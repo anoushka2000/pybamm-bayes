@@ -1,9 +1,6 @@
-colour
-IPython
-notebook
 numpy
-pandas
-plotly
 pybamm
-pymcmcstat
 setuptools
+matplotlib
+pints
+pandas
