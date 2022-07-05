@@ -124,7 +124,19 @@ class IdentifiabilityProblem(pints.ForwardModel):
         )
 
     def simulate(self, theta, times):
-
+        """
+        Simulate method used by pints sampler.
+        Parameters
+        ----------
+        theta: np.ndarray
+            Vector of input variable values.
+        times: np.ndarray
+            Array of times (in seconds) at which model is solved.
+        Returns
+        ----------
+        output: np.ndarray
+            Voltage time series.
+        """
         variable_names = [v.name for v in self.variables]
         inputs = self.default_inputs
         assert set(variable_names) - set(inputs.keys()) == set()
@@ -148,6 +160,8 @@ class IdentifiabilityProblem(pints.ForwardModel):
 
         except Exception as e:
             print(e)
+            # TODO: adjust parameters and retry solve or return last residual?
+            # array of zeros to maximize resolution if solution did not converge
             output = np.zeros(times.shape)
 
         self.generated_data = True
@@ -155,11 +169,14 @@ class IdentifiabilityProblem(pints.ForwardModel):
 
     def n_parameters(self):
         """
-        Return the dimension of the variable vector.
+        Return dimension of the variable vector.
         """
         return len(self.variables)
 
     def plot_priors(self):
+        """
+        Plot priors for all variables and save.
+        """
         for variable in self.variables:
             plt.figure(self.variables.index(variable))
 
@@ -180,7 +197,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
 
     def plot_data(self):
         """
-        Saves plot of voltage profile used for fitting.
+        Plot of voltage profile used for fitting and save.
         """
         plt.plot(self.times, self.data)
         plt.xlabel("Time (s)")
