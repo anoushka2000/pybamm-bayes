@@ -79,7 +79,7 @@ def run_mcmc(
     mcmc.set_max_iterations(n_iteration)
 
     # Logging
-    mcmc.set_log_to_screen(False)
+    mcmc.set_log_to_screen(True)
     mcmc.set_chain_filename(
         os.path.join(identifiability_problem.logs_dir_path, "chain.csv")
     )
@@ -89,7 +89,8 @@ def run_mcmc(
     )
 
     # Parallelization
-    mcmc.set_parallel(parallel=n_workers)
+    # TODO: ForkingPickler(file, protocol).dump(obj) -> TypeError: cannot pickle 'SwigPyObject' object
+    # mcmc.set_parallel(parallel=n_workers)
 
     # Run
     print("Running...")

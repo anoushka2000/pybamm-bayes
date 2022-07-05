@@ -25,7 +25,6 @@ def _fmt_parameters(parameters):
 
 
 class IdentifiabilityProblem(pints.ForwardModel):
-
     """
     Defines parameter identifiablility problem for a battery model.
 
@@ -127,9 +126,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
     def simulate(self, theta, times):
 
         variable_names = [v.name for v in self.variables]
-
         inputs = self.default_inputs
-
         assert set(variable_names) - set(inputs.keys()) == set()
 
         inputs.update(
@@ -137,9 +134,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
         )
         try:
             self.battery_simulation.solve(times, inputs=inputs)
-
             solution = self.battery_simulation.solution
-
             V = solution["Terminal voltage [V]"]
             output = V.entries.reshape(times.shape)
 
@@ -153,7 +148,6 @@ class IdentifiabilityProblem(pints.ForwardModel):
 
         except Exception as e:
             print(e)
-
             output = np.zeros(times.shape)
 
         self.generated_data = True
@@ -161,18 +155,19 @@ class IdentifiabilityProblem(pints.ForwardModel):
 
     def n_parameters(self):
         """
-        Return the dimension of the variable vector
+        Return the dimension of the variable vector.
         """
         return len(self.variables)
 
     def plot_priors(self):
         for variable in self.variables:
             plt.figure(self.variables.index(variable))
+
             n, bins, patches = plt.hist(variable.prior.sample(7000), bins=80, alpha=0.6)
             plt.plot(
                 [
-                    self.inverse_transform(variable.true_value),
-                    self.inverse_transform(variable.true_value),
+                    variable.true_value,
+                    variable.true_value,
                 ],
                 [0, max(n)],
             )
@@ -180,8 +175,13 @@ class IdentifiabilityProblem(pints.ForwardModel):
             plt.ylabel("Frequency")
             plt.title("Sampling from Prior")
             plt.savefig(os.path.join(self.logs_dir_path, f"prior_{variable.name}"))
+            plt.cla()
+            plt.clf()
 
     def plot_data(self):
+        """
+        Saves plot of voltage profile used for fitting.
+        """
         plt.plot(self.times, self.data)
         plt.xlabel("Time (s)")
         plt.ylabel("Voltage (V)")

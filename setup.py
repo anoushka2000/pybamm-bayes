@@ -8,8 +8,8 @@ here = path.abspath(path.dirname(__file__))
 install_requires = open(path.join(here, "requirements.txt")).read().strip().split("\n")
 
 setup(
-    name="battery-model-parameterization",
-    version="0.0",
+    name="battery_model_parameterization",
+    version="0.0.1",
     packages=find_packages(),
     install_requires=install_requires,
     description="Battery model parameter identifiability project.",
