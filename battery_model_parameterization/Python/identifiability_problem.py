@@ -8,7 +8,7 @@ import pints
 import pints.plot
 import pybamm
 
-INVERSE_TRANSFORMS = {"log10": lambda x: 10**x}
+INVERSE_TRANSFORMS = {"log10": lambda x: 10 ** x}
 
 
 def _fmt_variables(variables):
@@ -45,14 +45,14 @@ class IdentifiabilityProblem(pints.ForwardModel):
     """
 
     def __init__(
-        self,
-        battery_model,
-        variables,
-        transform_type,
-        parameter_values,
-        resolution,
-        timespan,
-        noise,
+            self,
+            battery_model,
+            variables,
+            transform_type,
+            parameter_values,
+            resolution,
+            timespan,
+            noise,
     ):
         super().__init__()
         self.generated_data = False
@@ -177,23 +177,22 @@ class IdentifiabilityProblem(pints.ForwardModel):
         """
         Plot priors for all variables and save.
         """
+        i = 0
+        fig, axs = plt.subplots(len(self.variables))
+        fig.subplots_adjust(hspace=0.9)
+        fig.suptitle('Prior Distributions')
         for variable in self.variables:
-            plt.figure(self.variables.index(variable))
-
-            n, bins, patches = plt.hist(variable.prior.sample(7000), bins=80, alpha=0.6)
-            plt.plot(
+            n, bins, patches = axs[i].hist(variable.prior.sample(7000), bins=80, alpha=0.6)
+            axs[i].plot(
                 [
                     variable.true_value,
                     variable.true_value,
                 ],
                 [0, max(n)],
             )
-            plt.xlabel(f"{variable.name} (transformed)")
-            plt.ylabel("Frequency")
-            plt.title("Sampling from Prior")
-            plt.savefig(os.path.join(self.logs_dir_path, f"prior_{variable.name}"))
-            plt.cla()
-            plt.clf()
+            axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
+            i += 1
+        plt.savefig(os.path.join(self.logs_dir_path, f"prior"))
 
     def plot_data(self):
         """

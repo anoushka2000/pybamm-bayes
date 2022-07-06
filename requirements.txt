@@ -4,6 +4,5 @@ setuptools
 matplotlib
 pints
 pandas
-bmp
 python
 scipy
