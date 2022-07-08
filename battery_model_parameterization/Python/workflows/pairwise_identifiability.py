@@ -1,4 +1,5 @@
 import pints
+import numpy as np
 from battery_model_parameterization.Python.variable import Variable
 from battery_model_parameterization.Python.identifiability_problem import (
     IdentifiabilityProblem,
@@ -8,11 +9,15 @@ from battery_model_parameterization.Python.battery_simulation import (
 )
 from battery_model_parameterization.Python.sampling import run_mcmc
 
-log_prior_Dsn = pints.GaussianLogPrior(-13, 1)
-log_prior_j0_p = pints.GaussianLogPrior(-5.6, 1)
+means = [-14.26, -8.50]
+sd = [1, 1]
+log_prior_Dsn = pints.GaussianLogPrior(means[0], sd[0])
+log_prior_De = pints.GaussianLogPrior(means[1], sd[1])
 
-Dsn = Variable(name="Ds_n", true_value=-13.45, prior=log_prior_Dsn)
-j0_p = Variable(name="j0_p", true_value=-4.698, prior=log_prior_j0_p)
+log_prior = pints.ComposedLogPrior(log_prior_Dsn, log_prior_De)
+
+Dsn = Variable(name="Ds_n", true_value=np.log10(3.54e-14), prior=log_prior_Dsn)
+De = Variable(name="De", true_value=np.log10(9.71e-10), prior=log_prior_De)
 
 model, param = dfn_constant_current_discharge(d_rate=0.1)
 
@@ -20,7 +25,7 @@ ten_hours = 60 * 60 * 10
 
 identifiability_problem = IdentifiabilityProblem(
     model,
-    variables=[Dsn, j0_p],
+    variables=[Dsn, De],
     parameter_values=param,
     transform_type="log10",
     resolution=10,
