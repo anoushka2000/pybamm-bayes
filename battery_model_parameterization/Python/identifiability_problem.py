@@ -181,8 +181,8 @@ class IdentifiabilityProblem(pints.ForwardModel):
 
                     with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
                         log.write("**************\n")
-                        log.write(np.array2string(theta)+"\n")
-                        log.write(repr(e)+"\n")
+                        log.write(np.array2string(theta) + "\n")
+                        log.write(repr(e) + "\n")
 
                     # array of zeros to maximize residual if solution did not converge
                     output = np.zeros(times.shape)

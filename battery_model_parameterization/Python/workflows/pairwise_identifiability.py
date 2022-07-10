@@ -30,10 +30,18 @@ model, param = dfn_constant_current_discharge(d_rate=0.1)
 
 ten_hours = 60 * 60 * 10
 
-identifiability_problem = IdentifiabilityProblem(model, variables, parameter_values=param,
-                                                 transform_type="log10",
-                                                 resolution=10, timespan=ten_hours, noise=0.005)
+identifiability_problem = IdentifiabilityProblem(
+    model,
+    variables,
+    parameter_values=param,
+    transform_type="log10",
+    resolution=10,
+    timespan=ten_hours,
+    noise=0.005,
+)
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
-chains = run_mcmc(identifiability_problem, burnin=2, n_iteration=3000, n_chains=10, n_workers=3)
+chains = run_mcmc(
+    identifiability_problem, burnin=2, n_iteration=3000, n_chains=10, n_workers=3
+)

@@ -26,7 +26,9 @@ def electrolyte_diffusivity_Capiglia1999(c_e, T):
         Solid diffusivity
     """
 
-    D_c_e = pybamm.InputParameter("De") * pybamm.exp(-0.65 * c_e / 1000)  # default = 5.34e-10
+    D_c_e = pybamm.InputParameter("De") * pybamm.exp(
+        -0.65 * c_e / 1000
+    )  # default = 5.34e-10
     E_D_e = 37040
     arrhenius = pybamm.exp(E_D_e / pybamm.constants.R * (1 / 298.15 - 1 / T))
 

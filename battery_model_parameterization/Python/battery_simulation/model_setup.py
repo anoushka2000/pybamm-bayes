@@ -19,7 +19,9 @@ def dfn_constant_current_discharge(d_rate):
     model = pybamm.lithium_ion.DFN()
 
     param = model.default_parameter_values
-    param["Negative electrode diffusivity [m2.s-1]"] = graphite_mcmb2528_diffusivity_Dualfoil1998
+    param[
+        "Negative electrode diffusivity [m2.s-1]"
+    ] = graphite_mcmb2528_diffusivity_Dualfoil1998
     param["Positive electrode diffusivity [m2.s-1]"] = lico2_diffusivity_Dualfoil1998
     param["Electrolyte diffusivity [m2.s-1]"] = electrolyte_diffusivity_Capiglia1999
     param[
