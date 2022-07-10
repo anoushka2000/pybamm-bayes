@@ -35,24 +35,6 @@ def run_mcmc(
     chains: np.ndarray
         Sampling chains (shape: iteration, chains, parameters).
     """
-    with open(
-        os.path.join(identifiability_problem.logs_dir_path, "metadata.json"), "r"
-    ) as outfile:
-        metadata = json.load(outfile)
-
-    metadata.update(
-        {
-            "burnin": burnin,
-            "n_iteration": n_iteration,
-            "n_chains": n_chains,
-            "sampling_method": sampling_method,
-        }
-    )
-
-    with open(
-        os.path.join(identifiability_problem.logs_dir_path, "metadata.json"), "w"
-    ) as outfile:
-        json.dump(metadata, outfile)
 
     problem = pints.SingleOutputProblem(
         identifiability_problem,
@@ -96,8 +78,53 @@ def run_mcmc(
     print("Running...")
     chains = mcmc.run()
     print("Done!")
-    pd.DataFrame({"chi_sq": identifiability_problem.chi_sq}).to_csv(
-        os.path.join(identifiability_problem.logs_dir_path, "chi_sq.csv")
+
+    chains = pd.DataFrame(
+        chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
     )
+
+    #  evaluate optimal value for each parameter
+    theta_optimal = np.array(
+        [float(chains[column].mode().iloc[0]) for column in chains.columns]
+    )
+
+    #  find residual at optimal value
+    y_hat = identifiability_problem.simulate(
+        theta_optimal, times=identifiability_problem.times
+    )
+    error_at_optimal = np.sum(abs(y_hat - identifiability_problem.data)) / len(
+        identifiability_problem.data
+    )
+
+    # chi_sq = distance in residuals between optimal value and all others
+    pd.DataFrame(
+        {
+            "residuals": identifiability_problem.residuals,
+            "chi_sq": identifiability_problem.residuals - error_at_optimal,
+        }
+    ).to_csv(os.path.join(identifiability_problem.logs_dir_path, "residuals.csv"))
+
+    with open(
+        os.path.join(identifiability_problem.logs_dir_path, "metadata.json"),
+        "r",
+    ) as outfile:
+        metadata = json.load(outfile)
+
+    metadata.update(
+        {
+            "burnin": burnin,
+            "n_iteration": n_iteration,
+            "n_chains": n_chains,
+            "sampling_method": sampling_method,
+            "theta_optimal": theta_optimal.tolist(),
+            "error_at_optimal": error_at_optimal,
+        }
+    )
+
+    with open(
+        os.path.join(identifiability_problem.logs_dir_path, "metadata.json"),
+        "w",
+    ) as outfile:
+        json.dump(metadata, outfile)
 
     return chains

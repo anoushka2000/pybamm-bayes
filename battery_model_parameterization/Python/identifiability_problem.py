@@ -8,7 +8,12 @@ import pints
 import pints.plot
 import pybamm
 
-INVERSE_TRANSFORMS = {"log10": lambda x: 10 ** x}
+
+def _inverse_log10(x):
+    return 10**x
+
+
+INVERSE_TRANSFORMS = {"log10": _inverse_log10}
 
 
 def _fmt_variables(variables):
@@ -45,14 +50,14 @@ class IdentifiabilityProblem(pints.ForwardModel):
     """
 
     def __init__(
-            self,
-            battery_model,
-            variables,
-            transform_type,
-            parameter_values,
-            resolution,
-            timespan,
-            noise,
+        self,
+        battery_model,
+        variables,
+        transform_type,
+        parameter_values,
+        resolution,
+        timespan,
+        noise,
     ):
         super().__init__()
         self.generated_data = False
@@ -73,7 +78,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
         self.noise = noise
         self.times = np.linspace(0, timespan, num=(timespan // resolution))
         self.logs_dir_path = self.create_logs_dir()
-        self.chi_sq = []
+        self.residuals = []
 
         data = self.simulate(self.true_values, self.times)
         self.data = data + np.random.normal(0, self.noise, data.shape)
@@ -106,6 +111,12 @@ class IdentifiabilityProblem(pints.ForwardModel):
             self.setup_battery_simulation()
             return self._battery_simulation
 
+    def setup_battery_simulation(self):
+        self._battery_simulation = pybamm.Simulation(
+            self.battery_model,
+            parameter_values=self.parameter_values,
+        )
+
     @property
     def metadata(self):
         return {
@@ -115,13 +126,6 @@ class IdentifiabilityProblem(pints.ForwardModel):
             "variables": _fmt_variables(self.variables),
             "transform type": self.transform_type,
         }
-
-    def setup_battery_simulation(self):
-        self._battery_simulation = pybamm.Simulation(
-            self.battery_model,
-            parameter_values=self.parameter_values,
-            solver=pybamm.CasadiSolver("fast"),
-        )
 
     def simulate(self, theta, times):
         """
@@ -145,25 +149,47 @@ class IdentifiabilityProblem(pints.ForwardModel):
             dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
         )
         try:
-            self.battery_simulation.solve(times, inputs=inputs)
+            # solve with CasadiSolver
+            self.battery_simulation.solve(
+                times, inputs=inputs, solver=pybamm.CasadiSolver("fast")
+            )
             solution = self.battery_simulation.solution
             V = solution["Terminal voltage [V]"]
             output = V.entries.reshape(times.shape)
 
-            if self.generated_data:
-                ess = np.sum(np.square((output - self.data) / self.noise)) / len(output)
-                self.chi_sq.append(ess)
+        except Exception:
+            # CasadiSolver "fast" failed
+            try:
+                self.battery_simulation.solve(
+                    times, inputs=inputs, solver=pybamm.CasadiSolver("safe")
+                )
+                solution = self.battery_simulation.solution
+                V = solution["Terminal voltage [V]"]
+                output = V.entries.reshape(times.shape)
 
-        #             solution.save_data(os.path.join(self.logs_dir_path, f"sol_data_{self.iteration_counter}.csv"),
-        #                                             ["Time [s]", "Terminal voltage [V]"], to_format="csv")
-        #             self.iteration_counter += 1
+            except Exception:
+                #  IDAKLUSolver "casadi" solver failed
+                try:
+                    self.battery_simulation.solve(
+                        times, inputs=inputs, solver=pybamm.IDAKLUSolver()
+                    )
+                    solution = self.battery_simulation.solution
+                    V = solution["Terminal voltage [V]"]
+                    output = V.entries.reshape(times.shape)
 
-        except Exception as e:
-            print(e)
-            # TODO: adjust parameters and retry solve or return last residual?
-            # array of zeros to maximize resolution if solution did not converge
-            output = np.zeros(times.shape)
+                except Exception as e:
 
+                    with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
+                        log.write("**************\n")
+                        log.write(np.array2string(theta)+"\n")
+                        log.write(repr(e)+"\n")
+
+                    # array of zeros to maximize residual if solution did not converge
+                    output = np.zeros(times.shape)
+
+        if self.generated_data:
+            ess = np.sum(np.square((output - self.data) / self.noise)) / len(output)
+            self.residuals.append(ess)
         self.generated_data = True
         return output
 
@@ -180,9 +206,11 @@ class IdentifiabilityProblem(pints.ForwardModel):
         i = 0
         fig, axs = plt.subplots(len(self.variables))
         fig.subplots_adjust(hspace=0.9)
-        fig.suptitle('Prior Distributions')
+        fig.suptitle("Prior Distributions")
         for variable in self.variables:
-            n, bins, patches = axs[i].hist(variable.prior.sample(7000), bins=80, alpha=0.6)
+            n, bins, patches = axs[i].hist(
+                variable.prior.sample(7000), bins=80, alpha=0.6
+            )
             axs[i].plot(
                 [
                     variable.true_value,

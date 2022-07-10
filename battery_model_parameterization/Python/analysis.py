@@ -1,6 +1,7 @@
 import os
 import json
 import glob
+import warnings
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -111,7 +112,6 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
     ----------
     logs_dir_name: str
        Name of directory logging idenfiability problem results.
-    # TODO: Berliner non linear confidence intervals not KDE
     kde: bool
         Set to ``True`` to use kernel-density estimation for the
         histograms and scatter plots. Cannot use together with ``heatmap``.
@@ -176,7 +176,10 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
 
                 # add prior histogram
                 axes[i, j].hist(
-                    priors[i].sample(len(samples)), bins=xbins, alpha=0.5, color="black"
+                    priors[i].sample(len(samples)),
+                    bins=xbins,
+                    alpha=0.5,
+                    color="black",
                 )
 
                 # Add kde plot
@@ -187,7 +190,10 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
                 # add true values for reference
                 ymin_tv, ymax_tv = axes[i, j].get_ylim()
                 axes[i, j].plot(
-                    [true_values[i], true_values[i]], [0.0, ymax_tv], "--", c="k"
+                    [true_values[i], true_values[i]],
+                    [0.0, ymax_tv],
+                    "--",
+                    c="k",
                 )
 
                 axes[i, j].set_ylabel("Frequency")

@@ -4,5 +4,4 @@ setuptools
 matplotlib
 pints
 pandas
-python
 scipy
