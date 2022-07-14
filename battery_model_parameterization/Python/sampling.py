@@ -83,24 +83,10 @@ def run_mcmc(
         chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
     )
 
-    #  evaluate optimal value for each parameter
-    theta_optimal = np.array(
-        [float(chains[column].mode().iloc[0]) for column in chains.columns]
-    )
-
-    #  find residual at optimal value
-    y_hat = identifiability_problem.simulate(
-        theta_optimal, times=identifiability_problem.times
-    )
-    error_at_optimal = np.sum(abs(y_hat - identifiability_problem.data)) / len(
-        identifiability_problem.data
-    )
-
     # chi_sq = distance in residuals between optimal value and all others
     pd.DataFrame(
         {
             "residuals": identifiability_problem.residuals,
-            "chi_sq": identifiability_problem.residuals - error_at_optimal,
         }
     ).to_csv(os.path.join(identifiability_problem.logs_dir_path, "residuals.csv"))
 
@@ -116,8 +102,6 @@ def run_mcmc(
             "n_iteration": n_iteration,
             "n_chains": n_chains,
             "sampling_method": sampling_method,
-            "theta_optimal": theta_optimal.tolist(),
-            "error_at_optimal": error_at_optimal,
         }
     )
 
