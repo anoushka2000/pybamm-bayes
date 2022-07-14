@@ -1,12 +1,13 @@
+import pints
 import unittest
 
-import pints
-
 from battery_model_parameterization.Python import sampling
-from battery_model_parameterization.Python.battery_simulation.model_setup import \
-    dfn_constant_current_discharge
-from battery_model_parameterization.Python.identifiability_problem import \
-    IdentifiabilityProblem
+from battery_model_parameterization.Python.battery_simulation.model_setup import (
+    dfn_constant_current_discharge,
+)
+from battery_model_parameterization.Python.identifiability_problem import (
+    IdentifiabilityProblem,
+)
 from battery_model_parameterization.Python.variable import Variable
 
 CHAIN_RECORD = [
@@ -41,9 +42,15 @@ class TestSampling(unittest.TestCase):
 
         ten_hours = 60 * 60 * 10
 
-        identifiability_problem = IdentifiabilityProblem(model, variables, parameter_values=param,
-                                                         transform_type="log10",
-                                                         resolution=10, timespan=ten_hours, noise=0.005)
+        identifiability_problem = IdentifiabilityProblem(
+            model,
+            variables,
+            parameter_values=param,
+            transform_type="log10",
+            resolution=10,
+            timespan=ten_hours,
+            noise=0.005,
+        )
         identifiability_problem.plot_data()
         identifiability_problem.plot_priors()
 
@@ -52,8 +59,10 @@ class TestSampling(unittest.TestCase):
         n_chains = 3
         n_workers = 3
 
-        chains = sampling.run_mcmc(identifiability_problem, burnin, n_iteration, n_chains, n_workers)
+        chains = sampling.run_mcmc(
+            identifiability_problem, burnin, n_iteration, n_chains, n_workers
+        )
 
         self.assertEqual(len(chains.columns), len(variables))
-        self.assertEqual(len(chains), n_iteration*n_chains)
+        self.assertEqual(len(chains), n_iteration * n_chains)
         self.assertEqual(CHAIN_RECORD, chains.to_records())
