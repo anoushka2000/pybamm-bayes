@@ -10,25 +10,6 @@ from battery_model_parameterization.Python.identifiability_problem import (
 )
 from battery_model_parameterization.Python.variable import Variable
 
-CHAIN_RECORD = [
-    (0, -16.74293161, -5.8482002),
-    (1, -16.52496226, -5.85054706),
-    (2, -15.96513726, -5.82824975),
-    (3, -15.89443343, -5.56774417),
-    (4, -15.89443343, -5.56774417),
-    (5, -15.92989206, -5.56421062),
-    (6, -15.66723845, -5.63038721),
-    (7, -15.34968708, -5.16882776),
-    (8, -15.23981286, -5.3478517),
-    (9, -15.23981286, -5.3478517),
-    (10, -14.65790656, -5.11991413),
-    (11, -14.65790656, -5.11991413),
-    (12, -14.47355606, -5.0526986),
-    (13, -14.47355606, -5.0526986),
-    (14, -14.12038002, -4.95777944),
-]
-
-
 class TestSampling(unittest.TestCase):
     def test_run_mcmc(self):
         log_prior_Dsn = pints.GaussianLogPrior(-13, 1)
@@ -65,4 +46,3 @@ class TestSampling(unittest.TestCase):
 
         self.assertEqual(len(chains.columns), len(variables))
         self.assertEqual(len(chains), n_iteration * n_chains)
-        self.assertEqual(CHAIN_RECORD, chains.to_records())
