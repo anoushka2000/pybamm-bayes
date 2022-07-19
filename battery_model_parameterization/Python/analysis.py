@@ -8,6 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
+import pints
 import scipy.stats as stats
 
 
@@ -28,6 +29,7 @@ def load_chains(logs_dir_path):
     (column names 'p0', 'p1' ...).
     Chains are appended sequentially.
     """
+
     chain_file_names = glob.glob(f"{logs_dir_path}/chain_?.csv")
     df_list = []
     for name in chain_file_names:
@@ -288,10 +290,7 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
                     # Determine point opacity
                     num_points = len(samples[:, i])
                     if opacity is None:
-                        if num_points < 10:
-                            opacity = 1.0
-                        else:
-                            opacity = 1.0 / np.log10(num_points)
+                        opacity = 1.0
 
                     # Scatter points
                     axes[i, j].scatter(
@@ -368,7 +367,7 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
     plt.savefig(os.path.join(logs_dir_path, "pairwise_correlation"))
 
 
-def plot_confidence_intervals(logs_dir_name):
+def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
     """
     Local confidence regions from sampled parameter pairs.
 
@@ -379,6 +378,7 @@ def plot_confidence_intervals(logs_dir_name):
     """
     logs_dir_path = _get_logs_path(logs_dir_name)
     result = load_chains_with_residual(logs_dir_name)
+
     theta_optimal = result.nsmallest(1, "residuals")[
         result.columns[1:3]
     ].values.flatten()
@@ -389,6 +389,8 @@ def plot_confidence_intervals(logs_dir_name):
 
     # recover true values from metadata
     true_values = [var["true_value"] for var in metadata["variables"]]
+
+    result = result[result.chi_sq < chi_sq_limit]
 
     # plotting
     fig = px.scatter(
