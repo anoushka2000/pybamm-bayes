@@ -4,11 +4,11 @@ import os
 import warnings
 
 import matplotlib.pyplot as plt
-import plotly.express as px
-import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
-import pints
+import pints  # noqa: F401
+import plotly.express as px
+import plotly.graph_objects as go
 import scipy.stats as stats
 
 
@@ -80,7 +80,7 @@ def load_chains_with_residual(logs_dir_name):
     result = result[result.p1 > theta_optimal[1] - 1]
     result = result[result.p1 < theta_optimal[1] + 1]
     result["chi_sq"] = (
-        result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
+            result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
     )
     result = result[result.chi_sq < 10]
     result.columns = ["sample number"] + variable_names + ["residuals", "chi_sq"]
@@ -288,7 +288,6 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
                 if not kde and not heatmap:
                     # Create scatter plot
                     # Determine point opacity
-                    num_points = len(samples[:, i])
                     if opacity is None:
                         opacity = 1.0
 
