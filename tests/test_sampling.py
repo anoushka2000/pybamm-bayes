@@ -10,6 +10,7 @@ from battery_model_parameterization.Python.identifiability_problem import (
 )
 from battery_model_parameterization.Python.variable import Variable
 
+
 class TestSampling(unittest.TestCase):
     def test_run_mcmc(self):
         log_prior_Dsn = pints.GaussianLogPrior(-13, 1)

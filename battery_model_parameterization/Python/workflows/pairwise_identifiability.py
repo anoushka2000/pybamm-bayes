@@ -43,5 +43,5 @@ identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
 chains = run_mcmc(
-    identifiability_problem, burnin=2, n_iteration=3000, n_chains=10, n_workers=3
+    identifiability_problem, burnin=1, n_iteration=3, n_chains=1, n_workers=3
 )
