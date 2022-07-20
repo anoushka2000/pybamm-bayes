@@ -10,7 +10,7 @@ import pybamm
 
 
 def _inverse_log10(x):
-    return 10 ** x
+    return 10**x
 
 
 INVERSE_TRANSFORMS = {"log10": _inverse_log10}
@@ -50,15 +50,15 @@ class IdentifiabilityProblem(pints.ForwardModel):
     """
 
     def __init__(
-            self,
-            battery_model,
-            variables,
-            transform_type,
-            parameter_values,
-            resolution,
-            timespan,
-            noise,
-            project_tag=" "
+        self,
+        battery_model,
+        variables,
+        transform_type,
+        parameter_values,
+        resolution,
+        timespan,
+        noise,
+        project_tag=" ",
     ):
         super().__init__()
         self.generated_data = False
@@ -78,9 +78,9 @@ class IdentifiabilityProblem(pints.ForwardModel):
         self.timespan = timespan
         self.noise = noise
         self.times = np.linspace(0, timespan, num=(timespan // resolution))
+        self.project_tag = project_tag
         self.logs_dir_path = self.create_logs_dir()
         self.residuals = []
-        self.project_tag = project_tag
 
         data = self.simulate(self.true_values, self.times)
         self.data = data + np.random.normal(0, self.noise, data.shape)
@@ -127,7 +127,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
             "default inputs": self.default_inputs,
             "variables": _fmt_variables(self.variables),
             "transform type": self.transform_type,
-            "project": self.project_tag
+            "project": self.project_tag,
         }
 
     def simulate(self, theta, times):
