@@ -33,8 +33,6 @@ class TestSampling(unittest.TestCase):
             timespan=ten_hours,
             noise=0.005,
         )
-        identifiability_problem.plot_data()
-        identifiability_problem.plot_priors()
 
         burnin = 2
         n_iteration = 5
