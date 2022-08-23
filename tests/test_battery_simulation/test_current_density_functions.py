@@ -1,6 +1,8 @@
 import unittest
-from battery_model_parameterization.Python.battery_simulation.current_density_functions import *
+
 from pybamm.expression_tree.binary_operators import Multiplication
+
+from battery_model_parameterization.Python.battery_simulation.current_density_functions import *
 
 
 class TestCurrentDensityFunctions(unittest.TestCase):

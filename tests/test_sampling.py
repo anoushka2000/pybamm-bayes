@@ -1,5 +1,6 @@
-import pints
 import unittest
+
+import pints
 
 from battery_model_parameterization.Python import sampling
 from battery_model_parameterization.Python.battery_simulation.model_setup import (

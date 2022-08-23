@@ -1,8 +1,11 @@
-import unittest
-import pints
-import pybamm
 import os
 import shutil
+import unittest
+
+import pints
+import pybamm
+from matplotlib.testing.compare import compare_images
+
 from battery_model_parameterization.Python.battery_simulation.model_setup import (
     dfn_constant_current_discharge,
 )
@@ -10,7 +13,6 @@ from battery_model_parameterization.Python.identifiability_problem import (
     IdentifiabilityProblem,
 )
 from battery_model_parameterization.Python.variable import Variable
-from matplotlib.testing.compare import compare_images
 
 
 class TestIdentifiabilityProblem(unittest.TestCase):

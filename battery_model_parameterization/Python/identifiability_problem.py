@@ -127,6 +127,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
             "default inputs": self.default_inputs,
             "variables": _fmt_variables(self.variables),
             "transform type": self.transform_type,
+            "noise": self.noise,
             "project": self.project_tag,
         }
 

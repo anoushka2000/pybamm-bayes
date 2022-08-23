@@ -1,6 +1,8 @@
-from battery_model_parameterization.Python.battery_simulation.model_setup import *
-import pybamm
 import unittest
+
+import pybamm
+
+from battery_model_parameterization.Python.battery_simulation.model_setup import *
 
 
 class TestModelSetup(unittest.TestCase):

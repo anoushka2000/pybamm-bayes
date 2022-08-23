@@ -10,10 +10,40 @@ import pints  # noqa: F401
 import plotly.express as px
 import plotly.graph_objects as go
 import scipy.stats as stats
+from IPython.display import Image, display
 
 
 def _get_logs_path(logs_dir_name):
     return os.path.join(os.getcwd(), "logs", logs_dir_name)
+
+
+def view_data(logs_dir_name):
+    """
+    Helper function to display data (voltage profile) plot in notebook.
+    """
+    logs_dir_path = _get_logs_path(logs_dir_name)
+    path = os.path.join(logs_dir_path, "data.png")
+    display(Image(filename=path))
+
+
+def load_metadata(logs_dir_name):
+    """
+    Parameters
+    ----------
+    logs_dir_name: str
+       Name of directory logging idenfiability problem results.
+
+    Returns
+    -------
+    Metadata associated with idenfiability problem.
+    """
+
+    logs_dir_path = _get_logs_path(logs_dir_name)
+
+    # load metadata
+    with open(os.path.join(logs_dir_path, "metadata.json"), "r") as j:
+        metadata = json.loads(j.read())
+    return metadata
 
 
 def load_chains(logs_dir_path):
@@ -52,9 +82,7 @@ def load_chains_with_residual(logs_dir_name):
     """
     logs_dir_path = _get_logs_path(logs_dir_name)
 
-    # load metadata
-    with open(os.path.join(logs_dir_path, "metadata.json"), "r") as j:
-        metadata = json.loads(j.read())
+    metadata = load_metadata(logs_dir_name)
 
     # recover variable definition from metadata
     variable_names = [
@@ -80,7 +108,7 @@ def load_chains_with_residual(logs_dir_name):
     result = result[result.p1 > theta_optimal[1] - 1]
     result = result[result.p1 < theta_optimal[1] + 1]
     result["chi_sq"] = (
-            result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
+        result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
     )
     result = result[result.chi_sq < 10]
     result.columns = ["sample number"] + variable_names + ["residuals", "chi_sq"]
@@ -198,9 +226,8 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
         Default shows all samples in ``samples``.
     """
     logs_dir_path = _get_logs_path(logs_dir_name)
-    # load metadata
-    with open(os.path.join(logs_dir_path, "metadata.json"), "r") as j:
-        metadata = json.loads(j.read())
+
+    metadata = load_metadata(logs_dir_name)
 
     # recover variable definition from metadata
     variable_names = [
@@ -382,9 +409,7 @@ def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
         result.columns[1:3]
     ].values.flatten()
 
-    # load metadata
-    with open(os.path.join(logs_dir_path, "metadata.json"), "r") as j:
-        metadata = json.loads(j.read())
+    metadata = load_metadata(logs_dir_name)
 
     # recover true values from metadata
     true_values = [var["true_value"] for var in metadata["variables"]]
