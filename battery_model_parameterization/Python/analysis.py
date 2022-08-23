@@ -6,14 +6,60 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pints  # noqa: F401
+import plotly.express as px
+import plotly.graph_objects as go
 import scipy.stats as stats
+from IPython.display import Image, display
 
 
 def _get_logs_path(logs_dir_name):
     return os.path.join(os.getcwd(), "logs", logs_dir_name)
 
 
+def view_data(logs_dir_name):
+    """
+    Helper function to display data (voltage profile) plot in notebook.
+    """
+    logs_dir_path = _get_logs_path(logs_dir_name)
+    path = os.path.join(logs_dir_path, "data.png")
+    display(Image(filename=path))
+
+
+def load_metadata(logs_dir_name):
+    """
+    Parameters
+    ----------
+    logs_dir_name: str
+       Name of directory logging idenfiability problem results.
+
+    Returns
+    -------
+    Metadata associated with idenfiability problem.
+    """
+
+    logs_dir_path = _get_logs_path(logs_dir_name)
+
+    # load metadata
+    with open(os.path.join(logs_dir_path, "metadata.json"), "r") as j:
+        metadata = json.loads(j.read())
+    return metadata
+
+
 def load_chains(logs_dir_path):
+    """
+    Parameters
+    ----------
+    logs_dir_name: str
+       Name of directory logging idenfiability problem results.
+
+    Returns
+    -------
+    DataFrame of chains. Each column is a parameter being sampled
+    (column names 'p0', 'p1' ...).
+    Chains are appended sequentially.
+    """
+
     chain_file_names = glob.glob(f"{logs_dir_path}/chain_?.csv")
     df_list = []
     for name in chain_file_names:
@@ -21,9 +67,58 @@ def load_chains(logs_dir_path):
     return pd.concat(df_list)
 
 
+def load_chains_with_residual(logs_dir_name):
+    """
+    Parameters
+    ----------
+    logs_dir_name: str
+       Name of directory logging idenfiability problem results.
+
+    Returns
+    -------
+    DataFrame of chains and residual .
+    Chains are appended interweaved to match order of evaluation.
+    (chain 1 sample 1, chain 2 sample 1,...chain n sample 1,...chain n sample n).
+    """
+    logs_dir_path = _get_logs_path(logs_dir_name)
+
+    metadata = load_metadata(logs_dir_name)
+
+    # recover variable definition from metadata
+    variable_names = [
+        f"{metadata['transform type']} {var['name']}" for var in metadata["variables"]
+    ]
+
+    # load chains
+    chain_file_names = glob.glob(f"{logs_dir_path}/chain_?.csv")
+    df_list = []
+    for name in chain_file_names:
+        df_list.append(pd.read_csv(name))
+
+    # load residual df
+    residuals = pd.read_csv(os.path.join(logs_dir_path, "residuals.csv"))
+    result = pd.concat(df_list).sort_index(kind="merge")
+    result = result.reset_index()
+    result["residuals"] = residuals.residuals
+    theta_optimal = result.nsmallest(1, "residuals")[["p0", "p1"]].values.flatten()
+
+    # filter to samples within one order of magnitude of true value
+    result = result[result.p0 > theta_optimal[0] - 1]
+    result = result[result.p0 < theta_optimal[0] + 1]
+    result = result[result.p1 > theta_optimal[1] - 1]
+    result = result[result.p1 < theta_optimal[1] + 1]
+    result["chi_sq"] = (
+        result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
+    )
+    result = result[result.chi_sq < 10]
+    result.columns = ["sample number"] + variable_names + ["residuals", "chi_sq"]
+
+    return result
+
+
 def plot_chain_convergence(logs_dir_name):
     """
-    Evoluation of chains with sampling iterations.
+    Evaluation of chains with sampling iterations.
     Parameters
     ----------
     logs_dir_name: str
@@ -78,13 +173,16 @@ def plot_chain_convergence(logs_dir_name):
             if max(n) > max_n:
                 max_n = int(max(n))
 
+            # set x limit for histogram subplot
+            axes[i, 0].set_xlim([round(true_values[i] - 2), round(true_values[i] + 2)])
+
             # add trace subplot
             axes[i, 1].set_xlabel("Iteration")
             axes[i, 1].set_ylabel(variable_names[i])
             axes[i, 1].plot(samples_j[:, i], alpha=0.8)
 
-        # set y limit
-        axes[i, 1].set_ylim([round(true_values[i] - 2), round(true_values[i] + 2)])
+            # set y limit for trace subplot
+            axes[i, 1].set_ylim([round(true_values[i] - 2), round(true_values[i] + 2)])
 
         # add prior histogram
         axes[i, 0].hist(
@@ -130,9 +228,8 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
         Default shows all samples in ``samples``.
     """
     logs_dir_path = _get_logs_path(logs_dir_name)
-    # load metadata
-    with open(os.path.join(logs_dir_path, "metadata.json"), "r") as j:
-        metadata = json.loads(j.read())
+
+    metadata = load_metadata(logs_dir_name)
 
     # recover variable definition from metadata
     variable_names = [
@@ -221,12 +318,8 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
                 if not kde and not heatmap:
                     # Create scatter plot
                     # Determine point opacity
-                    num_points = len(samples[:, i])
                     if opacity is None:
-                        if num_points < 10:
-                            opacity = 1.0
-                        else:
-                            opacity = 1.0 / np.log10(num_points)
+                        opacity = 1.0
 
                     # Scatter points
                     axes[i, j].scatter(
@@ -301,3 +394,62 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
             axes[i, 0].set_ylabel(variable_names[i])
 
     plt.savefig(os.path.join(logs_dir_path, "pairwise_correlation"))
+
+
+def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
+    """
+    Local confidence regions from sampled parameter pairs.
+
+    Parameters
+    ----------
+    logs_dir_name: str
+       Name of directory logging idenfiability problem results.
+    """
+    logs_dir_path = _get_logs_path(logs_dir_name)
+    result = load_chains_with_residual(logs_dir_name)
+
+    theta_optimal = result.nsmallest(1, "residuals")[
+        result.columns[1:3]
+    ].values.flatten()
+
+    metadata = load_metadata(logs_dir_name)
+
+    # recover true values from metadata
+    true_values = [var["true_value"] for var in metadata["variables"]]
+
+    result = result[result.chi_sq < chi_sq_limit]
+
+    # plotting
+    fig = px.scatter(
+        result,
+        result.columns[1],
+        result.columns[2],
+        color="chi_sq",
+        template="simple_white",
+        labels={"chi_sq": "χ2"},
+    )
+    fig.add_trace(
+        go.Scattergl(
+            x=[true_values[0]],
+            y=[true_values[1]],
+            name="True Value",
+            marker_color="grey",
+            mode="markers",
+            marker_size=10,
+        )
+    )
+    fig.add_trace(
+        go.Scattergl(
+            x=[theta_optimal[0]],
+            y=[theta_optimal[1]],
+            name="Optimal Value",
+            marker_color="gold",
+            mode="markers",
+            marker_symbol="square",
+            marker_size=10,
+        )
+    )
+    fig.layout["coloraxis"]["colorbar"]["y"] = 0.4
+    fig.update_layout(coloraxis={"colorscale": "agsunset"})
+
+    return fig
