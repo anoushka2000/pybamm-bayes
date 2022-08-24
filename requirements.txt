@@ -6,3 +6,4 @@ pints
 pandas
 scipy
 plotly
+ipython

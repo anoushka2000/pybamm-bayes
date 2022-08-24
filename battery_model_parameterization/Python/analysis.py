@@ -11,6 +11,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import scipy.stats as stats
 from IPython.display import Image, display
+from plotly.subplots import make_subplots
 
 
 def _get_logs_path(logs_dir_name):
@@ -125,9 +126,7 @@ def plot_chain_convergence(logs_dir_name):
        Name of directory logging idenfiability problem results.
     """
     logs_dir_path = _get_logs_path(logs_dir_name)
-    # load metadata
-    with open(os.path.join(logs_dir_path, "metadata.json"), "r") as j:
-        metadata = json.loads(j.read())
+    metadata = load_metadata(logs_dir_name)
 
     # recover variable definition from metadata
     variable_names = [
@@ -393,16 +392,78 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
     plt.savefig(os.path.join(logs_dir_path, "pairwise_correlation"))
 
 
-def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
-    """
-    Local confidence regions from sampled parameter pairs.
+def _plot_confidence_intervals_grid(logs_dir_name, n_variables, chi_sq_limit=10):
+    metadata = load_metadata(logs_dir_name)
+    result = load_chains_with_residual(logs_dir_name)
 
-    Parameters
-    ----------
-    logs_dir_name: str
-       Name of directory logging idenfiability problem results.
-    """
-    logs_dir_path = _get_logs_path(logs_dir_name)
+    theta_optimal = result.nsmallest(1, "residuals")[
+        result.columns[1 : n_variables + 1]
+    ].values.flatten()
+
+    # recover true values from metadata
+    true_values = [var["true_value"] for var in metadata["variables"]]
+
+    result = result[result.chi_sq < chi_sq_limit]
+
+    # plotting
+    fig = make_subplots(rows=n_variables, cols=n_variables)
+    for i in range(n_variables):
+        for j in range(n_variables):
+            fig.add_trace(
+                go.Scattergl(
+                    x=result[result.columns[i + 1]],
+                    y=result[result.columns[j + 1]],
+                    mode="markers",
+                    showlegend=False,
+                    marker_size=7,
+                    marker_colorbar=dict(len=0.7, title="χ2"),
+                    marker_color=result.chi_sq,
+                    marker_colorscale="agsunset",
+                ),
+                row=i + 1,
+                col=j + 1,
+            )
+            fig.add_trace(
+                go.Scattergl(
+                    x=[true_values[i]],
+                    y=[true_values[j]],
+                    name="True Value",
+                    marker_color="grey",
+                    mode="markers",
+                    showlegend=(i < 1 and j < 1),
+                    marker_size=10,
+                ),
+                row=i + 1,
+                col=j + 1,
+            )
+            fig.add_trace(
+                go.Scattergl(
+                    x=[theta_optimal[i]],
+                    y=[theta_optimal[j]],
+                    name="Optimal Value",
+                    marker_color="gold",
+                    mode="markers",
+                    showlegend=(i < 1 and j < 1),
+                    marker_symbol="square",
+                    marker_size=10,
+                ),
+                row=i + 1,
+                col=j + 1,
+            )
+            fig.update_xaxes(title=result.columns[i + 1], row=i + 1, col=j + 1)
+            fig.update_yaxes(title=result.columns[j + 1], row=i + 1, col=j + 1)
+    fig.layout["coloraxis"]["colorbar"]["y"] = 0.4
+    fig.update_layout(
+        paper_bgcolor="white",
+        template="simple_white",
+        height=320 * n_variables,
+        width=420 * n_variables,
+    )
+
+    return fig
+
+
+def _plot_confidence_intervals_bivariable(logs_dir_name, chi_sq_limit=10):
     result = load_chains_with_residual(logs_dir_name)
 
     theta_optimal = result.nsmallest(1, "residuals")[
@@ -448,5 +509,32 @@ def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
     )
     fig.layout["coloraxis"]["colorbar"]["y"] = 0.4
     fig.update_layout(coloraxis={"colorscale": "agsunset"})
+
+    return fig
+
+
+def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
+    """
+    Local confidence regions from sampled parameter pairs.
+
+    Parameters
+    ----------
+    logs_dir_name: str
+       Name of directory logging idenfiability problem results.
+
+    chi_sq_limit: float
+        Plot only parameters with chi_sq < chi_sq_limit
+        (allows greater resolution)
+    """
+    metadata = load_metadata(logs_dir_name)
+    n_variables = len(metadata["variables"])
+
+    if n_variables < 3:
+        # don't need grid
+        fig = _plot_confidence_intervals_bivariable(logs_dir_name, chi_sq_limit=10)
+    else:
+        fig = _plot_confidence_intervals_grid(
+            logs_dir_name, n_variables, chi_sq_limit=10
+        )
 
     return fig
