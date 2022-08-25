@@ -3,6 +3,7 @@ import json
 import os
 import warnings
 
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -119,7 +120,7 @@ def load_chains_with_residual(logs_dir_name):
 
 def plot_chain_convergence(logs_dir_name):
     """
-    Evaluation of chains with sampling iterations.
+    Line plot of sample vs sampling iterations for each chain.
     Parameters
     ----------
     logs_dir_name: str
@@ -198,6 +199,115 @@ def plot_chain_convergence(logs_dir_name):
 
     plt.tight_layout()
     plt.savefig(os.path.join(logs_dir_path, "chain_convergence"))
+
+
+def compare_chain_convergence(logs_dir_names):
+    """
+    Line plot of sample vs sampling iterations for each chain.
+    Parameters
+    ----------
+    logs_dir_names: List[str]
+       List of name of directories logging idenfiability problem results to compare.
+    """
+    color_list = list(mcolors.TABLEAU_COLORS) * 10
+    line_styles = ["-", "--", "-.", ":"] * 10
+
+    for i in range(len(logs_dir_names)):
+
+        line_style = line_styles[i]
+        color = color_list[i]
+        logs_dir_name = logs_dir_names[i]
+        logs_dir_path = _get_logs_path(logs_dir_name)
+        metadata = load_metadata(logs_dir_name)
+
+        # recover variable definition from metadata
+        variable_names = [
+            f"{metadata['transform type']} {var['name']}"
+            for var in metadata["variables"]
+        ]
+        true_values = [var["true_value"] for var in metadata["variables"]]
+        priors = [
+            eval(
+                f"pints.{var['prior_type']}({list(var['prior'].values())[0]},{list(var['prior'].values())[1]})"
+            )
+            for var in metadata["variables"]
+        ]
+
+        # load chains
+        chains = load_chains(logs_dir_path)
+        n_chains = metadata["n_chains"]
+        n_param = len(variable_names)
+        samples = chains.to_numpy().reshape(
+            n_chains, int(len(chains) / n_chains), n_param
+        )
+
+        if i < 1:
+            # set up figure first time
+            fig, axes = plt.subplots(
+                n_param, 2, figsize=(12, 2 * n_param), squeeze=False
+            )
+
+        # range across all samples
+        stacked_chains = np.vstack(samples)
+        xmin = np.min(stacked_chains, axis=0)
+        xmax = np.max(stacked_chains, axis=0)
+        xbins = np.linspace(xmin, xmax, 80)
+
+        for i in range(n_param):
+            # variable to store mode across all chains
+            max_n = 0
+
+            for j_list, samples_j in enumerate(samples):
+                # add histogram subplot
+                axes[i, 0].set_xlabel(variable_names[i])
+                axes[i, 0].set_ylabel("Frequency")
+                n, bins, patches = axes[i, 0].hist(
+                    samples_j[:, i], bins=xbins[:, i], alpha=0.8, color=color
+                )
+
+                if max(n) > max_n:
+                    max_n = int(max(n))
+
+                # set x limit for histogram subplot
+                axes[i, 0].set_xlim(
+                    [round(true_values[i] - 2), round(true_values[i] + 2)]
+                )
+
+                # add trace subplot
+                axes[i, 1].set_xlabel("Iteration")
+                axes[i, 1].set_ylabel(variable_names[i])
+                axes[i, 1].plot(samples_j[:, i], alpha=0.8, color=color)
+
+                # set y limit for trace subplot
+                axes[i, 1].set_ylim(
+                    [round(true_values[i] - 2), round(true_values[i] + 2)]
+                )
+
+            # add prior histogram
+            axes[i, 0].hist(
+                priors[i].sample(int(len(chains) / n_chains)),
+                bins=xbins[:, i],
+                alpha=0.5,
+                color="black",
+            )
+
+            # plot true value on histogram
+            axes[i, 0].plot(
+                [true_values[i], true_values[i]], [0.0, max_n], line_style, c="black"
+            )
+
+            # plot true value on chain line plot
+            xmin_tv, xmax_tv = axes[i, 1].get_xlim()
+            axes[i, 1].plot(
+                [0.0, xmax_tv], [true_values[i], true_values[i]], line_style, c="black"
+            )
+
+    plt.tight_layout()
+
+    # save in each project directory
+    for logs_dir_name in logs_dir_names:
+        logs_dir_path = _get_logs_path(logs_dir_name)
+        plt.savefig(os.path.join(logs_dir_path, "comparison_chain_convergence"))
 
 
 def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentiles=None):

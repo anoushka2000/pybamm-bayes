@@ -7,13 +7,18 @@ import numpy as np
 import pints
 import pints.plot
 import pybamm
+import battery_model_parameterization.Python.battery_models.model_setup as models
 
 
 def _inverse_log10(x):
-    return 10**x
+    return 10 ** x
 
 
 INVERSE_TRANSFORMS = {"log10": _inverse_log10}
+MODEL_LOOKUP = {
+    "default_dfn": models.default_dfn(),
+    "default_spme": models.default_spme()
+}
 
 
 def _fmt_variables(variables):
@@ -35,35 +40,41 @@ class IdentifiabilityProblem(pints.ForwardModel):
 
     Parameters
     ----------
-    battery_model: pybamm.BaseBatteryModel
-        Battery model to be parameterised.
-    variables: list[Variable]
+    battery_model: str
+        Name of battery model to be parameterised
+        One of "default_spme" or "default_dfn".
+    operating_conditions: List[Tuple[str]]/ List[str]
+        List of operating conditions (passed to pybamm.Experiment).
+    variables: List[Variable]
         List of variables being identified in problem.
     transform_type: str
-        Transformation variable value and sampling space.
-    resolution:
-        Time resolution of data used for parameter identification.
-    timespan: int
-        Time up to which data is simulated.
+        Transformation variable value input to battery model
+        and sampling space.
+        (only `log10` implemented for now)
+    resolution: str
+        Resolution of data used for parameter identification
+        (number and time unit e.g `1 minute`.)
     noise: float
         Noise added to data used for identification.
+    project_tag: str
+        Project identifier (prefix to logs dir name).
     """
 
     def __init__(
-        self,
-        battery_model,
-        variables,
-        transform_type,
-        parameter_values,
-        resolution,
-        timespan,
-        noise,
-        project_tag=" ",
+            self,
+            battery_model,
+            operating_conditions,
+            variables,
+            transform_type,
+            resolution,
+            noise,
+            project_tag=" ",
     ):
         super().__init__()
         self.generated_data = False
-        self.battery_model = battery_model
-        self.parameter_values = parameter_values
+        self.battery_model = MODEL_LOOKUP[battery_model][0]
+        self.operating_conditions = operating_conditions
+        self.parameter_values = MODEL_LOOKUP[battery_model][1]
         self.default_inputs = {
             "Ds_n": 1e-3,
             "Ds_p": 1e-3,
@@ -75,14 +86,16 @@ class IdentifiabilityProblem(pints.ForwardModel):
         self.transform_type = transform_type
         self.inverse_transform = INVERSE_TRANSFORMS[self.transform_type]
         self.resolution = resolution
-        self.timespan = timespan
         self.noise = noise
-        self.times = np.linspace(0, timespan, num=(timespan // resolution))
         self.project_tag = project_tag
         self.logs_dir_path = self.create_logs_dir()
         self.residuals = []
 
-        data = self.simulate(self.true_values, self.times)
+        self.battery_simulation.solve(inputs=self.default_inputs,
+                                      solver=pybamm.CasadiSolver("fast"))
+        self.times = self.battery_simulation.solution["Time [s]"].entries
+
+        data = self.simulate(self.true_values, times=[0, ])
         self.data = data + np.random.normal(0, self.noise, data.shape)
 
         if not os.path.isdir(self.logs_dir_path):
@@ -114,8 +127,11 @@ class IdentifiabilityProblem(pints.ForwardModel):
             return self._battery_simulation
 
     def setup_battery_simulation(self):
+        self.experiment = pybamm.Experiment(operating_conditions=self.operating_conditions,
+                                            period=self.resolution)
         self._battery_simulation = pybamm.Simulation(
             self.battery_model,
+            experiment=self.experiment,
             parameter_values=self.parameter_values,
         )
 
@@ -123,6 +139,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
     def metadata(self):
         return {
             "battery model": self.battery_model.name,
+            "operating conditions": self.operating_conditions,
             "parameter values": _fmt_parameters(self.parameter_values),
             "default inputs": self.default_inputs,
             "variables": _fmt_variables(self.variables),
@@ -155,31 +172,31 @@ class IdentifiabilityProblem(pints.ForwardModel):
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(
-                times, inputs=inputs, solver=pybamm.CasadiSolver("fast")
+                inputs=inputs, solver=pybamm.CasadiSolver("fast")
             )
             solution = self.battery_simulation.solution
             V = solution["Terminal voltage [V]"]
-            output = V.entries.reshape(times.shape)
+            output = V.entries
 
         except Exception:
             # CasadiSolver "fast" failed
             try:
                 self.battery_simulation.solve(
-                    times, inputs=inputs, solver=pybamm.CasadiSolver("safe")
+                    inputs=inputs, solver=pybamm.CasadiSolver("safe")
                 )
                 solution = self.battery_simulation.solution
                 V = solution["Terminal voltage [V]"]
-                output = V.entries.reshape(times.shape)
+                output = V.entries
 
             except Exception:
                 #  IDAKLUSolver "casadi" solver failed
                 try:
                     self.battery_simulation.solve(
-                        times, inputs=inputs, solver=pybamm.IDAKLUSolver()
+                        inputs=inputs, solver=pybamm.IDAKLUSolver()
                     )
                     solution = self.battery_simulation.solution
                     V = solution["Terminal voltage [V]"]
-                    output = V.entries.reshape(times.shape)
+                    output = V.entries
 
                 except Exception as e:
 
@@ -189,7 +206,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
                         log.write(repr(e) + "\n")
 
                     # array of zeros to maximize residual if solution did not converge
-                    output = np.zeros(times.shape)
+                    output = np.zeros(self.battery_simulation.solution["Time [s]"].entries.shape)
 
         if self.generated_data:
             ess = np.sum(np.square((output - self.data) / self.noise)) / len(output)
@@ -230,7 +247,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
         """
         Plot of voltage profile used for fitting and save.
         """
-        plt.plot(self.times, self.data)
+        plt.plot(self.battery_simulation.solution["Time [s]"].entries, self.data)
         plt.xlabel("Time (s)")
         plt.ylabel("Voltage (V)")
         plt.savefig(os.path.join(self.logs_dir_path, "data"))

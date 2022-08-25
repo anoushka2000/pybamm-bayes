@@ -1,7 +1,6 @@
 import pints
 from battery_model_parameterization.Python.battery_models.model_setup import (
-    dfn_constant_current_discharge,
-)
+default_dfn)
 from battery_model_parameterization.Python.identifiability_problem import (
     IdentifiabilityProblem,
 )
@@ -23,24 +22,23 @@ j0_p = Variable(name="j0_p", true_value=-6.22, prior=log_prior_j0_p)
 Dsp = Variable(name="Ds_p", true_value=-13, prior=log_prior_Dsp)
 De = Variable(name="De", true_value=-9.27, prior=log_prior_De)
 
-variables = [j0_n, j0_p]
+variables = [Dsp, De, j0_n, j0_p]
 
-model, param = dfn_constant_current_discharge(d_rate=0.1)
-
+operating_conditions = ["Discharge at C/10 for 10 hours"]
 ten_hours = 60 * 60 * 10
 
 identifiability_problem = IdentifiabilityProblem(
-    model,
-    variables,
-    parameter_values=param,
+    battery_model="default_dfn",
+    variables=variables,
+    operating_conditions=operating_conditions,
+    project_tag="test_exp",
     transform_type="log10",
-    resolution=10,
-    timespan=ten_hours,
+    resolution="10 minutes",
     noise=0.005,
 )
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
 chains = run_mcmc(
-    identifiability_problem, burnin=1, n_iteration=3, n_chains=1, n_workers=3
+    identifiability_problem, burnin=1, n_iteration=3, n_chains=2, n_workers=3
 )

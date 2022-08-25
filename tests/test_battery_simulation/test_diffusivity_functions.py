@@ -2,7 +2,7 @@ import unittest
 
 from pybamm.expression_tree.binary_operators import Multiplication
 
-from battery_model_parameterization.Python.battery_simulation.diffusivity_functions import *
+from battery_model_parameterization.Python.battery_models.variable_functions.diffusivity_functions import *
 
 
 class TestDiffusivityFunctions(unittest.TestCase):
