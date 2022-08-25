@@ -6,8 +6,6 @@ import pints
 import pybamm
 from matplotlib.testing.compare import compare_images
 
-from battery_model_parameterization.Python.battery_models.model_setup import \
-    dfn_constant_current_discharge
 from battery_model_parameterization.Python.identifiability_problem import \
     IdentifiabilityProblem
 from battery_model_parameterization.Python.variable import Variable
@@ -25,32 +23,38 @@ class TestIdentifiabilityProblem(unittest.TestCase):
         j0_n = Variable(name="j0_n", true_value=-4.698, prior=log_prior_j0_n)
 
         cls.variables = [Dsn, j0_n]
-        cls.battery_model, cls.parameter_values = dfn_constant_current_discharge(
-            d_rate=0.1
-        )
-        cls.timespan = 60 * 60 * 10
+        cls.battery_model = "default_dfn"
+        cls.experiment = pybamm.Experiment
+        cls.operating_conditions = ["Discharge at C/10 for 10 hours"]
         TestIdentifiabilityProblem.identifiability_problem = IdentifiabilityProblem(
+            project_tag="unit_test",
             battery_model=cls.battery_model,
+            operating_conditions=cls.operating_conditions,
             variables=cls.variables,
-            parameter_values=cls.parameter_values,
             transform_type="log10",
-            resolution=10,
-            timespan=cls.timespan,
+            resolution="10 seconds",
             noise=0.00,
         )
 
     def test_init_(self):
         # test generated_data flag
         self.assertEqual(self.identifiability_problem.generated_data, True)
+
         # test data generation
         self.assertEqual(
             len(self.identifiability_problem.data),
             len(self.identifiability_problem.times),
         )
+
+        self.assertEqual(
+            len(self.identifiability_problem.data),
+            3601,
+        )
+
         # test time array generation
         self.assertEqual(
             self.identifiability_problem.times.max(),
-            self.identifiability_problem.timespan,
+            36000,
         )
 
     def test_battery_simulation(self):
