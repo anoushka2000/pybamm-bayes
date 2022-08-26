@@ -645,10 +645,8 @@ def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
 
     if n_variables < 3:
         # don't need grid
-        fig = _plot_confidence_intervals_bivariable(logs_dir_name, chi_sq_limit=10)
+        fig = _plot_confidence_intervals_bivariable(logs_dir_name, chi_sq_limit)
     else:
-        fig = _plot_confidence_intervals_grid(
-            logs_dir_name, n_variables, chi_sq_limit=10
-        )
+        fig = _plot_confidence_intervals_grid(logs_dir_name, n_variables, chi_sq_limit)
 
     return fig
