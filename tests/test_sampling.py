@@ -3,8 +3,9 @@ import unittest
 import pints
 
 from battery_model_parameterization.Python import sampling
-from battery_model_parameterization.Python.identifiability_problem import \
-    IdentifiabilityProblem
+from battery_model_parameterization.Python.identifiability_problem import (
+    IdentifiabilityProblem,
+)
 from battery_model_parameterization.Python.variable import Variable
 
 
