@@ -11,7 +11,7 @@ import battery_model_parameterization.Python.battery_models.model_setup as model
 
 
 def _inverse_log10(x):
-    return 10**x
+    return 10 ** x
 
 
 INVERSE_TRANSFORMS = {"log10": _inverse_log10}
@@ -56,32 +56,47 @@ class IdentifiabilityProblem(pints.ForwardModel):
         (number and time unit e.g `1 minute`.)
     noise: float
         Noise added to data used for identification.
+    non_limiting: bool
+        If True, set all other parameters to a high value.
+        If False, keeo value in parameters set.
     project_tag: str
         Project identifier (prefix to logs dir name).
     """
 
     def __init__(
-        self,
-        battery_model,
-        operating_conditions,
-        variables,
-        transform_type,
-        resolution,
-        noise,
-        project_tag=" ",
+            self,
+            battery_model,
+            operating_conditions,
+            variables,
+            transform_type,
+            resolution,
+            noise,
+            non_limiting,
+            project_tag=" ",
     ):
         super().__init__()
         self.generated_data = False
         self.battery_model = MODEL_LOOKUP[battery_model][0]
         self.operating_conditions = operating_conditions
         self.parameter_values = MODEL_LOOKUP[battery_model][1]
-        self.default_inputs = {
-            "Ds_n": 1e-3,
-            "Ds_p": 1e-3,
-            "De": 1e-3,
-            "j0_n": 1e-3,
-            "j0_p": 1e-3,
-        }
+
+        if non_limiting:
+            self.default_inputs = {
+                "Ds_n": 1e-3,
+                "Ds_p": 1e-3,
+                "De": 1e-3,
+                "j0_n": 1e-3,
+                "j0_p": 1e-3,
+            }
+        else:
+            self.default_inputs = {
+                "Ds_n": 3.9 * 10 ** (-14),
+                "Ds_p":  1 * 10 ** (-13),
+                "De": 5.34e-10,
+                "j0_n": 2 * 10 ** (-5),
+                "j0_p": 6 * 10 ** (-7),
+            }
+
         self.variables = variables
         self.transform_type = transform_type
         self.inverse_transform = INVERSE_TRANSFORMS[self.transform_type]
