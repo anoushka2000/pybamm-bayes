@@ -1,3 +1,7 @@
+# TODO: separate loading and plotting
+# TODO: assert valid args
+# TODO: type hints
+
 import glob
 import json
 import os
@@ -662,6 +666,20 @@ def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
 
 
 def gelman_rubin_convergence_test(logs_dir_name=None, logs_dir_path=None, burnin=500):
+    """
+    Gelman Rubin statistic to diagnose if a chain has converged.
+    (If Gelman Rubin statistic < 1.1, parameter is identifiable).
+     Parameters
+    ----------
+    logs_dir_name:
+    logs_dir_path:
+    burnin: int
+    Number of samples to ignore as burn-in in calculation.
+
+    Returns
+    --------
+    Dictionary with variable name as key and Gelman Rubin statistic as value.
+    """
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
     metadata = load_metadata(logs_dir_path=logs_dir_path)
