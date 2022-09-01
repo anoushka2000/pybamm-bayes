@@ -19,28 +19,31 @@ def _get_logs_path(logs_dir_name):
     return os.path.join(os.getcwd(), "logs", logs_dir_name)
 
 
-def view_data(logs_dir_name):
+def view_data(logs_dir_name=None, logs_dir_path=None):
     """
     Helper function to display data (voltage profile) plot in notebook.
     """
-    logs_dir_path = _get_logs_path(logs_dir_name)
+    if logs_dir_path is None and logs_dir_name:
+        logs_dir_path = _get_logs_path(logs_dir_name)
     path = os.path.join(logs_dir_path, "data.png")
     display(Image(filename=path))
 
 
-def load_metadata(logs_dir_name):
+def load_metadata(logs_dir_name=None, logs_dir_path=None):
     """
     Parameters
     ----------
     logs_dir_name: str
        Name of directory logging idenfiability problem results.
+    logs_dir_path: str
+        Absolute path to directory logging idenfiability problem results.
 
     Returns
     -------
     Metadata associated with idenfiability problem.
     """
-
-    logs_dir_path = _get_logs_path(logs_dir_name)
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
 
     # load metadata
     with open(os.path.join(logs_dir_path, "metadata.json"), "r") as j:
@@ -48,12 +51,15 @@ def load_metadata(logs_dir_name):
     return metadata
 
 
-def load_chains(logs_dir_path):
+def load_chains(logs_dir_path, concat = True):
     """
     Parameters
     ----------
-    logs_dir_name: str
+    logs_dir_path: str
        Name of directory logging idenfiability problem results.
+    concat: bool
+        Concantenate chain DataFrames if True
+        else return list (defaults to True).
 
     Returns
     -------
@@ -66,7 +72,10 @@ def load_chains(logs_dir_path):
     df_list = []
     for name in chain_file_names:
         df_list.append(pd.read_csv(name))
-    return pd.concat(df_list)
+    if concat:
+        return pd.concat(df_list)
+    else:
+        return df_list
 
 
 def load_chains_with_residual(logs_dir_name):
