@@ -324,7 +324,8 @@ def compare_chain_convergence(logs_dir_names):
         plt.savefig(os.path.join(logs_dir_path, "comparison_chain_convergence"))
 
 
-def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentiles=None):
+def pairwise(logs_dir_name=None, logs_dir_path=None,
+             kde=False, heatmap=False, opacity=None, n_percentiles=None):
     """
     (Adapted from pint.plot.pairwise)
     Creates a set of pairwise scatterplots for all parameters
@@ -348,9 +349,10 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
         Shows only the middle n-th percentiles of the distribution.
         Default shows all samples in ``samples``.
     """
-    logs_dir_path = _get_logs_path(logs_dir_name)
+    if logs_dir_path in None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
 
-    metadata = load_metadata(logs_dir_name)
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
 
     # recover variable definition from metadata
     variable_names = [

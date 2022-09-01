@@ -233,7 +233,15 @@ class IdentifiabilityProblem(pints.ForwardModel):
                     )
 
         if self.generated_data:
-            ess = np.sum(np.square((output - self.data) / self.noise)) / len(output)
+            try:
+                ess = np.sum(np.square((output - self.data) / self.noise)) / len(output)
+            except ValueError:
+                # wrong shape of voltage due to incomplete solution
+                output = np.zeros(
+                    self.battery_simulation.solution["Time [s]"].entries.shape
+                )
+                ess = np.sum(np.square((output - self.data) / self.noise)) / len(output)
+
             self.residuals.append(ess)
         self.generated_data = True
         return output
