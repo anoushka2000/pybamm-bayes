@@ -324,8 +324,12 @@ def compare_chain_convergence(logs_dir_names):
         plt.savefig(os.path.join(logs_dir_path, "comparison_chain_convergence"))
 
 
-def pairwise(logs_dir_name=None, logs_dir_path=None,
-             kde=False, heatmap=False, opacity=None, n_percentiles=None):
+def pairwise(logs_dir_name=None,
+             logs_dir_path=None,
+             kde=False,
+             heatmap=False,
+             opacity=None,
+             n_percentiles=None):
     """
     (Adapted from pint.plot.pairwise)
     Creates a set of pairwise scatterplots for all parameters
