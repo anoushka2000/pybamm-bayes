@@ -16,4 +16,5 @@ class Variable:
         self.name = name
         self.true_value = true_value
         self.prior = prior
+        # self.transform
         self.prior_type = str(type(self.prior)).split(".")[-1][:-2]

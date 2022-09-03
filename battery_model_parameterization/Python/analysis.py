@@ -1,4 +1,4 @@
-# TODO: separate loading and plotting
+# TODO: separate loading and plotting modules
 # TODO: assert valid args
 # TODO: type hints
 
@@ -82,12 +82,14 @@ def load_chains(logs_dir_path, concat=True):
         return df_list
 
 
-def load_chains_with_residual(logs_dir_name):
+def load_chains_with_residual(logs_dir_name=None, logs_dir_path=None):
     """
     Parameters
     ----------
     logs_dir_name: str
        Name of directory logging idenfiability problem results.
+    logs_dir_path: str
+       Absolute path to directory logging idenfiability problem results.
 
     Returns
     -------
@@ -95,9 +97,11 @@ def load_chains_with_residual(logs_dir_name):
     Chains are appended interweaved to match order of evaluation.
     (chain 1 sample 1, chain 2 sample 1,...chain n sample 1,...chain n sample n).
     """
-    logs_dir_path = _get_logs_path(logs_dir_name)
 
-    metadata = load_metadata(logs_dir_name)
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
+
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
 
     # recover variable definition from metadata
     variable_names = [
@@ -141,7 +145,7 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
     """
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
-    metadata = load_metadata(logs_dir_name)
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
 
     # recover variable definition from metadata
     variable_names = [
@@ -353,36 +357,43 @@ def pairwise(logs_dir_name=None,
         Shows only the middle n-th percentiles of the distribution.
         Default shows all samples in ``samples``.
     """
-    if logs_dir_path in None:
+    if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
 
     metadata = load_metadata(logs_dir_path=logs_dir_path)
+    chain_file_names = glob.glob(f"{logs_dir_path}/chain_?.csv")
+    df_list = []
+
+    column_names = {var['name']: var for var in metadata['variables']}
+    for name in chain_file_names:
+        df = pd.read_csv(name)
+        df.columns = list(column_names)
+        df = df[sorted(list(column_names))]
+        df_list.append(df)
+
+    chains = pd.concat(df_list)
 
     # recover variable definition from metadata
+    variables = sorted(metadata['variables'], key=lambda x: x['name'])
+
     variable_names = [
-        f"{metadata['transform type']} {var['name']}" for var in metadata["variables"]
+        f"{metadata['transform type']} {var['name']}" for var in variables
     ]
-    true_values = [var["true_value"] for var in metadata["variables"]]
+
+    true_values = [var["true_value"] for var in variables]
     priors = [
         eval(
             f"pints.{var['prior_type']}({list(var['prior'].values())[0]},{list(var['prior'].values())[1]})"
         )
-        for var in metadata["variables"]
+        for var in variables
     ]
 
-    # load chains
-    chain_file_names = glob.glob(f"{logs_dir_path}/chain_?.csv")
-    df_list = []
-    for name in chain_file_names:
-        df_list.append(pd.read_csv(name))
-
-    chains = pd.concat(df_list)
     n_param = len(variable_names)
 
     samples = chains.to_numpy().reshape(len(chains), n_param)
     # create figure
     fig_size = (3 * n_param, 3 * n_param)
-    fig, axes = plt.subplots(n_param, n_param, figsize=fig_size)
+    fig, axes = plt.subplots(n_param, n_param, figsize=fig_size, sharex=False, sharey=False)
 
     bins = 50
     for i in range(n_param):
@@ -507,10 +518,6 @@ def pairwise(logs_dir_name=None,
                 for tl in axes[i, j].get_xticklabels():
                     tl.set_rotation(45)
 
-            if j > 0:
-                # Only show y tick labels for the first column
-                axes[i, j].set_yticklabels([])
-
         # Set axis labels
         axes[-1, i].set_xlabel(variable_names[i])
         if i == 0:
@@ -518,6 +525,14 @@ def pairwise(logs_dir_name=None,
             axes[i, 0].set_ylabel("Frequency")
         else:
             axes[i, 0].set_ylabel(variable_names[i])
+
+    # set the spacing between subplots
+    plt.subplots_adjust(left=0.1,
+                        bottom=0.1,
+                        right=0.9,
+                        top=0.9,
+                        wspace=0.4,
+                        hspace=0.4)
 
     plt.savefig(os.path.join(logs_dir_path, "pairwise_correlation"))
 

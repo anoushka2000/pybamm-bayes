@@ -13,6 +13,7 @@ def default_dfn():
     """
     model = pybamm.lithium_ion.DFN()
 
+    # TODO: mohtat/ chen_2020
     param = model.default_parameter_values
     param[
         "Negative electrode diffusivity [m2.s-1]"

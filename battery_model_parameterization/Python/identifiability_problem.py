@@ -15,10 +15,10 @@ def _inverse_log10(x):
 
 
 INVERSE_TRANSFORMS = {"log10": _inverse_log10}
-MODEL_LOOKUP = {
-    "default_dfn": models.default_dfn(),
-    "default_spme": models.default_spme(),
-}
+# MODEL_LOOKUP = {
+#     "default_dfn": models.default_dfn(),
+#     "default_spme": models.default_spme(),
+# }
 
 
 def _fmt_variables(variables):
@@ -40,25 +40,24 @@ class IdentifiabilityProblem(pints.ForwardModel):
 
     Parameters
     ----------
-    battery_model: str
-        Name of battery model to be parameterised
+    battery_simulation: pybamm.Simulation
+    ####
+    battery_model: pybamm.
+        Battery model to be parameterised
         One of "default_spme" or "default_dfn".
+    parameter_values:
     operating_conditions: List[Tuple[str]]/ List[str]
         List of operating conditions (passed to pybamm.Experiment).
-    variables: List[Variable]
-        List of variables being identified in problem.
-    transform_type: str
-        Transformation variable value input to battery model
-        and sampling space.
-        (only `log10` implemented for now)
     resolution: str
         Resolution of data used for parameter identification
         (number and time unit e.g `1 minute`.)
+    ####
+    variables: List[Variable]
+        List of variables being identified in problem.
+    default_inputs:
+    data: pd.DataFrame
     noise: float
         Noise added to data used for identification.
-    non_limiting: bool
-        If True, set all other parameters to a high value.
-        If False, keeo value in parameters set.
     project_tag: str
         Project identifier (prefix to logs dir name).
     """
@@ -66,12 +65,13 @@ class IdentifiabilityProblem(pints.ForwardModel):
     def __init__(
             self,
             battery_model,
+            parameter_values,
             operating_conditions,
             variables,
             transform_type,
             resolution,
             noise,
-            non_limiting,
+            default_inputs,
             project_tag=" ",
     ):
         super().__init__()
@@ -80,22 +80,22 @@ class IdentifiabilityProblem(pints.ForwardModel):
         self.operating_conditions = operating_conditions
         self.parameter_values = MODEL_LOOKUP[battery_model][1]
 
-        if non_limiting:
-            self.default_inputs = {
-                "Ds_n": 1e-3,
-                "Ds_p": 1e-3,
-                "De": 1e-3,
-                "j0_n": 1e-3,
-                "j0_p": 1e-3,
-            }
-        else:
-            self.default_inputs = {
-                "Ds_n": 3.9 * 10 ** (-14),
-                "Ds_p":  1 * 10 ** (-13),
-                "De": 5.34e-10,
-                "j0_n": 2 * 10 ** (-5),
-                "j0_p": 6 * 10 ** (-7),
-            }
+        # if non_limiting:
+        #     self.default_inputs = {
+        #         "Ds_n": 1e-3,
+        #         "Ds_p": 1e-3,
+        #         "De": 1e-3,
+        #         "j0_n": 1e-3,
+        #         "j0_p": 1e-3,
+        #     }
+        # else:
+        #     self.default_inputs = {
+        #         "Ds_n": 3.9 * 10 ** (-14),
+        #         "Ds_p":  1 * 10 ** (-13),
+        #         "De": 5.34e-10,
+        #         "j0_n": 2 * 10 ** (-5),
+        #         "j0_p": 6 * 10 ** (-7),
+        #     }
 
         self.variables = variables
         self.transform_type = transform_type
