@@ -1,10 +1,11 @@
-import os
-import json
 import glob
+import json
+import os
 import warnings
-import pandas as pd
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import scipy.stats as stats
 
 
@@ -99,7 +100,7 @@ def plot_chain_convergence(logs_dir_name):
         axes[i, 1].plot([0.0, xmax_tv], [true_values[i], true_values[i]], "--", c="k")
 
     plt.tight_layout()
-    plt.savefig(os.path.join(logs_dir_path, f"chain_convergence"))
+    plt.savefig(os.path.join(logs_dir_path, "chain_convergence"))
 
 
 def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentiles=None):
@@ -150,7 +151,6 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
         df_list.append(pd.read_csv(name))
 
     chains = pd.concat(df_list)
-    n_chains = len(chain_file_names)
     n_param = len(variable_names)
 
     samples = chains.to_numpy().reshape(len(chains), n_param)
@@ -297,4 +297,4 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
         else:
             axes[i, 0].set_ylabel(variable_names[i])
 
-    plt.savefig(os.path.join(logs_dir_path, f"pairwise_correlation"))
+    plt.savefig(os.path.join(logs_dir_path, "pairwise_correlation"))
