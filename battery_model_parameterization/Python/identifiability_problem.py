@@ -220,7 +220,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
             )
             axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
             i += 1
-        plt.savefig(os.path.join(self.logs_dir_path, f"prior"))
+        plt.savefig(os.path.join(self.logs_dir_path, "prior"))
 
     def plot_data(self):
         """
@@ -229,4 +229,4 @@ class IdentifiabilityProblem(pints.ForwardModel):
         plt.plot(self.times, self.data)
         plt.xlabel("Time (s)")
         plt.ylabel("Voltage (V)")
-        plt.savefig(os.path.join(self.logs_dir_path, f"data"))
+        plt.savefig(os.path.join(self.logs_dir_path, "data"))

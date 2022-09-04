@@ -1,5 +1,13 @@
-from battery_model_parameterization.Python.battery_simulation.current_density_functions import *
-from battery_model_parameterization.Python.battery_simulation.diffusivity_functions import *
+from battery_model_parameterization.Python.battery_simulation.current_density_functions import (
+    graphite_electrolyte_exchange_current_density_Dualfoil1998,
+    lico2_electrolyte_exchange_current_density_Dualfoil1998,
+)
+from battery_model_parameterization.Python.battery_simulation.diffusivity_functions import (
+    graphite_mcmb2528_diffusivity_Dualfoil1998,
+    lico2_diffusivity_Dualfoil1998,
+    electrolyte_diffusivity_Capiglia1999,
+)
+import pybamm
 
 
 def dfn_constant_current_discharge(d_rate):
