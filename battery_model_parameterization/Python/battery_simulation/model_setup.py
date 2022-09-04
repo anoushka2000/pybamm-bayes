@@ -1,5 +1,5 @@
-from battery_model_parameterization.Python.battery_simulation.current_density_functions import *
-from battery_model_parameterization.Python.battery_simulation.diffusivity_functions import *
+from battery_model_parameterization.current_density_functions import *
+from battery_model_parameterization.diffusivity_functions import *
 
 
 def dfn_constant_current_discharge(d_rate):
