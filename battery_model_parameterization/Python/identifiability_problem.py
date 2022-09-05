@@ -220,6 +220,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
             except ValueError:
                 # arrays of unequal size due to incomplete solution
                 ess = np.sum(np.square(self.data / self.noise)) / len(self.data)
+                output = np.zeros(self.data.shape)
 
             self.residuals.append(ess)
         self.generated_data = True
