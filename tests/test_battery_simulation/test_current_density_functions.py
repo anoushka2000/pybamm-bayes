@@ -1,6 +1,6 @@
 import unittest
 
-from battery_model_parameterization.current_density_functions import (
+from battery_model_parameterization import (
     graphite_electrolyte_exchange_current_density_Dualfoil1998,
     graphite_LGM50_electrolyte_exchange_current_density_Chen2020,
     lico2_electrolyte_exchange_current_density_Dualfoil1998,

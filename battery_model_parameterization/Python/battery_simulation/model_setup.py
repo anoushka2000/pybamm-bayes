@@ -1,9 +1,9 @@
 import pybamm
-from battery_model_parameterization.current_density_functions import (
+from battery_model_parameterization.Python.battery_simulation.current_density_functions import (  # noqa: E501
     graphite_electrolyte_exchange_current_density_Dualfoil1998,
     lico2_electrolyte_exchange_current_density_Dualfoil1998,
 )
-from battery_model_parameterization.diffusivity_functions import (
+from battery_model_parameterization.Python.battery_simulation.diffusivity_functions import (  # noqa: E501
     electrolyte_diffusivity_Capiglia1999,
     graphite_mcmb2528_diffusivity_Dualfoil1998,
     lico2_diffusivity_Dualfoil1998,

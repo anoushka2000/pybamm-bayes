@@ -39,6 +39,7 @@ def plot_chain_convergence(logs_dir_name):
         f"{metadata['transform type']} {var['name']}" for var in metadata["variables"]
     ]
     true_values = [var["true_value"] for var in metadata["variables"]]
+
     priors = [
         eval(
             f"pints.{v['prior_type']}({list(v['prior'].values())[0]},/"

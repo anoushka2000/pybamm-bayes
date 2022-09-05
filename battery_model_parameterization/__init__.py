@@ -7,4 +7,5 @@ from .Python.identifiability_problem import (
 from .Python.sampling import run_mcmc
 from .Python.variable import Variable
 
-from .Python.battery_simulation import current_density_functions, diffusivity_functions
+from .Python.battery_simulation.current_density_functions import *
+from .Python.battery_simulation.diffusivity_functions import *

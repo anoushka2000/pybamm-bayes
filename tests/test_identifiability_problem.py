@@ -11,6 +11,8 @@ from battery_model_parameterization.Python.identifiability_problem import \
 from battery_model_parameterization.Python.variable import Variable
 from matplotlib.testing.compare import compare_images
 
+here = os.path.abspath(os.path.dirname(__file__))
+
 
 class TestIdentifiabilityProblem(unittest.TestCase):
     identifiability_problem = None
@@ -57,7 +59,7 @@ class TestIdentifiabilityProblem(unittest.TestCase):
             self.identifiability_problem.battery_simulation,
             pybamm.simulation.Simulation,
         )
-        self.assertDictEqual(
+        self.assertEqual(
             self.identifiability_problem.battery_simulation.parameter_values,
             self.identifiability_problem.parameter_values,
         )
@@ -95,18 +97,23 @@ class TestIdentifiabilityProblem(unittest.TestCase):
         )
 
     def test_simulate(self):
-        output = self.identifiability_problem.simulate(self.true_values, self.times)
+        output = self.identifiability_problem.simulate(
+            self.identifiability_problem.true_values,
+            self.identifiability_problem.times
+        )
         self.assertFalse(output is None)
 
     def test_plot_priors(self):
-        expected = os.path.join("baseline_plots", "prior")
-        actual = os.path.join(self.identifiability_problem.logs_dir_path, "prior")
-        compare_images(expected, actual, tol=0.2)
+        expected = os.path.join(here, "baseline_plots", "prior.png")
+        self.identifiability_problem.plot_priors()
+        actual = os.path.join(self.identifiability_problem.logs_dir_path, "prior.png")
+        compare_images(expected, actual, tol=0.5)
 
     def test_plot_data(self):
-        expected = os.path.join("baseline_plots", "data")
-        actual = os.path.join(self.identifiability_problem.logs_dir_path, "data")
-        compare_images(expected, actual)
+        expected = os.path.join(here, "baseline_plots", "data.png")
+        self.identifiability_problem.plot_data()
+        actual = os.path.join(self.identifiability_problem.logs_dir_path, "data.png")
+        compare_images(expected, actual, tol=0.5)
 
     @classmethod
     def tearDownClass(cls):
