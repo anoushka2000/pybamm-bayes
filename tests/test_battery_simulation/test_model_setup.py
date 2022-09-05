@@ -1,8 +1,7 @@
-from battery_model_parameterization.Python.battery_simulation.model_setup import (
-    dfn_constant_current_discharge,
-)
-import pybamm
 import unittest
+
+import pybamm
+from battery_model_parameterization import dfn_constant_current_discharge
 
 
 class TestModelSetup(unittest.TestCase):

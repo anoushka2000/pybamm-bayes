@@ -1,8 +1,7 @@
 import pints
-
-from battery_model_parameterization import (
-    dfn_constant_current_discharge, IdentifiabilityProblem, run_mcmc, Variable
-)
+from battery_model_parameterization import (IdentifiabilityProblem, Variable,
+                                            dfn_constant_current_discharge,
+                                            run_mcmc)
 
 # mu = -1*(int(abs(true_value)) - 0.5)
 log_prior_Dsn = pints.GaussianLogPrior(-12.5, 1)

@@ -1,9 +1,8 @@
 import unittest
-from battery_model_parameterization.Python.battery_simulation.diffusivity_functions import (
+
+from battery_model_parameterization.diffusivity_functions import (
     electrolyte_diffusivity_Capiglia1999,
-    graphite_mcmb2528_diffusivity_Dualfoil1998,
-    lico2_diffusivity_Dualfoil1998,
-)
+    graphite_mcmb2528_diffusivity_Dualfoil1998, lico2_diffusivity_Dualfoil1998)
 from pybamm.expression_tree.binary_operators import Multiplication
 
 
