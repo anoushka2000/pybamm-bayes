@@ -511,7 +511,7 @@ def _plot_confidence_intervals_grid(logs_dir_name, n_variables, chi_sq_limit=10)
     result = load_chains_with_residual(logs_dir_name)
 
     theta_optimal = result.nsmallest(1, "residuals")[
-        result.columns[1 : n_variables + 1]
+        result.columns[1: n_variables + 1]
     ].values.flatten()
 
     # recover true values from metadata
