@@ -41,9 +41,10 @@ def plot_chain_convergence(logs_dir_name):
     true_values = [var["true_value"] for var in metadata["variables"]]
     priors = [
         eval(
-            f"pints.{var['prior_type']}({list(var['prior'].values())[0]},{list(var['prior'].values())[1]})"
+            f"pints.{v['prior_type']}({list(v['prior'].values())[0]},/"
+            f"{list(v['prior'].values())[1]})"
         )
-        for var in metadata["variables"]
+        for v in metadata["variables"]
     ]
 
     # load chains
@@ -139,9 +140,10 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
     true_values = [var["true_value"] for var in metadata["variables"]]
     priors = [
         eval(
-            f"pints.{var['prior_type']}({list(var['prior'].values())[0]},{list(var['prior'].values())[1]})"
+            f"pints.{v['prior_type']}({list(v['prior'].values())[0]},/"
+            f"{list(v['prior'].values())[1]})"
         )
-        for var in metadata["variables"]
+        for v in metadata["variables"]
     ]
 
     # load chains

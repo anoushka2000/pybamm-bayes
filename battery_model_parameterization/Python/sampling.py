@@ -71,7 +71,8 @@ def run_mcmc(
     )
 
     # Parallelization
-    # TODO: ForkingPickler(file, protocol).dump(obj) -> TypeError: cannot pickle 'SwigPyObject' object
+    # TODO: ForkingPickler(file, protocol).dump(obj)
+    #  TypeError: cannot pickle 'SwigPyObject' object
     # mcmc.set_parallel(parallel=n_workers)
 
     # Run
