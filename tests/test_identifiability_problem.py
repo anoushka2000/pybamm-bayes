@@ -26,7 +26,7 @@ class TestIdentifiabilityProblem(unittest.TestCase):
         TestIdentifiabilityProblem.identifiability_problem = IdentifiabilityProblem(
             battery_model="default_dfn",
             operating_conditions=[
-                "Discharge at C/10 for 10 hours",
+                "Discharge at C/10 for 9 hours",
             ],
             variables=cls.variables,
             transform_type="log10",

@@ -17,7 +17,7 @@ class TestSampling(unittest.TestCase):
         identifiability_problem = IdentifiabilityProblem(
             battery_model="default_dfn",
             operating_conditions=[
-                "Discharge at C/10 for 10 hours",
+                "Discharge at C/10 for 9 hours",
             ],
             variables=variables,
             transform_type="log10",
