@@ -1,13 +1,10 @@
 import pints
-
-from battery_model_parameterization.Python.battery_simulation.model_setup import (
-    dfn_constant_current_discharge,
-)
-from battery_model_parameterization.Python.identifiability_problem import (
+from battery_model_parameterization import (
     IdentifiabilityProblem,
+    Variable,
+    dfn_constant_current_discharge,
+    run_mcmc,
 )
-from battery_model_parameterization.Python.sampling import run_mcmc
-from battery_model_parameterization.Python.variable import Variable
 
 # mu = -1*(int(abs(true_value)) - 0.5)
 log_prior_Dsn = pints.GaussianLogPrior(-12.5, 1)

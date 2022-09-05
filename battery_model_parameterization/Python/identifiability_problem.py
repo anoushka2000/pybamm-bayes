@@ -71,6 +71,8 @@ class IdentifiabilityProblem(pints.ForwardModel):
             "j0_p": 1e-3,
         }
         self.variables = variables
+        self.true_values = np.array([v.true_value for v in self.variables])
+
         self.transform_type = transform_type
         self.inverse_transform = INVERSE_TRANSFORMS[self.transform_type]
         self.resolution = resolution
@@ -92,10 +94,6 @@ class IdentifiabilityProblem(pints.ForwardModel):
     @property
     def log_prior(self):
         return pints.ComposedLogPrior(*[v.prior for v in self.variables])
-
-    @property
-    def true_values(self):
-        return np.array([v.true_value for v in self.variables])
 
     def create_logs_dir(self):
         logs_dir_name = [p.name for p in self.variables]
@@ -220,7 +218,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
             )
             axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
             i += 1
-        plt.savefig(os.path.join(self.logs_dir_path, f"prior"))
+        plt.savefig(os.path.join(self.logs_dir_path, "prior"))
 
     def plot_data(self):
         """
@@ -229,4 +227,4 @@ class IdentifiabilityProblem(pints.ForwardModel):
         plt.plot(self.times, self.data)
         plt.xlabel("Time (s)")
         plt.ylabel("Voltage (V)")
-        plt.savefig(os.path.join(self.logs_dir_path, f"data"))
+        plt.savefig(os.path.join(self.logs_dir_path, "data"))
