@@ -4,11 +4,7 @@ import unittest
 
 import pints
 import pybamm
-from battery_model_parameterization.Python.battery_simulation.model_setup import \
-    dfn_constant_current_discharge
-from battery_model_parameterization.Python.identifiability_problem import \
-    IdentifiabilityProblem
-from battery_model_parameterization.Python.variable import Variable
+from battery_model_parameterization import IdentifiabilityProblem, Variable
 from matplotlib.testing.compare import compare_images
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -26,18 +22,17 @@ class TestIdentifiabilityProblem(unittest.TestCase):
         j0_n = Variable(name="j0_n", true_value=-4.698, prior=log_prior_j0_n)
 
         cls.variables = [Dsn, j0_n]
-        cls.battery_model, cls.parameter_values = dfn_constant_current_discharge(
-            d_rate=0.1
-        )
-        cls.timespan = 60 * 60 * 10
+
         TestIdentifiabilityProblem.identifiability_problem = IdentifiabilityProblem(
-            battery_model=cls.battery_model,
+            battery_model="default_dfn",
+            operating_conditions=[
+                "Discharge at C/10 for 10 hours",
+            ],
             variables=cls.variables,
-            parameter_values=cls.parameter_values,
             transform_type="log10",
-            resolution=10,
-            timespan=cls.timespan,
+            resolution="1 minute",
             noise=0.00,
+            project_tag="test",
         )
 
     def test_init_(self):
@@ -47,11 +42,6 @@ class TestIdentifiabilityProblem(unittest.TestCase):
         self.assertEqual(
             len(self.identifiability_problem.data),
             len(self.identifiability_problem.times),
-        )
-        # test time array generation
-        self.assertEqual(
-            self.identifiability_problem.times.max(),
-            self.identifiability_problem.timespan,
         )
 
     def test_battery_simulation(self):
@@ -98,8 +88,7 @@ class TestIdentifiabilityProblem(unittest.TestCase):
 
     def test_simulate(self):
         output = self.identifiability_problem.simulate(
-            self.identifiability_problem.true_values,
-            self.identifiability_problem.times
+            self.identifiability_problem.true_values, self.identifiability_problem.times
         )
         self.assertFalse(output is None)
 

@@ -1,23 +1,19 @@
 import pybamm
-from battery_model_parameterization.Python.battery_simulation.current_density_functions import (  # noqa: E501
+from battery_model_parameterization.Python.battery_models.variable_functions.current_density_functions import (  # noqa: E501
     graphite_electrolyte_exchange_current_density_Dualfoil1998,
     lico2_electrolyte_exchange_current_density_Dualfoil1998,
 )
-from battery_model_parameterization.Python.battery_simulation.diffusivity_functions import (  # noqa: E501
-    electrolyte_diffusivity_Capiglia1999,
+
+from battery_model_parameterization.Python.battery_models.variable_functions.diffusivity_functions import (  # noqa: E501
     graphite_mcmb2528_diffusivity_Dualfoil1998,
     lico2_diffusivity_Dualfoil1998,
+    electrolyte_diffusivity_Capiglia1999,
 )
 
 
-def dfn_constant_current_discharge(d_rate):
+def default_dfn():
     """
     DFN model with diffusivities and reference exchange current densities as inputs.
-
-    Parameters
-    ----------
-    d_rate : float
-        Discharge rate.
 
     Returns
     -------
@@ -38,5 +34,22 @@ def dfn_constant_current_discharge(d_rate):
     param[
         "Positive electrode exchange-current density [A.m-2]"
     ] = lico2_electrolyte_exchange_current_density_Dualfoil1998
-    param["Current function [A]"] = param["Nominal cell capacity [A.h]"] * d_rate
+    return model, param
+
+
+def default_spme():
+    """
+    SPMe model with diffusitivies and cation transference number as inputs.
+    Returns
+    -------
+    model: pybamm.models.full_battery_models.lithium_ion.spme.SPMe
+    param: pybamm.parameters.parameter_values.ParameterValues
+    """
+    model = pybamm.lithium_ion.SPMe()
+
+    param = model.default_parameter_values
+    param["Negative electrode diffusivity [m2.s-1]"] = pybamm.InputParameter("Ds_n")
+    param["Positive electrode diffusivity [m2.s-1]"] = pybamm.InputParameter("Ds_p")
+    param["Electrolyte diffusivity [m2.s-1]"] = pybamm.InputParameter("De")
+    param["Cation transference number"] = pybamm.InputParameter("t_+")
     return model, param
