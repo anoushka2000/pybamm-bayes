@@ -183,7 +183,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
             V = solution["Terminal voltage [V]"]
             output = V.entries
 
-        except Exception:
+        except pybamm.SolverError:
             # CasadiSolver "fast" failed
             try:
                 self.battery_simulation.solve(
@@ -193,8 +193,8 @@ class IdentifiabilityProblem(pints.ForwardModel):
                 V = solution["Terminal voltage [V]"]
                 output = V.entries
 
-            except Exception:
-                #  ScipySolver "casadi" solver failed
+            except pybamm.SolverError:
+                #  ScipySolver solver failed
                 try:
                     self.battery_simulation.solve(
                         inputs=inputs, solver=pybamm.ScipySolver()
@@ -203,7 +203,7 @@ class IdentifiabilityProblem(pints.ForwardModel):
                     V = solution["Terminal voltage [V]"]
                     output = V.entries
 
-                except Exception as e:
+                except pybamm.SolverError as e:
 
                     with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
                         log.write("**************\n")
