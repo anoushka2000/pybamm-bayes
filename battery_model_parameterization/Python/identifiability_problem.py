@@ -11,7 +11,7 @@ import battery_model_parameterization.Python.battery_models.model_setup as model
 
 
 def _inverse_log10(x):
-    return 10 ** x
+    return 10**x
 
 
 INVERSE_TRANSFORMS = {"log10": _inverse_log10}
@@ -98,7 +98,12 @@ class IdentifiabilityProblem(pints.ForwardModel):
         )
         self.times = self.battery_simulation.solution["Time [s]"].entries
 
-        data = self.simulate(self.true_values, times=[0, ])
+        data = self.simulate(
+            self.true_values,
+            times=[
+                0,
+            ],
+        )
         self.data = data + np.random.normal(0, self.noise, data.shape)
 
         if not os.path.isdir(self.logs_dir_path):

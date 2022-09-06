@@ -1,6 +1,4 @@
 # TODO: separate loading and plotting
-# TODO: assert valid args
-# TODO: type hints
 
 import glob
 import json
@@ -55,12 +53,14 @@ def load_metadata(logs_dir_name=None, logs_dir_path=None):
     return metadata
 
 
-def load_chains(logs_dir_path, concat=True):
+def load_chains(logs_dir_name=None, logs_dir_path=None, concat=True):
     """
     Parameters
     ----------
-    logs_dir_path: str
+    logs_dir_name: str
        Name of directory logging idenfiability problem results.
+    logs_dir_path: str
+       Absolute path to directory logging idenfiability problem results.
     concat: bool
         Concantenate chain DataFrames if True
         else return list (defaults to True).
@@ -71,6 +71,8 @@ def load_chains(logs_dir_path, concat=True):
     (column names 'p0', 'p1' ...).
     Chains are appended sequentially.
     """
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
 
     chain_file_names = glob.glob(f"{logs_dir_path}/chain_?.csv")
     df_list = []
@@ -82,12 +84,14 @@ def load_chains(logs_dir_path, concat=True):
         return df_list
 
 
-def load_chains_with_residual(logs_dir_name):
+def load_chains_with_residual(logs_dir_name=None, logs_dir_path=None):
     """
     Parameters
     ----------
     logs_dir_name: str
        Name of directory logging idenfiability problem results.
+    logs_dir_path: str
+       Absolute path to directory logging idenfiability problem results.
 
     Returns
     -------
@@ -95,9 +99,10 @@ def load_chains_with_residual(logs_dir_name):
     Chains are appended interweaved to match order of evaluation.
     (chain 1 sample 1, chain 2 sample 1,...chain n sample 1,...chain n sample n).
     """
-    logs_dir_path = _get_logs_path(logs_dir_name)
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
 
-    metadata = load_metadata(logs_dir_name)
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
 
     # recover variable definition from metadata
     variable_names = [
@@ -131,7 +136,7 @@ def load_chains_with_residual(logs_dir_name):
     return result
 
 
-def plot_chain_convergence(logs_dir_name):
+def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
     """
     Line plot of sample vs sampling iterations for each chain.
     Parameters
@@ -139,8 +144,9 @@ def plot_chain_convergence(logs_dir_name):
     logs_dir_name: str
        Name of directory logging idenfiability problem results.
     """
-    logs_dir_path = _get_logs_path(logs_dir_name)
-    metadata = load_metadata(logs_dir_name)
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
 
     # recover variable definition from metadata
     variable_names = [
@@ -233,7 +239,7 @@ def compare_chain_convergence(logs_dir_names):
         color = color_list[i]
         logs_dir_name = logs_dir_names[i]
         logs_dir_path = _get_logs_path(logs_dir_name)
-        metadata = load_metadata(logs_dir_name)
+        metadata = load_metadata(logs_dir_name=logs_dir_name)
 
         # recover variable definition from metadata
         variable_names = [
@@ -326,7 +332,14 @@ def compare_chain_convergence(logs_dir_names):
         plt.savefig(os.path.join(logs_dir_path, "comparison_chain_convergence"))
 
 
-def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentiles=None):
+def pairwise(
+    logs_dir_name=None,
+    logs_dir_path=None,
+    kde=False,
+    heatmap=False,
+    opacity=None,
+    n_percentiles=None,
+):
     """
     (Adapted from pint.plot.pairwise)
     Creates a set of pairwise scatterplots for all parameters
@@ -336,6 +349,8 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
     ----------
     logs_dir_name: str
        Name of directory logging idenfiability problem results.
+    logs_dir_path: str
+        Absolute path to directory logging idenfiability problem results.
     kde: bool
         Set to ``True`` to use kernel-density estimation for the
         histograms and scatter plots. Cannot use together with ``heatmap``.
@@ -350,9 +365,10 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
         Shows only the middle n-th percentiles of the distribution.
         Default shows all samples in ``samples``.
     """
-    logs_dir_path = _get_logs_path(logs_dir_name)
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
 
-    metadata = load_metadata(logs_dir_name)
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
 
     # recover variable definition from metadata
     variable_names = [
@@ -519,12 +535,17 @@ def pairwise(logs_dir_name, kde=False, heatmap=False, opacity=None, n_percentile
     plt.savefig(os.path.join(logs_dir_path, "pairwise_correlation"))
 
 
-def _plot_confidence_intervals_grid(logs_dir_name, n_variables, chi_sq_limit=10):
-    metadata = load_metadata(logs_dir_name)
-    result = load_chains_with_residual(logs_dir_name)
+def _plot_confidence_intervals_grid(
+    n_variables, logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
+):
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
+
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
+    result = load_chains_with_residual(logs_dir_path=logs_dir_path)
 
     theta_optimal = result.nsmallest(1, "residuals")[
-        result.columns[1: n_variables + 1]
+        result.columns[1 : n_variables + 1]
     ].values.flatten()
 
     # recover true values from metadata
@@ -590,14 +611,19 @@ def _plot_confidence_intervals_grid(logs_dir_name, n_variables, chi_sq_limit=10)
     return fig
 
 
-def _plot_confidence_intervals_bivariable(logs_dir_name, chi_sq_limit=10):
-    result = load_chains_with_residual(logs_dir_name)
+def _plot_confidence_intervals_bivariable(
+    logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
+):
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
+
+    result = load_chains_with_residual(logs_dir_path=logs_dir_path)
 
     theta_optimal = result.nsmallest(1, "residuals")[
         result.columns[1:3]
     ].values.flatten()
 
-    metadata = load_metadata(logs_dir_name)
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
 
     # recover true values from metadata
     true_values = [var["true_value"] for var in metadata["variables"]]
@@ -683,9 +709,7 @@ def gelman_rubin_convergence_test(logs_dir_name=None, logs_dir_path=None, burnin
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
     metadata = load_metadata(logs_dir_path=logs_dir_path)
-    variable_names = [
-        var['name'] for var in metadata["variables"]
-    ]
+    variable_names = [var["name"] for var in metadata["variables"]]
 
     chains = load_chains(logs_dir_path=logs_dir_path, concat=False)
     gelman_rubin_factors = []
@@ -711,9 +735,13 @@ def gelman_rubin_convergence_test(logs_dir_name=None, logs_dir_path=None, burnin
 
         n_valid_iterations = len(chain)
         mean_all_chains = sum(chain_mean_list) / len(chain_mean_list)
-        B = (n_valid_iterations / (n_chains - 1)) * ((chain_mean_list - mean_all_chains) ** 2).sum()
+        B = (n_valid_iterations / (n_chains - 1)) * (
+            (chain_mean_list - mean_all_chains) ** 2
+        ).sum()
         W = sum(chain_var_list) / len(chain_var_list)
-        V = ((n_valid_iterations - 1) / n_valid_iterations) * W + (n_chains + 1) / (n_chains * n_valid_iterations) * B
+        V = ((n_valid_iterations - 1) / n_valid_iterations) * W + (n_chains + 1) / (
+            n_chains * n_valid_iterations
+        ) * B
         gelman_rubin_factors.append(V)
         chains = analysis.load_chains(get_logs_path(logs_dir_name), concat=False)
 
@@ -741,9 +769,13 @@ def gelman_rubin_convergence_test(logs_dir_name=None, logs_dir_path=None, burnin
 
         n_valid_iterations = len(chain)
         mean_all_chains = sum(chain_mean_list) / len(chain_mean_list)
-        B = (n_valid_iterations / (n_chains - 1)) * ((chain_mean_list - mean_all_chains) ** 2).sum()
+        B = (n_valid_iterations / (n_chains - 1)) * (
+            (chain_mean_list - mean_all_chains) ** 2
+        ).sum()
         W = sum(chain_var_list) / len(chain_var_list)
-        V = ((n_valid_iterations - 1) / n_valid_iterations) * W + (n_chains + 1) / (n_chains * n_valid_iterations) * B
+        V = ((n_valid_iterations - 1) / n_valid_iterations) * W + (n_chains + 1) / (
+            n_chains * n_valid_iterations
+        ) * B
         gelman_rubin_factors.append(V)
 
     return dict(zip(variable_names, gelman_rubin_factors))
