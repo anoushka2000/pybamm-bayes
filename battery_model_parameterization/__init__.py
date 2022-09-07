@@ -4,5 +4,17 @@ from .Python.identifiability_problem import (
 from .Python.sampling import run_mcmc
 from .Python.variable import Variable
 
-from battery_model_parameterization.Python.workflows.utils.current_density_functions import *
-from .Python.battery_models.variable_functions.diffusivity_functions import *
+#
+# Battery Model Parameters
+#
+
+# Negative Electrode
+from .Python.workflows.utils.parameters.lithium_ion.negative_electrode.exchange_current_density import *
+from .Python.workflows.utils.parameters.lithium_ion.negative_electrode.diffusivity import *
+
+# Positive Electrode
+from .Python.workflows.utils.parameters.lithium_ion.positive_electrode.exchange_current_density import *
+from .Python.workflows.utils.parameters.lithium_ion.positive_electrode.diffusivity import *
+
+# Electrolyte
+from .Python.workflows.utils.parameters.lithium_ion.electrolyte.diffusivity import *
