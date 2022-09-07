@@ -1,5 +1,5 @@
 import pybamm
-from battery_model_parameterization.Python.battery_models.variable_functions.current_density_functions import (  # noqa: E501
+from battery_model_parameterization.Python.workflows.utils.current_density_functions import (  # noqa: E501
     graphite_electrolyte_exchange_current_density_Dualfoil1998,
     lico2_electrolyte_exchange_current_density_Dualfoil1998,
 )
