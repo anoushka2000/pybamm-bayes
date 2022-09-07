@@ -28,13 +28,18 @@ def lico2_electrolyte_exchange_current_density_Dualfoil1998(c_e, c_s_surf, T):
     m_ref = pybamm.InputParameter(
         "j0_p"
     )  # default = 6 * 10 ** (-7) (A/m2)(mol/m3)**1.5 - includes ref concentrations
+    alpha = pybamm.InputParameter("alpha_p")  # default = 0.5
     E_r = 39570
     arrhenius = pybamm.exp(E_r / pybamm.constants.R * (1 / 298.15 - 1 / T))
 
     c_p_max = pybamm.Parameter("Maximum concentration in positive electrode [mol.m-3]")
 
     return (
-        m_ref * arrhenius * c_e**0.5 * c_s_surf**0.5 * (c_p_max - c_s_surf) ** 0.5
+        m_ref
+        * arrhenius
+        * c_e**alpha
+        * c_s_surf**alpha
+        * (c_p_max - c_s_surf) ** alpha
     )
 
 
@@ -64,11 +69,18 @@ def nmc_LGM50_electrolyte_exchange_current_density_Chen2020(c_e, c_s_surf, T):
     m_ref = pybamm.InputParameter(
         "j0_p"
     )  # default value = 3.42e-6 (A/m2)(mol/m3)**1.5 - includes ref concentrations
+
+    alpha = pybamm.InputParameter("alpha_p")
+
     E_r = 17800
     arrhenius = pybamm.exp(E_r / pybamm.constants.R * (1 / 298.15 - 1 / T))
 
     c_p_max = pybamm.Parameter("Maximum concentration in positive electrode [mol.m-3]")
 
     return (
-        m_ref * arrhenius * c_e**0.5 * c_s_surf**0.5 * (c_p_max - c_s_surf) ** 0.5
+        m_ref
+        * arrhenius
+        * c_e**alpha
+        * c_s_surf**alpha
+        * (c_p_max - c_s_surf) ** alpha
     )
