@@ -1,53 +1,119 @@
 import pybamm
-
-from battery_model_parameterization import (  # noqa: E501
-    graphite_electrolyte_exchange_current_density_Dualfoil1998,
-    lico2_electrolyte_exchange_current_density_Dualfoil1998,
-    electrolyte_diffusivity_Capiglia1999,
-    lico2_diffusivity_Dualfoil1998,
-    graphite_mcmb2528_diffusivity_Dualfoil1998,
-)
+import battery_model_parameterization as bmp
 
 
-def default_dfn():
+def marquis_2019():
     """
-    DFN model with diffusivities and reference exchange current densities as inputs.
-
     Returns
     -------
-    model: pybamm.models.full_battery_models.lithium_ion.dfn.DFN
-    param: pybamm.parameters.parameter_values.ParameterValues
+    pybamm.ParameterValues object with values from Marquis 2019 and inputs:
+    - Electrode active material volume fractions: am_fraction_n, am_fraction_p
+    - Electrode Diffusivities: Ds_n, Ds_p, De
+    - Electrode Diffusivity: De
+    - Electrode reference exchange-current densities: j0_n, j0_p
+    - Cation transference number = t_+
     """
-    model = pybamm.lithium_ion.DFN()
 
-    param = model.default_parameter_values
+    param = pybamm.ParameterValues("Marquis2019")
+
+    param["Positive electrode active material volume fraction"] = pybamm.InputParameter(
+        "am_fraction_p"
+    )
+    param["Negative electrode active material volume fraction"] = pybamm.InputParameter(
+        "am_fraction_n"
+    )
+
+    param["Cation transference number"] = pybamm.InputParameter("t_+")
+
     param[
         "Negative electrode diffusivity [m2.s-1]"
-    ] = graphite_mcmb2528_diffusivity_Dualfoil1998
-    param["Positive electrode diffusivity [m2.s-1]"] = lico2_diffusivity_Dualfoil1998
-    param["Electrolyte diffusivity [m2.s-1]"] = electrolyte_diffusivity_Capiglia1999
+    ] = bmp.graphite_mcmb2528_diffusivity_Dualfoil1998
+    param[
+        "Positive electrode diffusivity [m2.s-1]"
+    ] = bmp.lico2_diffusivity_Dualfoil1998
+    param["Electrolyte diffusivity [m2.s-1]"] = bmp.electrolyte_diffusivity_Capiglia1999
+
     param[
         "Negative electrode exchange-current density [A.m-2]"
-    ] = graphite_electrolyte_exchange_current_density_Dualfoil1998
+    ] = bmp.graphite_electrolyte_exchange_current_density_Dualfoil1998
     param[
         "Positive electrode exchange-current density [A.m-2]"
-    ] = lico2_electrolyte_exchange_current_density_Dualfoil1998
-    return model, param
+    ] = bmp.lico2_electrolyte_exchange_current_density_Dualfoil1998
+
+    return param
 
 
-def default_spme():
+def chen_2020():
     """
-    SPMe model with diffusitivies and cation transference number as inputs.
     Returns
     -------
-    model: pybamm.models.full_battery_models.lithium_ion.spme.SPMe
-    param: pybamm.parameters.parameter_values.ParameterValues
+    pybamm.ParameterValues object with values from Chen 2020 and inputs:
+    - Electrode active material volume fractions: am_fraction_n, am_fraction_p
+    - Electrode Diffusivities: Ds_n, Ds_p, De
+    - Electrode Diffusivity: De
+    - Electrode reference exchange-current densities: j0_n, j0_p
+    - Cation transference number = t_+
     """
-    model = pybamm.lithium_ion.SPMe()
 
-    param = model.default_parameter_values
+    param = pybamm.ParameterValues("Chen2020")
+
+    param["Positive electrode active material volume fraction"] = pybamm.InputParameter(
+        "am_fraction_p"
+    )
+    param["Negative electrode active material volume fraction"] = pybamm.InputParameter(
+        "am_fraction_n"
+    )
+
+    param["Cation transference number"] = pybamm.InputParameter("t_+")
+
     param["Negative electrode diffusivity [m2.s-1]"] = pybamm.InputParameter("Ds_n")
     param["Positive electrode diffusivity [m2.s-1]"] = pybamm.InputParameter("Ds_p")
-    param["Electrolyte diffusivity [m2.s-1]"] = pybamm.InputParameter("De")
+    param["Electrolyte diffusivity [m2.s-1]"] = bmp.electrolyte_diffusivity_Nyman2008
+
+    param[
+        "Negative electrode exchange-current density [A.m-2]"
+    ] = bmp.graphite_LGM50_electrolyte_exchange_current_density_Chen2020
+    param[
+        "Positive electrode exchange-current density [A.m-2]"
+    ] = bmp.nmc_LGM50_electrolyte_exchange_current_density_Chen2020
+
+    return param
+
+
+def mohtat_2020():
+    """
+    Returns
+    -------
+    pybamm.ParameterValues object with values from Mohtat 2020 and inputs:
+    - Electrode active material volume fractions: am_fraction_n, am_fraction_p
+    - Electrode Diffusivities: Ds_n, Ds_p, De
+    - Electrode Diffusivity: De
+    - Electrode reference exchange-current densities: j0_n, j0_p
+    - Cation transference number = t_+
+    """
+
+    param = pybamm.ParameterValues("Chen2020")
+
+    param["Positive electrode active material volume fraction"] = pybamm.InputParameter(
+        "am_fraction_p"
+    )
+    param["Negative electrode active material volume fraction"] = pybamm.InputParameter(
+        "am_fraction_n"
+    )
+
     param["Cation transference number"] = pybamm.InputParameter("t_+")
-    return model, param
+
+    param[
+        "Negative electrode diffusivity [m2.s-1]"
+    ] = bmp.graphite_diffusivity_PeymanMPM
+    param["Positive electrode diffusivity [m2.s-1]"] = bmp.NMC_diffusivity_PeymanMPM
+    param["Electrolyte diffusivity [m2.s-1]"] = bmp.electrolyte_diffusivity_PeymanMPM
+
+    param[
+        "Negative electrode exchange-current density [A.m-2]"
+    ] = bmp.graphite_electrolyte_exchange_current_density_PeymanMPM
+    param[
+        "Positive electrode exchange-current density [A.m-2]"
+    ] = bmp.NMC_electrolyte_exchange_current_density_PeymanMPM
+
+    return param
