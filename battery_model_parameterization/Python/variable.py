@@ -7,7 +7,7 @@ class Variable:
     name: str
         Variable name
     value: float
-        For NonlinearIdentifiability problems this is the value of the variable used to simulate data.
+        For IdentifiabilityAnalysis problems this is the value of the variable used to simulate data.
         For ParameterEstimation problems this is the value around which sampling chains are initialized.
     prior : pints.LogPrior
         Prior from which variable is sampled.

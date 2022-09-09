@@ -1,4 +1,4 @@
-from .Python.identifiability_problem import (
+from .Python.identifiability_analysis import (
     IdentifiabilityProblem,
 )
 from .Python.sampling import run_mcmc
