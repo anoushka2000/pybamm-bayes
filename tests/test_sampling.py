@@ -4,11 +4,14 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization import (IdentifiabilityAnalysis,
-                                            ParameterEstimation, Variable,
-                                            marquis_2019,
-                                            run_identifiability_analysis,
-                                            run_parameter_estimation)
+from battery_model_parameterization import (
+    IdentifiabilityAnalysis,
+    ParameterEstimation,
+    Variable,
+    marquis_2019,
+    run_identifiability_analysis,
+    run_parameter_estimation,
+)
 
 
 class TestSampling(unittest.TestCase):
@@ -23,7 +26,7 @@ class TestSampling(unittest.TestCase):
 
         # setup battery simulation
         model = pybamm.lithium_ion.DFN()
-        cls.parameter_values = marquis_2019()
+        cls.parameter_values = marquis_2019(cls.variables)
         cls.simulation = pybamm.Simulation(
             model,
             solver=pybamm.CasadiSolver("fast"),

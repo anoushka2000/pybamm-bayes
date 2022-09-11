@@ -99,68 +99,6 @@ class BaseSamplingProblem(pints.ForwardModel):
             "project": self.project_tag,
         }
 
-    def simulate(self, theta, times):
-        """
-        Simulate method used by pints sampler.
-        Parameters
-        ----------
-        theta: np.ndarray
-            Vector of input variable values.
-        times: np.ndarray
-            Array of times (in seconds) at which model is solved.
-        Returns
-        ----------
-        output: np.ndarray
-            Voltage time series.
-        """
-        variable_names = [v.name for v in self.variables]
-        inputs = self.default_inputs
-        assert set(variable_names) - set(inputs.keys()) == set()
-
-        inputs.update(
-            dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
-        )
-        try:
-            # solve with CasadiSolver
-            self.battery_simulation.solve(
-                inputs=inputs, solver=pybamm.CasadiSolver("fast")
-            )
-            solution = self.battery_simulation.solution
-            V = solution["Terminal voltage [V]"]
-            output = V.entries
-
-        except pybamm.SolverError:
-            # CasadiSolver "fast" failed
-            try:
-                self.battery_simulation.solve(
-                    inputs=inputs, solver=pybamm.CasadiSolver("safe")
-                )
-                solution = self.battery_simulation.solution
-                V = solution["Terminal voltage [V]"]
-                output = V.entries
-
-            except pybamm.SolverError:
-                #  ScipySolver solver failed
-                try:
-                    self.battery_simulation.solve(
-                        inputs=inputs, solver=pybamm.ScipySolver()
-                    )
-                    solution = self.battery_simulation.solution
-                    V = solution["Terminal voltage [V]"]
-                    output = V.entries
-
-                except pybamm.SolverError as e:
-
-                    with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
-                        log.write("**************\n")
-                        log.write(np.array2string(theta) + "\n")
-                        log.write(repr(e) + "\n")
-
-                    # array of zeros to maximize residual if solution did not converge
-                    output = np.zeros(self.data.shape)
-
-        return output
-
     def n_parameters(self):
         """
         Return dimension of the variable vector.

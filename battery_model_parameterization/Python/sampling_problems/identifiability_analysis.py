@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import pybamm
@@ -52,7 +52,7 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         variables: List[Variable],
         transform_type: str,
         noise: float,
-        times: np.ndarray,
+        times: Optional[np.ndarray],
         project_tag: str = "",
     ):
 
@@ -70,7 +70,12 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         self.residuals = []
 
         if battery_simulation.operating_mode == "without experiment":
+            if times is None:
+                raise ValueError("""If battery simulation is not operated using an experiment,\n
+                an array of times to evaluate simulation at must be passed.""")
+
             self.times = times
+
         else:
             battery_simulation.solve(self.default_inputs)
             self.times = battery_simulation.solution["Time [s]"].entries
