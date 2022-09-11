@@ -1,18 +1,19 @@
 import json
 import os
 
+import battery_model_parameterization as bmp
 import numpy as np
 import pandas as pd
 import pints
 
 
 def run_mcmc(
-    identifiability_problem,
-    burnin=500,
-    n_iteration=2000,
-    n_chains=12,
-    n_workers=4,
-    sampling_method="pints.MetropolisRandomWalkMCMC",
+    identifiability_problem: bmp.IdentifiabilityAnalysis,
+    burnin: int = 0,
+    n_iteration: int = 2000,
+    n_chains: int = 12,
+    n_workers: int = 4,
+    sampling_method: str = "MetropolisRandomWalkMCMC",
 ):
     """
     Parameters
@@ -28,13 +29,17 @@ def run_mcmc(
     n_workers: int
         Number of parallel processes.
     sampling_method: str
-        Name of MCMC sampling method (from pints).
+        Name of MCMC sampling class (from pints)
+        For a full list of samplers see:
+        https://pints.readthedocs.io/en/stable/mcmc_samplers/index.html
+        Defaults to MetropolisRandomWalkMCMC.
 
     Returns
     -------
     chains: np.ndarray
         Sampling chains (shape: iteration, chains, parameters).
     """
+    sampling_method = "pints." + sampling_method
 
     problem = pints.SingleOutputProblem(
         identifiability_problem,
@@ -52,7 +57,7 @@ def run_mcmc(
         for x in np.random.normal(1, 0.2, n_chains)
     ]
 
-    # Create mcmc routine
+    # Create MCMC routine
     mcmc = pints.MCMCController(
         log_posterior, n_chains, xs, method=eval(sampling_method)
     )

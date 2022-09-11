@@ -61,7 +61,14 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         project_tag: str = "",
     ):
 
-        super().__init__()
+        super().__init__(
+            battery_simulation,
+            parameter_values,
+            variables,
+            transform_type,
+            project_tag,
+        )
+
         self.generated_data = False
         self.noise = noise
         self.true_values = np.array([v.value for v in self.variables])
@@ -72,12 +79,6 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
 
         self.times = self.battery_simulation.solution["Time [s]"].entries
         self.data = data + np.random.normal(0, self.noise, data.shape)
-
-        if not os.path.isdir(self.logs_dir_path):
-            os.makedirs(self.logs_dir_path)
-
-        with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
-            outfile.write(json.dumps(self.metadata))
 
     @property
     def metadata(self):
