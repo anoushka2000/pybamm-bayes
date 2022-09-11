@@ -1,17 +1,23 @@
 import unittest
-
+import os
 import numpy as np
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization import (IdentifiabilityAnalysis,
-                                            ParameterEstimation, Variable,
-                                            marquis_2019,
-                                            run_identifiability_analysis,
-                                            run_parameter_estimation)
+from battery_model_parameterization import (
+    IdentifiabilityAnalysis,
+    ParameterEstimation,
+    Variable,
+    marquis_2019,
+    run_identifiability_analysis,
+    run_parameter_estimation,
+)
+
+here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestSampling(unittest.TestCase):
+    @classmethod
     def setUpClass(cls):
         # setup variables
         log_prior_Dsn = pints.GaussianLogPrior(-13, 1)
@@ -54,9 +60,10 @@ class TestSampling(unittest.TestCase):
         self.assertEqual(len(chains), n_iteration * n_chains)
 
     def test_run_parameter_estimation(self):
-
         parameter_estimation_problem = ParameterEstimation(
-            data=pd.read_csv("test_data.csv"),
+            data=pd.read_csv(
+                os.path.join(here, "test_sampling_problems", "test_data.csv")
+            ),
             battery_simulation=self.simulation,
             parameter_values=self.parameter_values,
             variables=self.variables,

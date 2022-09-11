@@ -4,7 +4,8 @@ from battery_model_parameterization import (
     graphite_electrolyte_exchange_current_density_Dualfoil1998,
     graphite_LGM50_electrolyte_exchange_current_density_Chen2020,
     lico2_electrolyte_exchange_current_density_Dualfoil1998,
-    nmc_LGM50_electrolyte_exchange_current_density_Chen2020)
+    nmc_LGM50_electrolyte_exchange_current_density_Chen2020,
+)
 from pybamm.expression_tree.binary_operators import Multiplication
 
 

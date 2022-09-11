@@ -32,9 +32,7 @@ simulation = pybamm.Simulation(
     experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
 )
 
-data = pd.read_csv(
-    "~/PycharmProjects/battery-model-parameterization/tests/test_data.csv"
-)
+data = pd.read_csv("/tests/test_sampling_problems/test_data.csv")
 
 estimation_problem = ParameterEstimation(
     data=data,

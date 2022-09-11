@@ -5,14 +5,13 @@ import unittest
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization import (ParameterEstimation, Variable,
-                                            marquis_2019)
+from battery_model_parameterization import ParameterEstimation, Variable, marquis_2019
 
 here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestParameterEstimation(unittest.TestCase):
-    parameter_esimation_problem = None
+    parameter_estimation_problem = None
 
     @classmethod
     def setUpClass(cls):
@@ -33,8 +32,8 @@ class TestParameterEstimation(unittest.TestCase):
             experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
         )
 
-        cls.parameter_esimation_problem = ParameterEstimation(
-            data=pd.read_csv("test_data.csv"),
+        cls.parameter_estimation_problem = ParameterEstimation(
+            data=pd.read_csv(os.path.join(here, "test_data.csv")),
             battery_simulation=cls.simulation,
             parameter_values=cls.parameter_values,
             variables=cls.variables,
@@ -45,26 +44,28 @@ class TestParameterEstimation(unittest.TestCase):
     def test_init_(self):
         # test data generation
         self.assertEqual(
-            len(self.parameter_esimation_problem.data),
-            len(self.parameter_esimation_problem.times),
+            len(self.parameter_estimation_problem.data),
+            len(self.parameter_estimation_problem.times),
         )
 
     def test_metadata(self):
-        self.assertIsInstance(self.parameter_esimation_problem.metadata, dict)
+        self.assertIsInstance(self.parameter_estimation_problem.metadata, dict)
 
     def test_initial_values(self):
         self.assertEqual(
-            self.parameter_esimation_problem.initial_values.shape[0],
-            len(self.parameter_esimation_problem.variables),
+            self.parameter_estimation_problem.initial_values.shape[0],
+            len(self.parameter_estimation_problem.variables) + 1,
         )
 
     def test_simulate(self):
-        output = self.parameter_esimation_problem.simulate(
-            self.parameter_esimation_problem.initial_values,
-            self.parameter_esimation_problem.times,
+        output = self.parameter_estimation_problem.simulate(
+            self.parameter_estimation_problem.initial_values,
+            self.parameter_estimation_problem.times,
         )
         self.assertFalse(output is None)
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(TestParameterEstimation.identifiability_problem.logs_dir_path)
+        shutil.rmtree(
+            TestParameterEstimation.parameter_estimation_problem.logs_dir_path
+        )

@@ -2,8 +2,12 @@ import unittest
 
 import pints
 import pybamm
-from battery_model_parameterization import (Variable, chen_2020, marquis_2019,
-                                            mohtat_2020)
+from battery_model_parameterization import (
+    Variable,
+    chen_2020,
+    marquis_2019,
+    mohtat_2020,
+)
 
 
 class TestModelSetup(unittest.TestCase):
@@ -19,33 +23,12 @@ class TestModelSetup(unittest.TestCase):
 
     def test_chen_2020(self):
         param = chen_2020(self.variables)
-        self.assertIsInstance(
-            param["Negative electrode diffusivity [m2.s-1]"], pybamm.InputParameter
-        )
-        self.assertIsInstance(
-            param["Negative electrode exchange-current density [A.m-2]"],
-            pybamm.InputParameter,
-        )
         self.assertIsInstance(param, pybamm.ParameterValues)
 
     def test_marquis_2019(self):
         param = marquis_2019(self.variables)
-        self.assertIsInstance(
-            param["Negative electrode diffusivity [m2.s-1]"], pybamm.InputParameter
-        )
-        self.assertIsInstance(
-            param["Negative electrode exchange-current density [A.m-2]"],
-            pybamm.InputParameter,
-        )
         self.assertIsInstance(param, pybamm.ParameterValues)
 
     def test_mohtat_2020(self):
         param = mohtat_2020(self.variables)
-        self.assertIsInstance(
-            param["Negative electrode diffusivity [m2.s-1]"], pybamm.InputParameter
-        )
-        self.assertIsInstance(
-            param["Negative electrode exchange-current density [A.m-2]"],
-            pybamm.InputParameter,
-        )
         self.assertIsInstance(param, pybamm.ParameterValues)

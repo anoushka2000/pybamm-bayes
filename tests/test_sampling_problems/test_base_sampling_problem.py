@@ -4,8 +4,7 @@ import unittest
 
 import pints
 import pybamm
-from battery_model_parameterization import (BaseSamplingProblem, Variable,
-                                            marquis_2019)
+from battery_model_parameterization import BaseSamplingProblem, Variable, marquis_2019
 from matplotlib.testing.compare import compare_images
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -40,13 +39,6 @@ class TestBaseSamplingProblem(unittest.TestCase):
             project_tag="test",
         )
 
-    def test_init_(self):
-        # test data generation
-        self.assertEqual(
-            len(self.sampling_problem.data),
-            len(self.sampling_problem.times),
-        )
-
     def test_create_logs_dir(self):
         self.assertTrue(os.path.exists(self.sampling_problem.logs_dir_path))
 
@@ -63,12 +55,6 @@ class TestBaseSamplingProblem(unittest.TestCase):
         expected = os.path.join(here, "baseline_plots", "prior.png")
         self.sampling_problem.plot_priors()
         actual = os.path.join(self.sampling_problem.logs_dir_path, "prior.png")
-        compare_images(expected, actual, tol=0.5)
-
-    def test_plot_data(self):
-        expected = os.path.join(here, "baseline_plots", "data.png")
-        self.sampling_problem.plot_data()
-        actual = os.path.join(self.sampling_problem.logs_dir_path, "data.png")
         compare_images(expected, actual, tol=0.5)
 
     @classmethod

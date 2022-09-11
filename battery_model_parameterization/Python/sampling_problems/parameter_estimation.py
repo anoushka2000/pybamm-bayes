@@ -49,13 +49,13 @@ class ParameterEstimation(BaseSamplingProblem):
     """
 
     def __init__(
-            self,
-            data: pd.DataFrame,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            transform_type: str,
-            project_tag: str = "",
+        self,
+        data: pd.DataFrame,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        transform_type: str,
+        project_tag: str = "",
     ):
 
         super().__init__(
@@ -87,7 +87,7 @@ class ParameterEstimation(BaseSamplingProblem):
             )
 
         if not np.array_equal(
-                self.battery_simulation.solution["Time [s]"].entries, self.times
+            self.battery_simulation.solution["Time [s]"].entries, self.times
         ):
             # if simulation did not solve at times in data
             # (e.g. for experiments)
