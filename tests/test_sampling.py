@@ -1,17 +1,17 @@
 import unittest
-import pybamm
-import pints
+
 import numpy as np
+import pandas as pd
+import pints
+import pybamm
 from battery_model_parameterization import (IdentifiabilityAnalysis,
-                                            ParameterEstimation,
-                                            Variable,
+                                            ParameterEstimation, Variable,
                                             marquis_2019,
                                             run_identifiability_analysis,
                                             run_parameter_estimation)
 
 
 class TestSampling(unittest.TestCase):
-
     def setUpClass(cls):
         # setup variables
         log_prior_Dsn = pints.GaussianLogPrior(-13, 1)
@@ -24,15 +24,16 @@ class TestSampling(unittest.TestCase):
         # setup battery simulation
         model = pybamm.lithium_ion.DFN()
         cls.parameter_values = marquis_2019()
-        cls.simulation = pybamm.Simulation(model,
-                                           solver=pybamm.CasadiSolver("fast"),
-                                           experiment=pybamm.Experiment(["Discharge at C/10 for 1 hour"]),
-                                           )
+        cls.simulation = pybamm.Simulation(
+            model,
+            solver=pybamm.CasadiSolver("fast"),
+            experiment=pybamm.Experiment(["Discharge at C/10 for 1 hour"]),
+        )
 
     def test_run_identifiability_analysis(self):
-
         identifiability_problem = IdentifiabilityAnalysis(
             battery_simulation=self.simulation,
+            parameter_values=self.parameter_values,
             variables=self.variables,
             transform_type="log10",
             noise=0.005,
@@ -47,6 +48,29 @@ class TestSampling(unittest.TestCase):
 
         chains = run_identifiability_analysis(
             identifiability_problem, burnin, n_iteration, n_chains, n_workers
+        )
+
+        self.assertEqual(len(chains.columns), len(self.variables))
+        self.assertEqual(len(chains), n_iteration * n_chains)
+
+    def test_run_parameter_estimation(self):
+
+        parameter_estimation_problem = ParameterEstimation(
+            data=pd.read_csv("test_data.csv"),
+            battery_simulation=self.simulation,
+            parameter_values=self.parameter_values,
+            variables=self.variables,
+            transform_type="log10",
+            project_tag="test",
+        )
+
+        burnin = 2
+        n_iteration = 5
+        n_chains = 3
+        n_workers = 3
+
+        chains = run_identifiability_analysis(
+            parameter_estimation_problem, burnin, n_iteration, n_chains, n_workers
         )
 
         self.assertEqual(len(chains.columns), len(self.variables))
