@@ -4,7 +4,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 import pybamm
-from battery_model_parameterization import BaseSamplingProblem, Variable
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import BaseSamplingProblem
+from battery_model_parameterization.Python.variable import Variable
 from scipy.interpolate import interp1d
 
 
@@ -45,13 +46,13 @@ class ParameterEstimation(BaseSamplingProblem):
     """
 
     def __init__(
-        self,
-        data: pd.DataFrame,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        transform_type: str,
-        project_tag: str = "",
+            self,
+            data: pd.DataFrame,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            transform_type: str,
+            project_tag: str = "",
     ):
 
         super().__init__(
@@ -66,14 +67,15 @@ class ParameterEstimation(BaseSamplingProblem):
             t_eval=self.times,
         )
 
-        if max(self.battery_simulation.solution["Time [s]"].entries) > max(
-            data["time"]
-        ):
+        simulation_end_time = max(self.battery_simulation.solution["Time [s]"].entries)
+        if simulation_end_time > max(data["time"]):
             raise ValueError(
                 f"""
-            Simulation time span is {max(data["time"])} s.\n
-            Experimental time span is {max(self.battery_simulation.solution["Time [s]"].entries)} s.\n
-            Time span and operating conditons of experimental data and simulation must match."""
+            Experiment time span is {max(data["time"])} s.\n
+            Simulation time span is {simulation_end_time} s.\n
+            Time span and operating conditons of experimental data\n
+            and simulation must match.
+            """
             )
 
         self.times = data["time"]

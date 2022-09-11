@@ -110,7 +110,7 @@ def load_chains_with_residual(logs_dir_name):
     result = result[result.p1 > theta_optimal[1] - 1]
     result = result[result.p1 < theta_optimal[1] + 1]
     result["chi_sq"] = (
-        result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
+            result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
     )
     result = result[result.chi_sq < 10]
     result.columns = ["sample number"] + variable_names + ["residuals", "chi_sq"]
@@ -511,7 +511,7 @@ def _plot_confidence_intervals_grid(logs_dir_name, n_variables, chi_sq_limit=10)
     result = load_chains_with_residual(logs_dir_name)
 
     theta_optimal = result.nsmallest(1, "residuals")[
-        result.columns[1 : n_variables + 1]
+        result.columns[1: n_variables + 1]
     ].values.flatten()
 
     # recover true values from metadata

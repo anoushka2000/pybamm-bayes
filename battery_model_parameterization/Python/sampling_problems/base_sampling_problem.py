@@ -1,14 +1,13 @@
-import json
 import os
 from datetime import datetime
 from typing import List
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pints
 import pints.plot
 import pybamm
-from battery_model_parameterization import Variable
+
+from battery_model_parameterization.Python.variable import Variable
 
 
 def _fmt_variables(variables):
@@ -66,9 +65,6 @@ class BaseSamplingProblem(pints.ForwardModel):
 
         if not os.path.isdir(self.logs_dir_path):
             os.makedirs(self.logs_dir_path)
-
-        with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
-            outfile.write(json.dumps(self.metadata))
 
     @property
     def transforms(self):

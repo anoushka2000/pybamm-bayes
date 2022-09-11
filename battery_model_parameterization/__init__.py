@@ -4,9 +4,9 @@ from .Python.variable import Variable
 #
 # Sampling Problems
 #
-from .Python.sampling_problems.base_sampling_problem import BaseSamplingProblem
-from .Python.sampling_problems.identifiability_analysis import IdentifiabilityAnalysis
-from .Python.sampling_problems.parameter_estimation import ParameterEstimation
+from .Python.sampling_problems.base_sampling_problem import *
+from .Python.sampling_problems.identifiability_analysis import *
+from .Python.sampling_problems.parameter_estimation import *
 
 
 #

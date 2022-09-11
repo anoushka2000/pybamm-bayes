@@ -1,9 +1,11 @@
+import json
 import os
 from typing import List, Optional
 
 import numpy as np
 import pybamm
-from battery_model_parameterization import BaseSamplingProblem, Variable
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import BaseSamplingProblem # noqa: E501
+from battery_model_parameterization.Python.variable import Variable
 
 
 def _fmt_variables(variables):
@@ -21,7 +23,8 @@ def _fmt_parameters(parameters):
 
 class IdentifiabilityAnalysis(BaseSamplingProblem):
     """
-    Class for conducting non-linear identifiability analysis on battery simulation parameters.
+    Class for conducting non-linear identifiability analysis on
+    battery simulation parameters.
 
     Parameters
     ----------
@@ -52,36 +55,44 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         variables: List[Variable],
         transform_type: str,
         noise: float,
-        times: Optional[np.ndarray],
+        times: Optional[np.ndarray] = None,
         project_tag: str = "",
     ):
 
         super().__init__(
-            battery_simulation,
-            parameter_values,
-            variables,
-            transform_type,
-            project_tag,
+            battery_simulation=battery_simulation,
+            parameter_values=parameter_values,
+            variables=variables,
+            transform_type=transform_type,
+            project_tag=project_tag,
         )
 
         self.generated_data = False
-        self.noise = noise
         self.true_values = np.array([v.value for v in self.variables])
+        self.noise = noise
         self.residuals = []
 
         if battery_simulation.operating_mode == "without experiment":
             if times is None:
-                raise ValueError("""If battery simulation is not operated using an experiment,\n
-                an array of times to evaluate simulation at must be passed.""")
+                raise ValueError(
+                    """If battery simulation is not operated using an experiment,\n
+                an array of times to evaluate simulation at must be passed."""
+                )
 
             self.times = times
 
         else:
-            battery_simulation.solve(self.default_inputs)
+            inputs = dict(
+                zip([v.name for v in variables], [v.value for v in variables])
+            )
+            battery_simulation.solve(inputs=inputs)
             self.times = battery_simulation.solution["Time [s]"].entries
 
-        data = self.simulate(self.true_values, self.times)
+        data = self.simulate(theta=self.true_values, times=self.times)
         self.data = data + np.random.normal(0, self.noise, data.shape)
+
+        with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
+            outfile.write(json.dumps(self.metadata))
 
     @property
     def metadata(self):
@@ -93,7 +104,7 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
             "transform type": self.transform_type,
             "noise": self.noise,
             "project": self.project_tag,
-            "times": self.times,
+            "times": str(self.times),
         }
 
     def simulate(self, theta, times):
@@ -111,12 +122,10 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
             Voltage time series.
         """
         variable_names = [v.name for v in self.variables]
-        inputs = self.default_inputs
-        assert set(variable_names) - set(inputs.keys()) == set()
 
-        inputs.update(
-            dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
-        )
+        inputs = dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
+        print(inputs)
+
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(

@@ -1,14 +1,16 @@
 import json
 import os
 
-import battery_model_parameterization as bmp
 import numpy as np
 import pandas as pd
 import pints
 
+from .sampling_problems.identifiability_analysis import IdentifiabilityAnalysis
+from .sampling_problems.parameter_estimation import ParameterEstimation
+
 
 def run_identifiability_analysis(
-    identifiability_problem: bmp.IdentifiabilityAnalysis,
+    identifiability_problem: IdentifiabilityAnalysis,
     burnin: int = 0,
     n_iteration: int = 2000,
     n_chains: int = 12,
@@ -137,7 +139,7 @@ def run_identifiability_analysis(
 
 
 def run_parameter_estimation(
-    parameter_estimation_problem: bmp.ParameterEstimation,
+    parameter_estimation_problem: ParameterEstimation,
     burnin: int = 0,
     n_iteration: int = 2000,
     n_chains: int = 12,

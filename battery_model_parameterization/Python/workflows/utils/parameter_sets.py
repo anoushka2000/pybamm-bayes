@@ -53,15 +53,35 @@ def marquis_2019(variables):
             "Electrolyte diffusivity [m2.s-1]"
         ] = bmp.electrolyte_diffusivity_Capiglia1999
 
-    if "j0_n" in variable_names:
+    if "j0_n" in variable_names and "alpha_n" in variable_names:
         param[
             "Negative electrode exchange-current density [A.m-2]"
         ] = bmp.graphite_electrolyte_exchange_current_density_Dualfoil1998
 
-    if "j0_p" in variable_names:
+    elif "j0_n" in variable_names:
+        param[
+            "Negative electrode exchange-current density [A.m-2]"
+        ] = bmp.graphite_electrolyte_exchange_current_density_Dualfoil1998_j0
+
+    elif "alpha_n" in variable_names:
+        param[
+            "Negative electrode exchange-current density [A.m-2]"
+        ] = bmp.graphite_electrolyte_exchange_current_density_Dualfoil1998_alpha
+
+    if "j0_p" in variable_names and "alpha_p" in variable_names:
         param[
             "Positive electrode exchange-current density [A.m-2]"
         ] = bmp.lico2_electrolyte_exchange_current_density_Dualfoil1998
+
+    elif "j0_p" in variable_names:
+        param[
+            "Positive electrode exchange-current density [A.m-2]"
+        ] = bmp.graphite_electrolyte_exchange_current_density_Dualfoil1998_j0
+
+    elif "alpha_p" in variable_names:
+        param[
+            "Positive electrode exchange-current density [A.m-2]"
+        ] = bmp.graphite_electrolyte_exchange_current_density_Dualfoil1998_alpha
 
     return param
 
@@ -113,15 +133,35 @@ def chen_2020(variables):
             "Electrolyte diffusivity [m2.s-1]"
         ] = bmp.electrolyte_diffusivity_Nyman2008
 
-    if "j0_n" in variable_names:
+    if "j0_n" in variable_names and "alpha_n" in variable_names:
         param[
             "Negative electrode exchange-current density [A.m-2]"
         ] = bmp.graphite_LGM50_electrolyte_exchange_current_density_Chen2020
 
-    if "j0_p" in variable_names:
+    elif "j0_n" in variable_names:
+        param[
+            "Negative electrode exchange-current density [A.m-2]"
+        ] = bmp.graphite_LGM50_electrolyte_exchange_current_density_Chen2020_j0
+
+    elif "alpha_n" in variable_names:
+        param[
+            "Negative electrode exchange-current density [A.m-2]"
+        ] = bmp.graphite_LGM50_electrolyte_exchange_current_density_Chen2020_alpha
+
+    if "j0_p" in variable_names and "alpha_p" in variable_names:
         param[
             "Positive electrode exchange-current density [A.m-2]"
         ] = bmp.nmc_LGM50_electrolyte_exchange_current_density_Chen2020
+
+    elif "j0_p" in variable_names:
+        param[
+            "Positive electrode exchange-current density [A.m-2]"
+        ] = bmp.nmc_LGM50_electrolyte_exchange_current_density_Chen2020_j0
+
+    elif "alpha_p" in variable_names:
+        param[
+            "Positive electrode exchange-current density [A.m-2]"
+        ] = bmp.nmc_LGM50_electrolyte_exchange_current_density_Chen2020_alpha
 
     return param
 
@@ -175,14 +215,34 @@ def mohtat_2020(variables):
             "Electrolyte diffusivity [m2.s-1]"
         ] = bmp.electrolyte_diffusivity_PeymanMPM
 
-    if "j0_n" in variable_names:
+    if "j0_n" in variable_names and "alpha_n" in variable_names:
         param[
             "Negative electrode exchange-current density [A.m-2]"
         ] = bmp.graphite_electrolyte_exchange_current_density_PeymanMPM
 
-    if "j0_p" in variable_names:
+    elif "j0_n" in variable_names:
+        param[
+            "Negative electrode exchange-current density [A.m-2]"
+        ] = bmp.graphite_electrolyte_exchange_current_density_PeymanMPM_j0
+
+    elif "alpha_n" in variable_names:
+        param[
+            "Negative electrode exchange-current density [A.m-2]"
+        ] = bmp.graphite_electrolyte_exchange_current_density_PeymanMPM_alpha
+
+    if "j0_p" in variable_names and "alpha_p" in variable_names:
         param[
             "Positive electrode exchange-current density [A.m-2]"
         ] = bmp.NMC_electrolyte_exchange_current_density_PeymanMPM
+
+    elif "j0_p" in variable_names:
+        param[
+            "Positive electrode exchange-current density [A.m-2]"
+        ] = bmp.NMC_electrolyte_exchange_current_density_PeymanMPM_j0
+
+    elif "alpha_p" in variable_names:
+        param[
+            "Positive electrode exchange-current density [A.m-2]"
+        ] = bmp.NMC_electrolyte_exchange_current_density_PeymanMPM_alpha
 
     return param
