@@ -7,7 +7,9 @@ import numpy as np
 import pints
 import pints.plot
 import pybamm
-import battery_model_parameterization.Python.battery_models.model_setup as models
+from battery_model_parameterization import Variable
+from battery_model_parameterization import BaseSamplingProblem
+from typing import List
 
 
 def _inverse_log10(x):
@@ -15,10 +17,6 @@ def _inverse_log10(x):
 
 
 INVERSE_TRANSFORMS = {"log10": _inverse_log10}
-MODEL_LOOKUP = {
-    "default_dfn": models.default_dfn(),
-    "default_spme": models.default_spme(),
-}
 
 
 def _fmt_variables(variables):
@@ -34,76 +32,65 @@ def _fmt_parameters(parameters):
     return {k: str(v) for k, v in parameters.items()}
 
 
-class IdentifiabilityProblem(pints.ForwardModel):
+class IdentifiabilityAnalysis(pints.ForwardModel):
     """
-    Defines parameter identifiablility problem for a battery model.
+    Class for conducting non-linear identifiability analysis on battery simulation parameters.
 
     Parameters
     ----------
-    battery_model: str
-        Name of battery model to be parameterised
-        One of "default_spme" or "default_dfn".
-    operating_conditions: List[Tuple[str]]/ List[str]
-        List of operating conditions (passed to pybamm.Experiment).
+    battery_simulation: pybamm.Simulation
+        Battery simulation for which parameter identifiability is being tested.
+    parameter_values: pybamm.ParameterValues
+        Parameter values for the simulation.
     variables: List[Variable]
         List of variables being identified in problem.
+        Each variable listed in `variables` must be initialized
+        as a pybamm.InputParameter in `parameter_values`.
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
         (only `log10` implemented for now)
-    resolution: str
+    resolution: int
         Resolution of data used for parameter identification
-        (number and time unit e.g `1 minute`.)
     noise: float
-        Noise added to data used for identification.
+        Noise added to simulated data used to identify parameters.
     project_tag: str
         Project identifier (prefix to logs dir name).
     """
 
     def __init__(
         self,
-        battery_model,
-        operating_conditions,
-        variables,
-        transform_type,
-        resolution,
-        noise,
-        project_tag=" ",
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        transform_type: str,
+        resolution: int,
+        noise: float,
+        project_tag: str = "",
     ):
+
         super().__init__()
         self.generated_data = False
-        self.battery_model = MODEL_LOOKUP[battery_model][0]
-        self.operating_conditions = operating_conditions
-        self.parameter_values = MODEL_LOOKUP[battery_model][1]
-        self.default_inputs = {
-            "Ds_n": 1e-3,
-            "Ds_p": 1e-3,
-            "De": 1e-3,
-            "j0_n": 1e-3,
-            "j0_p": 1e-3,
-        }
+        self.battery_simulation = battery_simulation
+        self.parameter_values = parameter_values
+        self.noise = noise
         self.variables = variables
-        self.true_values = np.array([v.true_value for v in self.variables])
-
+        self.true_values = np.array([v.value for v in self.variables])
         self.transform_type = transform_type
         self.inverse_transform = INVERSE_TRANSFORMS[self.transform_type]
         self.resolution = resolution
-        self.noise = noise
         self.project_tag = project_tag
         self.logs_dir_path = self.create_logs_dir()
         self.residuals = []
+        self.default_inputs = {v.name: v.value for v in self.variables}
 
         self.battery_simulation.solve(
             inputs=self.default_inputs, solver=pybamm.CasadiSolver("fast")
         )
         self.times = self.battery_simulation.solution["Time [s]"].entries
 
-        data = self.simulate(
-            self.true_values,
-            times=[
-                0,
-            ],
-        )
+        data = self.simulate(self.true_values)
+
         self.data = data + np.random.normal(0, self.noise, data.shape)
 
         if not os.path.isdir(self.logs_dir_path):
@@ -123,27 +110,9 @@ class IdentifiabilityProblem(pints.ForwardModel):
         return os.path.join(current_path, "logs", "__".join(logs_dir_name))
 
     @property
-    def battery_simulation(self):
-        try:
-            return self._battery_simulation
-        except AttributeError:
-            self.setup_battery_simulation()
-            return self._battery_simulation
-
-    def setup_battery_simulation(self):
-        self.experiment = pybamm.Experiment(
-            operating_conditions=self.operating_conditions, period=self.resolution
-        )
-        self._battery_simulation = pybamm.Simulation(
-            self.battery_model,
-            experiment=self.experiment,
-            parameter_values=self.parameter_values,
-        )
-
-    @property
     def metadata(self):
         return {
-            "battery model": self.battery_model.name,
+            "battery model": self.battery_simulation.model.name,
             "operating conditions": self.operating_conditions,
             "parameter values": _fmt_parameters(self.parameter_values),
             "default inputs": self.default_inputs,

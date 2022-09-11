@@ -7,8 +7,14 @@ import numpy as np
 import pints
 import pints.plot
 import pybamm
-from battery_model_parameterization import Variable
-from typing import List
+import battery_model_parameterization.Python.battery_models.model_setup as models
+
+
+def _inverse_log10(x):
+    return 10**x
+
+
+INVERSE_TRANSFORMS = {"log10": _inverse_log10}
 
 
 def _fmt_variables(variables):
@@ -24,59 +30,76 @@ def _fmt_parameters(parameters):
     return {k: str(v) for k, v in parameters.items()}
 
 
-class BaseSamplingProblem(pints.ForwardModel):
+class ParameterEstimation(pints.ForwardModel):
     """
-    Base class for using MCMC sampling  of battery simulation parameters.
+    Defines parameter identifiablility problem for a battery model.
 
     Parameters
     ----------
     battery_simulation: pybamm.Simulation
         Battery simulation for which parameter identifiability is being tested.
     parameter_values: pybamm.ParameterValues
-        Parameter values for the simulation.
+        Parameter values for the simulation with `variables` as inputs.
+    default_inputs: Optional[Dict[str, float]]
+        Possible dictionary keys are: [
     variables: List[Variable]
         List of variables being identified in problem.
-        Each variable listed in `variables` must be initialized
-        as a pybamm.InputParameter in `parameter_values`.
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
         (only `log10` implemented for now)
+    resolution: int
+        Resolution of data to used for parameter identification
+        (number and time unit e.g `1 minute`.)
     project_tag: str
         Project identifier (prefix to logs dir name).
     """
 
     def __init__(
-            self,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            transform_type: str,
-            project_tag: str = "",
+        self,
+        battery_simulation,
+        parameter_values,
+        default_inputs,
+        variables,
+        transform_type,
+        resolution,
+        noise,
+        project_tag=" ",
     ):
 
         super().__init__()
+        self.generated_data = False
         self.battery_simulation = battery_simulation
+        self.noise = noise
         self.parameter_values = parameter_values
+        self.default_inputs = default_inputs
         self.variables = variables
+        self.true_values = np.array([v.true_value for v in self.variables])
         self.transform_type = transform_type
+        self.inverse_transform = INVERSE_TRANSFORMS[self.transform_type]
+        self.resolution = resolution
         self.project_tag = project_tag
         self.logs_dir_path = self.create_logs_dir()
-        self.default_inputs = {v.name: v.value for v in self.variables}
+        self.residuals = []
+
+        self.battery_simulation.solve(
+            inputs=self.default_inputs, solver=pybamm.CasadiSolver("fast")
+        )
+        self.times = self.battery_simulation.solution["Time [s]"].entries
+
+        data = self.simulate(
+            self.true_values,
+            times=[
+                0,
+            ],
+        )
+        self.data = data + np.random.normal(0, self.noise, data.shape)
 
         if not os.path.isdir(self.logs_dir_path):
             os.makedirs(self.logs_dir_path)
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
-
-    @property
-    def transforms(self):
-        return {"log10": lambda x: 10 ** x}
-
-    @property
-    def inverse_transform(self):
-        return self.transforms[self.transform_type]
 
     @property
     def log_prior(self):
@@ -89,13 +112,33 @@ class BaseSamplingProblem(pints.ForwardModel):
         return os.path.join(current_path, "logs", "__".join(logs_dir_name))
 
     @property
+    def battery_simulation(self):
+        try:
+            return self._battery_simulation
+        except AttributeError:
+            self.setup_battery_simulation()
+            return self._battery_simulation
+
+    def setup_battery_simulation(self):
+        self.experiment = pybamm.Experiment(
+            operating_conditions=self.operating_conditions, period=self.resolution
+        )
+        self._battery_simulation = pybamm.Simulation(
+            self.battery_model,
+            experiment=self.experiment,
+            parameter_values=self.parameter_values,
+        )
+
+    @property
     def metadata(self):
         return {
-            "battery model": self.battery_simulation.model.name,
+            "battery model": self.battery_model.name,
+            "operating conditions": self.operating_conditions,
             "parameter values": _fmt_parameters(self.parameter_values),
             "default inputs": self.default_inputs,
             "variables": _fmt_variables(self.variables),
             "transform type": self.transform_type,
+            "noise": self.noise,
             "project": self.project_tag,
         }
 
@@ -159,6 +202,17 @@ class BaseSamplingProblem(pints.ForwardModel):
                     # array of zeros to maximize residual if solution did not converge
                     output = np.zeros(self.data.shape)
 
+        if self.generated_data:
+            try:
+                ess = np.sum(np.square((output - self.data) / self.noise)) / len(output)
+
+            except ValueError:
+                # arrays of unequal size due to incomplete solution
+                ess = np.sum(np.square(self.data / self.noise)) / len(self.data)
+                output = np.zeros(self.data.shape)
+
+            self.residuals.append(ess)
+        self.generated_data = True
         return output
 
     def n_parameters(self):
@@ -179,15 +233,13 @@ class BaseSamplingProblem(pints.ForwardModel):
             n, bins, patches = axs[i].hist(
                 variable.prior.sample(7000), bins=80, alpha=0.6
             )
-
-            if variable.value:
-                axs[i].plot(
-                    [
-                        variable.value,
-                        variable.value,
-                    ],
-                    [0, max(n)],
-                )
+            axs[i].plot(
+                [
+                    variable.true_value,
+                    variable.true_value,
+                ],
+                [0, max(n)],
+            )
             axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
             i += 1
         plt.savefig(os.path.join(self.logs_dir_path, "prior"))
