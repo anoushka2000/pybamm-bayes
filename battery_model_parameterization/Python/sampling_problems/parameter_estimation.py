@@ -29,7 +29,7 @@ class ParameterEstimation(BaseSamplingProblem):
     ----------
     data: pd.DataFrame
         Experimental voltage profile as a data frame with columns
-        `time` and `voltage`.
+        `time` (time in seconds) and `voltage` (voltage in volts).
     battery_simulation: pybamm.Simulation
         Battery simulation for which parameter identifiability is being tested.
     parameter_values: pybamm.ParameterValues
@@ -60,14 +60,24 @@ class ParameterEstimation(BaseSamplingProblem):
 
         self.initial_values = np.array([v.value for v in self.variables])
 
-        self.times = data["time"]
-        self.data = data["voltage"]
-
         self.battery_simulation.solve(
             inputs=self.default_inputs,
             solver=pybamm.CasadiSolver("fast"),
             t_eval=self.times,
         )
+
+        if max(self.battery_simulation.solution["Time [s]"].entries) > max(
+            data["time"]
+        ):
+            raise ValueError(
+                f"""
+            Simulation time span is {max(data["time"])} s.\n
+            Experimental time span is {max(self.battery_simulation.solution["Time [s]"].entries)} s.\n
+            Time span and operating conditons of experimental data and simulation must match."""
+            )
+
+        self.times = data["time"]
+        self.data = data["voltage"]
 
         if self.battery_simulation.solution["Time [s]"].entries != self.times:
             # if simulation did not solve at times in data
