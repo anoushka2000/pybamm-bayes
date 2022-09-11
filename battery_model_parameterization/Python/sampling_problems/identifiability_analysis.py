@@ -1,12 +1,7 @@
-import json
 import os
-from datetime import datetime
 from typing import List
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pints
-import pints.plot
 import pybamm
 from battery_model_parameterization import BaseSamplingProblem, Variable
 
@@ -42,12 +37,12 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         Transformation variable value input to battery model
         and sampling space.
         (only `log10` implemented for now)
-    resolution: int
-        Resolution of data used for parameter identification
     noise: float
-        Noise added to simulated data used to identify parameters.
+        Scale of zero-mean noise added to synthetic data used to identify parameters.
+    times: np.ndarray
+        Array of times at which simulation is evaluated.
     project_tag: str
-        Project identifier (prefix to logs dir name).
+        Project identifier (prefix to logs directory name).
     """
 
     def __init__(
@@ -56,8 +51,8 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         parameter_values: pybamm.ParameterValues,
         variables: List[Variable],
         transform_type: str,
-        resolution: int,
         noise: float,
+        times: np.ndarray,
         project_tag: str = "",
     ):
 
@@ -72,12 +67,15 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         self.generated_data = False
         self.noise = noise
         self.true_values = np.array([v.value for v in self.variables])
-        self.resolution = resolution
         self.residuals = []
 
-        data = self.simulate(self.true_values)
+        if battery_simulation.operating_mode == "without experiment":
+            self.times = times
+        else:
+            battery_simulation.solve(self.default_inputs)
+            self.times = battery_simulation.solution["Time [s]"].entries
 
-        self.times = self.battery_simulation.solution["Time [s]"].entries
+        data = self.simulate(self.true_values, self.times)
         self.data = data + np.random.normal(0, self.noise, data.shape)
 
     @property
@@ -90,6 +88,7 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
             "transform type": self.transform_type,
             "noise": self.noise,
             "project": self.project_tag,
+            "times": self.times,
         }
 
     def simulate(self, theta, times):
@@ -116,7 +115,7 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(
-                inputs=inputs, solver=pybamm.CasadiSolver("fast")
+                inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.times
             )
             solution = self.battery_simulation.solution
             V = solution["Terminal voltage [V]"]
@@ -126,7 +125,7 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
             # CasadiSolver "fast" failed
             try:
                 self.battery_simulation.solve(
-                    inputs=inputs, solver=pybamm.CasadiSolver("safe")
+                    inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times
                 )
                 solution = self.battery_simulation.solution
                 V = solution["Terminal voltage [V]"]
@@ -136,7 +135,7 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
                 #  ScipySolver solver failed
                 try:
                     self.battery_simulation.solve(
-                        inputs=inputs, solver=pybamm.ScipySolver()
+                        inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
                     )
                     solution = self.battery_simulation.solution
                     V = solution["Terminal voltage [V]"]

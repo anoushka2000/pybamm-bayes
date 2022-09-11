@@ -1,24 +1,24 @@
 import unittest
 
 import pints
-from battery_model_parameterization import (IdentifiabilityProblem, Variable,
-                                            run_mcmc)
+from battery_model_parameterization import (IdentifiabilityAnalysis,
+                                            ParameterEstimation,
+                                            Variable,
+                                            run_identifiability_analysis,
+                                            run_parameter_estimation)
 
 
 class TestSampling(unittest.TestCase):
-    def test_run_mcmc(self):
+    def test_run_run_identifiability_analysis(self):
         log_prior_Dsn = pints.GaussianLogPrior(-13, 1)
         log_prior_j0_n = pints.GaussianLogPrior(-4.26, 1)
 
-        Dsn = Variable(name="Ds_n", true_value=-13.45, prior=log_prior_Dsn)
-        j0_n = Variable(name="j0_n", true_value=-4.698, prior=log_prior_j0_n)
+        Dsn = Variable(name="Ds_n", value=-13.45, prior=log_prior_Dsn)
+        j0_n = Variable(name="j0_n", value=-4.698, prior=log_prior_j0_n)
         variables = [Dsn, j0_n]
 
-        identifiability_problem = IdentifiabilityProblem(
+        identifiability_problem = IdentifiabilityAnalysis(
             battery_model="default_dfn",
-            operating_conditions=[
-                "Discharge at C/10 for 10 hours",
-            ],
             variables=variables,
             transform_type="log10",
             resolution="1 minute",

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pybamm
 from battery_model_parameterization import BaseSamplingProblem, Variable
+from scipy.interpolate import interp1d
 
 
 def _fmt_variables(variables):
@@ -59,12 +60,23 @@ class ParameterEstimation(BaseSamplingProblem):
 
         self.initial_values = np.array([v.value for v in self.variables])
 
-        self.battery_simulation.solve(
-            inputs=self.default_inputs, solver=pybamm.CasadiSolver("fast")
-        )
-
         self.times = data["time"]
         self.data = data["voltage"]
+
+        self.battery_simulation.solve(
+            inputs=self.default_inputs,
+            solver=pybamm.CasadiSolver("fast"),
+            t_eval=self.times,
+        )
+
+        if self.battery_simulation.solution["Time [s]"].entries != self.times:
+            # if simulation did not solve at times in data
+            # (e.g. for experiments)
+            # interpolate data to times in simulation
+
+            self.times = battery_simulation.solution["Time [s]"]
+            interpolant = interp1d(x=self.times, y=self.data, fill_value="extrapolate")
+            self.data = interpolant(battery_simulation.solution["Time [s]"])
 
     def simulate(self, theta, times):
         """
@@ -90,7 +102,7 @@ class ParameterEstimation(BaseSamplingProblem):
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(
-                inputs=inputs, solver=pybamm.CasadiSolver("fast")
+                inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.times
             )
             solution = self.battery_simulation.solution
             V = solution["Terminal voltage [V]"]
@@ -100,20 +112,21 @@ class ParameterEstimation(BaseSamplingProblem):
             # CasadiSolver "fast" failed
             try:
                 self.battery_simulation.solve(
-                    inputs=inputs, solver=pybamm.CasadiSolver("safe")
+                    inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times
                 )
                 solution = self.battery_simulation.solution
                 V = solution["Terminal voltage [V]"]
                 output = V.entries
 
             except pybamm.SolverError:
-                #  ScipySolver solver failed
+                #  Casadi solver failed
                 try:
                     self.battery_simulation.solve(
-                        inputs=inputs, solver=pybamm.ScipySolver()
+                        inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
                     )
                     solution = self.battery_simulation.solution
                     V = solution["Terminal voltage [V]"]
+
                     output = V.entries
 
                 except pybamm.SolverError as e:
