@@ -1,10 +1,13 @@
 import os
 from typing import List
-
+import json
 import numpy as np
 import pandas as pd
 import pybamm
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import BaseSamplingProblem
+import pints
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
+    BaseSamplingProblem,
+)
 from battery_model_parameterization.Python.variable import Variable
 from scipy.interpolate import interp1d
 
@@ -59,11 +62,16 @@ class ParameterEstimation(BaseSamplingProblem):
             battery_simulation, parameter_values, variables, transform_type, project_tag
         )
 
-        self.initial_values = np.array([v.value for v in self.variables])
+        initial_values = [v.value for v in self.variables]
+        # use 1e-6 as initial value for noise
+        initial_values.append(1e-6)
+        self.initial_values = np.array(initial_values)
+        self.times = data["time"]
+        self.data = data["voltage"]
 
         self.battery_simulation.solve(
             inputs=self.default_inputs,
-            solver=pybamm.CasadiSolver("fast"),
+            solver=pybamm.CasadiSolver("safe"),
             t_eval=self.times,
         )
 
@@ -78,17 +86,26 @@ class ParameterEstimation(BaseSamplingProblem):
             """
             )
 
-        self.times = data["time"]
-        self.data = data["voltage"]
-
-        if self.battery_simulation.solution["Time [s]"].entries != self.times:
+        if not np.array_equal(
+                self.battery_simulation.solution["Time [s]"].entries, self.times
+        ):
             # if simulation did not solve at times in data
             # (e.g. for experiments)
             # interpolate data to times in simulation
 
-            self.times = battery_simulation.solution["Time [s]"]
             interpolant = interp1d(x=self.times, y=self.data, fill_value="extrapolate")
-            self.data = interpolant(battery_simulation.solution["Time [s]"])
+            self.times = battery_simulation.solution["Time [s]"].entries
+            self.data = interpolant(battery_simulation.solution["Time [s]"].entries)
+
+        with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
+            outfile.write(json.dumps(self.metadata))
+
+    @property
+    def log_prior(self):
+        # extra prior for unknown noise
+        priors = [v.prior for v in self.variables]
+        priors.append(pints.GaussianLogPrior(0, 1))
+        return pints.ComposedLogPrior(*priors)
 
     def simulate(self, theta, times):
         """
@@ -105,12 +122,9 @@ class ParameterEstimation(BaseSamplingProblem):
             Voltage time series.
         """
         variable_names = [v.name for v in self.variables]
-        inputs = self.default_inputs
-        assert set(variable_names) - set(inputs.keys()) == set()
+        theta = theta[: len(variable_names) + 1]
+        inputs = dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
 
-        inputs.update(
-            dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
-        )
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(

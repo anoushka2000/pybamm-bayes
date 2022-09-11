@@ -1,10 +1,11 @@
+import pandas as pd
 import pints
 import pybamm
 from battery_model_parameterization import (
-    IdentifiabilityAnalysis,
+    ParameterEstimation,
     Variable,
     chen_2020,
-    run_identifiability_analysis,
+    run_parameter_estimation,
 )
 
 # define priors for variables being analysed
@@ -31,17 +32,21 @@ simulation = pybamm.Simulation(
     experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
 )
 
-identifiability_problem = IdentifiabilityAnalysis(
+data = pd.read_csv(
+    "~/PycharmProjects/battery-model-parameterization/tests/test_data.csv"
+)
+
+estimation_problem = ParameterEstimation(
+    data=data,
     battery_simulation=simulation,
     variables=variables,
     parameter_values=param,
     transform_type="log10",
-    noise=0.005,
     project_tag="example",
 )
-identifiability_problem.plot_data()
-identifiability_problem.plot_priors()
+estimation_problem.plot_data()
+estimation_problem.plot_priors()
 
-chains = run_identifiability_analysis(
-    identifiability_problem, burnin=1, n_iteration=5, n_chains=2, n_workers=3
+chains = run_parameter_estimation(
+    estimation_problem, burnin=1, n_iteration=5, n_chains=2, n_workers=3
 )

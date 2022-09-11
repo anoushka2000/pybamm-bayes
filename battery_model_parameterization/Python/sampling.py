@@ -173,12 +173,12 @@ def run_parameter_estimation(
     sampling_method = "pints." + sampling_method
 
     problem = pints.SingleOutputProblem(
-        parameter_estimation_problem,
-        parameter_estimation_problem.times,
-        parameter_estimation_problem.data,
+        model=parameter_estimation_problem,
+        times=parameter_estimation_problem.times,
+        values=parameter_estimation_problem.data,
     )
 
-    log_likelihood = pints.GaussianLogLikelihood(problem, parameter_estimation_problem)
+    log_likelihood = pints.GaussianLogLikelihood(problem=problem)
 
     log_posterior = pints.LogPosterior(
         log_likelihood, parameter_estimation_problem.log_prior
@@ -220,6 +220,8 @@ def run_parameter_estimation(
     chains = pd.DataFrame(
         chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
     )
+    # drop noise estimation column
+    chains = chains[chains.columns[:-1]]
 
     #  evaluate optimal value for each parameter
     theta_optimal = np.array(

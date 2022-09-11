@@ -62,6 +62,7 @@ class BaseSamplingProblem(pints.ForwardModel):
         self.project_tag = project_tag
         self.logs_dir_path = self.create_logs_dir()
         self.default_inputs = {v.name: v.value for v in self.variables}
+        self.residuals = []
 
         if not os.path.isdir(self.logs_dir_path):
             os.makedirs(self.logs_dir_path)

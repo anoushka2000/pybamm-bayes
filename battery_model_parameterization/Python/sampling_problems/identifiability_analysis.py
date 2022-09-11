@@ -4,7 +4,9 @@ from typing import List, Optional
 
 import numpy as np
 import pybamm
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import BaseSamplingProblem # noqa: E501
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
+    BaseSamplingProblem,
+)
 from battery_model_parameterization.Python.variable import Variable
 
 
@@ -70,7 +72,6 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         self.generated_data = False
         self.true_values = np.array([v.value for v in self.variables])
         self.noise = noise
-        self.residuals = []
 
         if battery_simulation.operating_mode == "without experiment":
             if times is None:
@@ -124,7 +125,6 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         variable_names = [v.name for v in self.variables]
 
         inputs = dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
-        print(inputs)
 
         try:
             # solve with CasadiSolver
