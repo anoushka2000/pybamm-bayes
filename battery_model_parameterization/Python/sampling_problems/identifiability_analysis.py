@@ -7,8 +7,7 @@ import numpy as np
 import pints
 import pints.plot
 import pybamm
-from battery_model_parameterization import Variable
-from battery_model_parameterization import BaseSamplingProblem
+from battery_model_parameterization import BaseSamplingProblem, Variable
 from typing import List
 
 
@@ -32,7 +31,7 @@ def _fmt_parameters(parameters):
     return {k: str(v) for k, v in parameters.items()}
 
 
-class IdentifiabilityAnalysis(pints.ForwardModel):
+class IdentifiabilityAnalysis(BaseSamplingProblem):
     """
     Class for conducting non-linear identifiability analysis on battery simulation parameters.
 
@@ -71,26 +70,14 @@ class IdentifiabilityAnalysis(pints.ForwardModel):
 
         super().__init__()
         self.generated_data = False
-        self.battery_simulation = battery_simulation
-        self.parameter_values = parameter_values
         self.noise = noise
-        self.variables = variables
         self.true_values = np.array([v.value for v in self.variables])
-        self.transform_type = transform_type
-        self.inverse_transform = INVERSE_TRANSFORMS[self.transform_type]
         self.resolution = resolution
-        self.project_tag = project_tag
-        self.logs_dir_path = self.create_logs_dir()
         self.residuals = []
-        self.default_inputs = {v.name: v.value for v in self.variables}
-
-        self.battery_simulation.solve(
-            inputs=self.default_inputs, solver=pybamm.CasadiSolver("fast")
-        )
-        self.times = self.battery_simulation.solution["Time [s]"].entries
 
         data = self.simulate(self.true_values)
 
+        self.times = self.battery_simulation.solution["Time [s]"].entries
         self.data = data + np.random.normal(0, self.noise, data.shape)
 
         if not os.path.isdir(self.logs_dir_path):
@@ -100,20 +87,9 @@ class IdentifiabilityAnalysis(pints.ForwardModel):
             outfile.write(json.dumps(self.metadata))
 
     @property
-    def log_prior(self):
-        return pints.ComposedLogPrior(*[v.prior for v in self.variables])
-
-    def create_logs_dir(self):
-        logs_dir_name = [self.project_tag] + [p.name for p in self.variables]
-        logs_dir_name.append(datetime.utcnow().strftime(format="%d%m%y_%H%M"))
-        current_path = os.getcwd()
-        return os.path.join(current_path, "logs", "__".join(logs_dir_name))
-
-    @property
     def metadata(self):
         return {
             "battery model": self.battery_simulation.model.name,
-            "operating conditions": self.operating_conditions,
             "parameter values": _fmt_parameters(self.parameter_values),
             "default inputs": self.default_inputs,
             "variables": _fmt_variables(self.variables),
@@ -194,41 +170,3 @@ class IdentifiabilityAnalysis(pints.ForwardModel):
             self.residuals.append(ess)
         self.generated_data = True
         return output
-
-    def n_parameters(self):
-        """
-        Return dimension of the variable vector.
-        """
-        return len(self.variables)
-
-    def plot_priors(self):
-        """
-        Plot priors for all variables and save.
-        """
-        i = 0
-        fig, axs = plt.subplots(len(self.variables))
-        fig.subplots_adjust(hspace=0.9)
-        fig.suptitle("Prior Distributions")
-        for variable in self.variables:
-            n, bins, patches = axs[i].hist(
-                variable.prior.sample(7000), bins=80, alpha=0.6
-            )
-            axs[i].plot(
-                [
-                    variable.true_value,
-                    variable.true_value,
-                ],
-                [0, max(n)],
-            )
-            axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
-            i += 1
-        plt.savefig(os.path.join(self.logs_dir_path, "prior"))
-
-    def plot_data(self):
-        """
-        Plot of voltage profile used for fitting and save.
-        """
-        plt.plot(self.battery_simulation.solution["Time [s]"].entries, self.data)
-        plt.xlabel("Time (s)")
-        plt.ylabel("Voltage (V)")
-        plt.savefig(os.path.join(self.logs_dir_path, "data"))

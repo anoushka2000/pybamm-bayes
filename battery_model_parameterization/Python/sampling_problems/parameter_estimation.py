@@ -7,14 +7,6 @@ import numpy as np
 import pints
 import pints.plot
 import pybamm
-import battery_model_parameterization.Python.battery_models.model_setup as models
-
-
-def _inverse_log10(x):
-    return 10**x
-
-
-INVERSE_TRANSFORMS = {"log10": _inverse_log10}
 
 
 def _fmt_variables(variables):
