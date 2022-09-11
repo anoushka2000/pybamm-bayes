@@ -1,12 +1,15 @@
 import json
 import os
 from datetime import datetime
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pints
 import pints.plot
 import pybamm
+from battery_model_parameterization import BaseSamplingProblem
 
 
 def _fmt_variables(variables):
@@ -22,9 +25,9 @@ def _fmt_parameters(parameters):
     return {k: str(v) for k, v in parameters.items()}
 
 
-class ParameterEstimation(pints.ForwardModel):
+class ParameterEstimation(BaseSamplingProblem):
     """
-    Defines parameter identifiablility problem for a battery model.
+    Defines parameter estimations problem for a battery model.
 
     Parameters
     ----------
@@ -48,15 +51,15 @@ class ParameterEstimation(pints.ForwardModel):
     """
 
     def __init__(
-        self,
-        battery_simulation,
-        parameter_values,
-        default_inputs,
-        variables,
-        transform_type,
-        resolution,
-        noise,
-        project_tag=" ",
+            self,
+            data: pd.DataFrame,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            transform_type: str,
+            resolution: int,
+            noise: float,
+            project_tag: str = "",
     ):
 
         super().__init__()

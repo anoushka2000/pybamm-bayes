@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,7 +9,6 @@ import pints
 import pints.plot
 import pybamm
 from battery_model_parameterization import BaseSamplingProblem, Variable
-from typing import List
 
 
 def _fmt_variables(variables):

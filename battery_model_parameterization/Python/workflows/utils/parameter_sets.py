@@ -1,5 +1,5 @@
-import pybamm
 import battery_model_parameterization as bmp
+import pybamm
 
 
 def marquis_2019(variables):
