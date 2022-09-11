@@ -4,11 +4,8 @@ import unittest
 
 import pints
 import pybamm
-from battery_model_parameterization import (
-    IdentifiabilityAnalysis,
-    Variable,
-    marquis_2019,
-)
+from battery_model_parameterization import (IdentifiabilityAnalysis, Variable,
+                                            marquis_2019)
 
 here = os.path.abspath(os.path.dirname(__file__))
 

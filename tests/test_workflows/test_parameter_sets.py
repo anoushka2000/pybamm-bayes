@@ -2,12 +2,8 @@ import unittest
 
 import pints
 import pybamm
-from battery_model_parameterization import (
-    Variable,
-    chen_2020,
-    marquis_2019,
-    mohtat_2020,
-)
+from battery_model_parameterization import (Variable, chen_2020, marquis_2019,
+                                            mohtat_2020)
 
 
 class TestModelSetup(unittest.TestCase):
