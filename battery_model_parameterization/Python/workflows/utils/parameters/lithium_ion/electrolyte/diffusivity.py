@@ -1,5 +1,5 @@
 #
-# Modifies pybamm exchange current density functions to allow De as an input.
+# Modifies pybamm exchange diffusivity functions to allow De as an input.
 #
 import pybamm
 
