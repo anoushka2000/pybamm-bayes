@@ -8,4 +8,3 @@ scipy
 plotly
 ipython
 coverage
-tox
