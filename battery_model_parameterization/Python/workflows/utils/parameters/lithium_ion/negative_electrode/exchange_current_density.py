@@ -116,7 +116,7 @@ def _graphite_LGM50_electrolyte_exchange_current_density_Chen2020(
 
 def graphite_LGM50_electrolyte_exchange_current_density_Chen2020(alpha_input, j0_input):
     return partial(
-        graphite_LGM50_electrolyte_exchange_current_density_Chen2020,
+        _graphite_LGM50_electrolyte_exchange_current_density_Chen2020,
         alpha_input=alpha_input,
         j0_input=j0_input,
     )
