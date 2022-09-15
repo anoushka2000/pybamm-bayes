@@ -577,7 +577,7 @@ def _plot_confidence_intervals_grid(logs_dir_name, n_variables, chi_sq_limit=10)
     return fig
 
 
-def _plot_confidence_intervals_bivariable(logs_dir_name, chi_sq_limit=10):
+def _plot_confidence_intervals_bivariate(logs_dir_name, chi_sq_limit=10):
     result = load_chains_with_residual(logs_dir_name)
 
     theta_optimal = result.nsmallest(1, "residuals")[
@@ -645,7 +645,7 @@ def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
 
     if n_variables < 3:
         # don't need grid
-        fig = _plot_confidence_intervals_bivariable(logs_dir_name, chi_sq_limit=10)
+        fig = _plot_confidence_intervals_bivariate(logs_dir_name, chi_sq_limit=10)
     else:
         fig = _plot_confidence_intervals_grid(
             logs_dir_name, n_variables, chi_sq_limit=10

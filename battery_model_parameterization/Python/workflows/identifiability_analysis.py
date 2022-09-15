@@ -3,9 +3,10 @@ import pybamm
 from battery_model_parameterization import (
     IdentifiabilityAnalysis,
     Variable,
-    chen_2020,
+    marquis_2019,
     run_identifiability_analysis,
 )
+
 
 # define priors for variables being analysed
 log_prior_j0_n = pints.GaussianLogPrior(-5.5, 1)
@@ -23,7 +24,7 @@ variables = [j0_n, j0_p]
 model = pybamm.lithium_ion.DFN()
 
 # create parameter set
-param = chen_2020(variables)
+param = marquis_2019(variables)
 
 simulation = pybamm.Simulation(
     model,
