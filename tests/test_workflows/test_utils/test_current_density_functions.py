@@ -8,7 +8,7 @@ from battery_model_parameterization import (
     NMC_electrolyte_exchange_current_density_PeymanMPM,
     graphite_electrolyte_exchange_current_density_PeymanMPM,
 )
-from pybamm.expression_tree.binary_operators import Multiplication
+from pybamm import Scalar, Multiplication
 
 
 class TestCurrentDensityFunctions(unittest.TestCase):
@@ -59,4 +59,4 @@ class TestCurrentDensityFunctions(unittest.TestCase):
             alpha_input=False, j0_input=False
         )
         result = f(self.c_e, self.c_s_surf, self.c_s_max, self.T)
-        self.assertIsInstance(result, Multiplication)
+        self.assertIsInstance(result, Scalar)
