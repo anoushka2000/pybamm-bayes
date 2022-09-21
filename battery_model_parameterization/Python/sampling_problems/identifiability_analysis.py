@@ -1,7 +1,8 @@
 import json
 import os
 from typing import List, Optional
-
+import pandas as pd
+import pints
 import numpy as np
 import pybamm
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
@@ -179,12 +180,12 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         return output
 
     def run(
-            self,
-            burnin: int = 0,
-            n_iteration: int = 2000,
-            n_chains: int = 12,
-            n_workers: int = 4,
-            sampling_method: str = "MetropolisRandomWalkMCMC",
+        self,
+        burnin: int = 0,
+        n_iteration: int = 2000,
+        n_chains: int = 12,
+        n_workers: int = 4,
+        sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -215,16 +216,9 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
             self.times,
             self.data,
         )
-        log_likelihood = pints.GaussianKnownSigmaLogLikelihood(
-            problem, self.noise
-        )
-        log_posterior = pints.LogPosterior(
-            log_likelihood, self.log_prior
-        )
-        xs = [
-            x * self.true_values
-            for x in np.random.normal(1, 0.2, n_chains)
-        ]
+        log_likelihood = pints.GaussianKnownSigmaLogLikelihood(problem, self.noise)
+        log_posterior = pints.LogPosterior(log_likelihood, self.log_prior)
+        xs = [x * self.true_values for x in np.random.normal(1, 0.2, n_chains)]
 
         # Create MCMC routine
         mcmc = pints.MCMCController(
@@ -236,13 +230,9 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
 
         # Logging
         mcmc.set_log_to_screen(True)
-        mcmc.set_chain_filename(
-            os.path.join(self.logs_dir_path, "chain.csv")
-        )
+        mcmc.set_chain_filename(os.path.join(self.logs_dir_path, "chain.csv"))
         mcmc.set_chain_storage(store_in_memory=True)
-        mcmc.set_log_pdf_filename(
-            os.path.join(self.logs_dir_path, "log_pdf.csv")
-        )
+        mcmc.set_log_pdf_filename(os.path.join(self.logs_dir_path, "log_pdf.csv"))
 
         # Parallelization
         # TODO: ForkingPickler(file, protocol).dump(obj)
@@ -264,12 +254,8 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         )
 
         #  find residual at optimal value
-        y_hat = self.simulate(
-            theta_optimal, times=self.times
-        )
-        error_at_optimal = np.sum(abs(y_hat - self.data)) / len(
-            self.data
-        )
+        y_hat = self.simulate(theta_optimal, times=self.times)
+        error_at_optimal = np.sum(abs(y_hat - self.data)) / len(self.data)
 
         # chi_sq = distance in residuals between optimal value and all others
         pd.DataFrame(
@@ -280,8 +266,8 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "r",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -297,8 +283,8 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         )
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "w",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "w",
         ) as outfile:
             json.dump(metadata, outfile)
 

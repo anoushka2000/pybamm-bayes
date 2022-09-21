@@ -5,7 +5,6 @@ from battery_model_parameterization import (
     ParameterEstimation,
     Variable,
     chen_2020,
-    run_parameter_estimation,
 )
 
 # define priors for variables being analysed
@@ -45,6 +44,6 @@ estimation_problem = ParameterEstimation(
 estimation_problem.plot_data()
 estimation_problem.plot_priors()
 
-chains = run_parameter_estimation(
+chains = estimation_problem.run(
     estimation_problem, burnin=1, n_iteration=5, n_chains=2, n_workers=3
 )

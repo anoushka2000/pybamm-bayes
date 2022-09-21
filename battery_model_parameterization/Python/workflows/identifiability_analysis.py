@@ -4,7 +4,6 @@ from battery_model_parameterization import (
     IdentifiabilityAnalysis,
     Variable,
     marquis_2019,
-    run_identifiability_analysis,
 )
 
 
@@ -43,6 +42,4 @@ identifiability_problem = IdentifiabilityAnalysis(
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
-chains = identifiability_analysis.run(
-    burnin=1, n_iteration=5, n_chains=2, n_workers=3
-)
+chains = identifiability_problem.run(burnin=1, n_iteration=5, n_chains=2, n_workers=3)

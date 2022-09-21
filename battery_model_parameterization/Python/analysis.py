@@ -611,7 +611,6 @@ def _plot_confidence_intervals_grid(
     return fig
 
 
-
 def _plot_confidence_intervals_bivariate(
         logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
 ):

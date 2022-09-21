@@ -49,13 +49,13 @@ class ParameterEstimation(BaseSamplingProblem):
     """
 
     def __init__(
-            self,
-            data: pd.DataFrame,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            transform_type: str,
-            project_tag: str = "",
+        self,
+        data: pd.DataFrame,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        transform_type: str,
+        project_tag: str = "",
     ):
 
         super().__init__(
@@ -87,7 +87,7 @@ class ParameterEstimation(BaseSamplingProblem):
             )
 
         if not np.array_equal(
-                self.battery_simulation.solution["Time [s]"].entries, self.times
+            self.battery_simulation.solution["Time [s]"].entries, self.times
         ):
             # if simulation did not solve at times in data
             # (e.g. for experiments)
@@ -177,12 +177,12 @@ class ParameterEstimation(BaseSamplingProblem):
         return output
 
     def run(
-            self,
-            burnin: int = 0,
-            n_iteration: int = 2000,
-            n_chains: int = 12,
-            n_workers: int = 4,
-            sampling_method: str = "MetropolisRandomWalkMCMC",
+        self,
+        burnin: int = 0,
+        n_iteration: int = 2000,
+        n_chains: int = 12,
+        n_workers: int = 4,
+        sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -216,14 +216,9 @@ class ParameterEstimation(BaseSamplingProblem):
 
         log_likelihood = pints.GaussianLogLikelihood(problem=problem)
 
-        log_posterior = pints.LogPosterior(
-            log_likelihood, self.log_prior
-        )
+        log_posterior = pints.LogPosterior(log_likelihood, self.log_prior)
 
-        xs = [
-            x * self.initial_values
-            for x in np.random.normal(1, 0.2, n_chains)
-        ]
+        xs = [x * self.initial_values for x in np.random.normal(1, 0.2, n_chains)]
 
         # Create MCMC routine
         mcmc = pints.MCMCController(
@@ -235,13 +230,9 @@ class ParameterEstimation(BaseSamplingProblem):
 
         # Logging
         mcmc.set_log_to_screen(True)
-        mcmc.set_chain_filename(
-            os.path.join(self.logs_dir_path, "chain.csv")
-        )
+        mcmc.set_chain_filename(os.path.join(self.logs_dir_path, "chain.csv"))
         mcmc.set_chain_storage(store_in_memory=True)
-        mcmc.set_log_pdf_filename(
-            os.path.join(self.logs_dir_path, "log_pdf.csv")
-        )
+        mcmc.set_log_pdf_filename(os.path.join(self.logs_dir_path, "log_pdf.csv"))
 
         # Parallelization
         # TODO: ForkingPickler(file, protocol).dump(obj)
@@ -265,12 +256,8 @@ class ParameterEstimation(BaseSamplingProblem):
         )
 
         #  find residual at optimal value
-        y_hat = self.simulate(
-            theta_optimal, times=self.times
-        )
-        error_at_optimal = np.sum(abs(y_hat - self.data)) / len(
-            self.data
-        )
+        y_hat = self.simulate(theta_optimal, times=self.times)
+        error_at_optimal = np.sum(abs(y_hat - self.data)) / len(self.data)
 
         pd.DataFrame(
             {
@@ -279,8 +266,8 @@ class ParameterEstimation(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "r",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -296,8 +283,8 @@ class ParameterEstimation(BaseSamplingProblem):
         )
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "w",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "w",
         ) as outfile:
             json.dump(metadata, outfile)
 
