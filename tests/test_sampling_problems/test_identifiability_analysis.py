@@ -39,7 +39,7 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
             parameter_values=cls.parameter_values,
             variables=cls.variables,
             transform_type="log10",
-            noise=0.00,
+            noise=0.005,
             project_tag="test",
         )
 
