@@ -1,6 +1,5 @@
-import pybamm
-
 import battery_model_parameterization as bmp
+import pybamm
 
 
 def _exchange_current_density_inputs(variable_names):

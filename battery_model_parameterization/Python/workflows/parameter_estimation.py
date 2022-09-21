@@ -1,7 +1,6 @@
 import pandas as pd
 import pints
 import pybamm
-
 from battery_model_parameterization import (ParameterEstimation, Variable,
                                             chen_2020)
 

@@ -4,8 +4,7 @@ import unittest
 
 import pints
 import pybamm
-from battery_model_parameterization import (BaseSamplingProblem, Variable,
-                                            marquis_2019)
+from battery_model_parameterization import BaseSamplingProblem, Variable, marquis_2019
 from matplotlib.testing.compare import compare_images
 
 here = os.path.abspath(os.path.dirname(__file__))

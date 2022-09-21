@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import pints
 import pints.plot
 import pybamm
-
 from battery_model_parameterization.Python.variable import Variable
 
 

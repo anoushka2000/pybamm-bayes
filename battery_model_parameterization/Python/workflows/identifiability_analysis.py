@@ -1,6 +1,5 @@
 import pints
 import pybamm
-
 from battery_model_parameterization import (IdentifiabilityAnalysis, Variable,
                                             marquis_2019)
 

@@ -6,11 +6,10 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
-from scipy.interpolate import interp1d
-
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import \
     BaseSamplingProblem  # noqa: E501
 from battery_model_parameterization.Python.variable import Variable
+from scipy.interpolate import interp1d
 
 
 def _fmt_variables(variables):

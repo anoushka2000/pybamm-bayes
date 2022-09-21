@@ -5,8 +5,7 @@ import unittest
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization import (ParameterEstimation, Variable,
-                                            marquis_2019)
+from battery_model_parameterization import ParameterEstimation, Variable, marquis_2019
 
 here = os.path.abspath(os.path.dirname(__file__))
 
