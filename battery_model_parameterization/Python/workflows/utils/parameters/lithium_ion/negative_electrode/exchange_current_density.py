@@ -2,8 +2,9 @@
 # Modifies pybamm exchange current density functions to allow j0_n
 # and/ or alpha_n as inputs.
 #
-import pybamm
 from functools import partial
+
+import pybamm
 
 
 def _graphite_electrolyte_exchange_current_density_Dualfoil1998(

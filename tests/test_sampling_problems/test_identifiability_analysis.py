@@ -4,11 +4,8 @@ import unittest
 
 import pints
 import pybamm
-from battery_model_parameterization import (
-    IdentifiabilityAnalysis,
-    Variable,
-    marquis_2019,
-)
+from battery_model_parameterization import (IdentifiabilityAnalysis, Variable,
+                                            marquis_2019)
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -66,6 +63,19 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
             self.identifiability_problem.true_values, self.identifiability_problem.times
         )
         self.assertFalse(output is None)
+
+    def test_run(self):
+        burnin = 2
+        n_iteration = 5
+        n_chains = 3
+        n_workers = 3
+
+        chains = self.identifiability_problem.run(
+            burnin, n_iteration, n_chains, n_workers
+        )
+
+        self.assertEqual(len(chains.columns), len(self.variables))
+        self.assertEqual(len(chains), n_iteration * n_chains)
 
     @classmethod
     def tearDownClass(cls):

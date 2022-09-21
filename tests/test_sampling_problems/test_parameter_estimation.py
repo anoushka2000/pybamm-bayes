@@ -5,7 +5,8 @@ import unittest
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization import ParameterEstimation, Variable, marquis_2019
+from battery_model_parameterization import (ParameterEstimation, Variable,
+                                            marquis_2019)
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -63,6 +64,19 @@ class TestParameterEstimation(unittest.TestCase):
             self.parameter_estimation_problem.times,
         )
         self.assertFalse(output is None)
+
+    def test_run(self):
+        burnin = 2
+        n_iteration = 5
+        n_chains = 3
+        n_workers = 3
+
+        chains = self.parameter_estimation_problem.run(
+            burnin, n_iteration, n_chains, n_workers
+        )
+
+        self.assertEqual(len(chains.columns), len(self.variables))
+        self.assertEqual(len(chains), n_iteration * n_chains)
 
     @classmethod
     def tearDownClass(cls):

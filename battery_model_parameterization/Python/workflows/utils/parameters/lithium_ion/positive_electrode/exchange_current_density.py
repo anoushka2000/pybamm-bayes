@@ -3,8 +3,9 @@
 # and/or alpha_p as inputs.
 #
 
-import pybamm
 from functools import partial
+
+import pybamm
 
 
 def _lico2_electrolyte_exchange_current_density_Dualfoil1998(

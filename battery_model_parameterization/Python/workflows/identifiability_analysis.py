@@ -1,11 +1,8 @@
 import pints
 import pybamm
-from battery_model_parameterization import (
-    IdentifiabilityAnalysis,
-    Variable,
-    marquis_2019,
-)
 
+from battery_model_parameterization import (IdentifiabilityAnalysis, Variable,
+                                            marquis_2019)
 
 # define priors for variables being analysed
 log_prior_j0_n = pints.GaussianLogPrior(-5.5, 1)

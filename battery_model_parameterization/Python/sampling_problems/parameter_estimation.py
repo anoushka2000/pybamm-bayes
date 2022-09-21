@@ -1,15 +1,16 @@
+import json
 import os
 from typing import List
-import json
+
 import numpy as np
 import pandas as pd
-import pybamm
 import pints
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
-    BaseSamplingProblem,
-)
-from battery_model_parameterization.Python.variable import Variable
+import pybamm
 from scipy.interpolate import interp1d
+
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import \
+    BaseSamplingProblem  # noqa: E501
+from battery_model_parameterization.Python.variable import Variable
 
 
 def _fmt_variables(variables):
