@@ -36,7 +36,7 @@ def electrolyte_diffusivity_Nyman2008(c_e, T):
 
 
 def _graphite_LGM50_electrolyte_exchange_current_density_Chen2020(
-    c_e, c_s_surf, T, alpha_input, j0_input
+    c_e, c_s_surf, c_s_max, T, alpha_input, j0_input
 ):
     """
     Exchange-current density for Butler-Volmer reactions between graphite and LiPF6 in
@@ -96,7 +96,7 @@ def graphite_LGM50_electrolyte_exchange_current_density_Chen2020(alpha_input, j0
 
 
 def _nmc_LGM50_electrolyte_exchange_current_density_Chen2020(
-    c_e, c_s_surf, T, alpha_input, j0_input
+    c_e, c_s_surf, c_s_max, T, alpha_input, j0_input
 ):
     """
     Exchange-current density for Butler-Volmer reactions between NMC and LiPF6 in
