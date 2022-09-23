@@ -61,7 +61,7 @@ def graphite_mcmb2528_diffusivity_Dualfoil1998(sto, T):
 
 
 def _graphite_electrolyte_exchange_current_density_Dualfoil1998(
-    c_e, c_s_surf, T, alpha_input, j0_input
+    c_e, c_s_surf, c_s_max, T, alpha_input, j0_input
 ):
     """
     Modifies pybamm function to allow j0_n and alpha_n input.
@@ -142,7 +142,7 @@ def lico2_diffusivity_Dualfoil1998(sto, T):
 
 
 def _lico2_electrolyte_exchange_current_density_Dualfoil1998(
-    c_e, c_s_surf, T, alpha_input, j0_input
+    c_e, c_s_surf, c_s_max, T, alpha_input, j0_input
 ):
     """
     Exchange-current density for Butler-Volmer reactions between lico2 and LiPF6 in
