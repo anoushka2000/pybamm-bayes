@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from typing import List
 
@@ -6,11 +7,11 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
-import logging
+from scipy.interpolate import interp1d
+
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import \
     BaseSamplingProblem  # noqa: E501
 from battery_model_parameterization.Python.variable import Variable
-from scipy.interpolate import interp1d
 
 logging.basicConfig()
 LOG = logging.getLogger("parameter_estimation")
