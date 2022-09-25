@@ -3,13 +3,14 @@ from datetime import datetime
 from typing import List
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import pints
 import pints.plot
 import pybamm
-import numpy as np
 import seaborn as sns
+import tqdm
 from battery_model_parameterization.Python.variable import Variable
-import pandas as pd
 
 
 def _fmt_variables(variables):
@@ -141,6 +142,8 @@ class BaseSamplingProblem(pints.ForwardModel):
 
     def plot_results_summary(self):
 
+        variable_names = [var.name for var in self.variables]
+
         # Calculate summary from chains
         posterior_distributions = [
             np.random.normal(
@@ -153,8 +156,8 @@ class BaseSamplingProblem(pints.ForwardModel):
         results = []
         summary = []
 
-        for i, input_set in enumerate(zip(*posterior_distributions)):
-            inputs = dict(zip(self.chains.columns, input_set))
+        for i, input_set in tqdm.tqdm(enumerate(zip(*posterior_distributions))):
+            inputs = dict(zip(variable_names, input_set))
             solution_V = self.simulate(theta=list(input_set), times=self.times)
             summary.append(
                 {
@@ -176,7 +179,7 @@ class BaseSamplingProblem(pints.ForwardModel):
         df_summary = pd.DataFrame(summary)
 
         # Generate plots using df and summary df
-        variable_names = [var.name for var in self.variables]
+
         rows = len(variable_names) + 1
 
         fig, ax = plt.subplots(rows, 2, figsize=(8, rows * 3))
