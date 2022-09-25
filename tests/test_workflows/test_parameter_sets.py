@@ -24,17 +24,35 @@ class TestModelSetup(unittest.TestCase):
     def test_chen_2020(self):
         param = chen_2020(self.variables)
         self.assertIsInstance(param, pybamm.ParameterValues)
-        self.assertIsInstance(param["Negative electrode diffusivity [m2.s-1]"], pybamm.InputParameter)
-        self.assertIsInstance(param["Positive electrode diffusivity [m2.s-1]"], pybamm.InputParameter)
+        self.assertIsInstance(
+            param[
+                "Negative electrode diffusivity [m2.s-1]"
+            ], pybamm.InputParameter)
+        self.assertIsInstance(
+            param[
+                "Positive electrode diffusivity [m2.s-1]"
+            ], pybamm.InputParameter)
 
     def test_marquis_2019(self):
         param = marquis_2019(self.variables)
         self.assertIsInstance(param, pybamm.ParameterValues)
-        self.assertIsInstance(param["Negative electrode diffusivity [m2.s-1]"], pybamm.InputParameter)
-        self.assertIsInstance(param["Positive electrode diffusivity [m2.s-1]"], pybamm.InputParameter)
+        self.assertIsInstance(
+            param[
+                "Negative electrode diffusivity [m2.s-1]"
+            ], pybamm.InputParameter)
+        self.assertIsInstance(
+            param[
+                "Positive electrode diffusivity [m2.s-1]"
+            ], pybamm.InputParameter)
 
     def test_mohtat_2020(self):
         param = mohtat_2020(self.variables)
         self.assertIsInstance(param, pybamm.ParameterValues)
-        self.assertIsInstance(param["Negative electrode diffusivity [m2.s-1]"], pybamm.InputParameter)
-        self.assertIsInstance(param["Positive electrode diffusivity [m2.s-1]"], pybamm.InputParameter)
+        self.assertIsInstance(
+            param[
+                "Negative electrode diffusivity [m2.s-1]"
+            ], pybamm.InputParameter)
+        self.assertIsInstance(
+            param[
+                "Positive electrode diffusivity [m2.s-1]"
+            ], pybamm.InputParameter)
