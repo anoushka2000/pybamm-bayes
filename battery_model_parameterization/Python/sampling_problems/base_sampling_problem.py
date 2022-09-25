@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 import pints
 import pints.plot
 import pybamm
+import numpy as np
+import seaborn as sns
 from battery_model_parameterization.Python.variable import Variable
+import pandas as pd
 
 
 def _fmt_variables(variables):
@@ -62,6 +65,7 @@ class BaseSamplingProblem(pints.ForwardModel):
         self.logs_dir_path = self.create_logs_dir()
         self.default_inputs = {v.name: v.value for v in self.variables}
         self.residuals = []
+        self.chains = pd.DataFrame()
 
         if not os.path.isdir(self.logs_dir_path):
             os.makedirs(self.logs_dir_path)
@@ -134,3 +138,78 @@ class BaseSamplingProblem(pints.ForwardModel):
         plt.xlabel("Time (s)")
         plt.ylabel("Voltage (V)")
         plt.savefig(os.path.join(self.logs_dir_path, "data"))
+
+    def plot_results_summary(self):
+
+        # Calculate summary from chains
+        posterior_distributions = [
+            np.random.normal(
+                loc=self.chains[column].mean(),
+                scale=self.chains[column].std(),
+                size=100,
+            )
+            for column in self.chains.columns
+        ]
+        results = []
+        summary = []
+
+        for i, input_set in enumerate(zip(*posterior_distributions)):
+            inputs = dict(zip(self.chains.columns, input_set))
+            solution_V = self.simulate(theta=list(input_set), times=self.times)
+            summary.append(
+                {
+                    **inputs,
+                    "Residual": abs(self.data - solution_V).sum() / len(solution_V),
+                }
+            )
+
+            for t, V in zip(self.times, solution_V):
+                results.append(
+                    {
+                        **inputs,
+                        "Time [s]": t,
+                        "Voltage [V]": V,
+                        "run": i,
+                    }
+                )
+        df = pd.DataFrame(results)
+        df_summary = pd.DataFrame(summary)
+
+        # Generate plots using df and summary df
+        variable_names = [var.name for var in self.variables]
+        rows = len(variable_names) + 1
+
+        fig, ax = plt.subplots(rows, 2, figsize=(8, rows * 3))
+        for i, var in list(zip([i for i in range(1, rows)], variable_names)):
+            # column 0: plot a histogram for each variable
+            sns.distplot(
+                df[var],
+                hist=True,
+                kde=True,
+                bins=int(180 / 5),
+                color="darkblue",
+                hist_kws={"edgecolor": "black"},
+                kde_kws={"linewidth": 4},
+                ax=ax[i][0],
+            )
+
+            # column 1: plot voltage colored by variable for each variable
+            sns.lineplot(
+                data=df, x="Time [s]", y="Voltage [V]", hue=df[var], ax=ax[i][1]
+            )
+
+        sns.scatterplot(
+            data=df_summary,
+            x=variable_names[0],
+            y=variable_names[1],
+            hue="Residual",
+            ax=ax[0][1],
+        )
+
+        sns.lineplot(
+            data=df, x="Time [s]", y="Voltage [V]", errorbar=("sd", 1), ax=ax[0][0]
+        )
+        ax[0][0].set_ylabel("Voltage with one standard deviation")
+
+        fig.tight_layout()
+        plt.savefig(os.path.join(self.logs_dir_path, "results_summary"))
