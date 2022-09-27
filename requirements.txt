@@ -9,3 +9,4 @@ plotly
 ipython
 coverage
 seaborn
+tqdm
