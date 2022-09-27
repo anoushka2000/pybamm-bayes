@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 from typing import List
 
@@ -9,13 +8,11 @@ import pints
 import pybamm
 from scipy.interpolate import interp1d
 
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import \
-    BaseSamplingProblem  # noqa: E501
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
+    BaseSamplingProblem,
+)
+from battery_model_parameterization.Python.logger import logger
 from battery_model_parameterization.Python.variable import Variable
-
-logging.basicConfig()
-LOG = logging.getLogger("parameter_estimation")
-LOG.setLevel(logging.INFO)
 
 
 def _fmt_variables(variables):
@@ -246,9 +243,9 @@ class ParameterEstimation(BaseSamplingProblem):
         # mcmc.set_parallel(parallel=n_workers)
 
         # Run
-        LOG.info("Running...")
+        logger.info("Running...")
         chains = mcmc.run()
-        LOG.info("Done!")
+        logger.info("Done!")
 
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
