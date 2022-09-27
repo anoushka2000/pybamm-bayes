@@ -63,10 +63,6 @@ class TestModelSetup(unittest.TestCase):
         self.assertIsInstance(param, pybamm.ParameterValues)
         self.assertIsInstance(
             param[
-                "Negative electrode diffusivity [m2.s-1]"
-            ], pybamm.InputParameter)
-        self.assertIsInstance(
-            param[
                 "Positive electrode exchange-current density [A.m-2]"
             ], functools.partial
         )
