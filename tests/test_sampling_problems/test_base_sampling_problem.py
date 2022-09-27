@@ -60,7 +60,7 @@ class TestBaseSamplingProblem(unittest.TestCase):
     def test_plot_results_summary(self):
         self.sampling_problem.plot_results_summary()
         file_exists = os.path.exists(
-            os.path.join(self.sampling_problem.logs_dir_path, "results_plot.png")
+            os.path.join(self.sampling_problem.logs_dir_path, "results_summary.png")
         )
         self.assertTrue(file_exists)
 
