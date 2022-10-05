@@ -9,6 +9,7 @@ import pints
 import pints.plot
 import pybamm
 import seaborn as sns
+from scipy import stats
 import tqdm
 from battery_model_parameterization.Python.variable import Variable
 
@@ -26,7 +27,7 @@ def _fmt_parameters(parameters):
     return {k: str(v) for k, v in parameters.items()}
 
 
-class BaseSamplingProblem(pints.ForwardModel):
+class BaseSamplingProblem(pints.ForwardModelS1):
     """
     Base class for using MCMC sampling  of battery simulation parameters.
 
@@ -49,12 +50,12 @@ class BaseSamplingProblem(pints.ForwardModel):
     """
 
     def __init__(
-        self,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        transform_type: str,
-        project_tag: str = "",
+            self,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            transform_type: str,
+            project_tag: str = "",
     ):
 
         super().__init__()
@@ -73,7 +74,7 @@ class BaseSamplingProblem(pints.ForwardModel):
 
     @property
     def transforms(self):
-        return {"log10": lambda x: 10**x}
+        return {"log10": lambda x: 10 ** x}
 
     @property
     def inverse_transform(self):
@@ -115,19 +116,31 @@ class BaseSamplingProblem(pints.ForwardModel):
         fig.subplots_adjust(hspace=0.9)
         fig.suptitle("Prior Distributions")
         for variable in self.variables:
-            n, bins, patches = axs[i].hist(
-                variable.prior.sample(7000), bins=80, alpha=0.6
+            sample = variable.prior.sample(7000).flatten()
+
+            s_mode = 1
+            sns.distplot(
+                sample,
+                hist=True,
+                kde=True,
+                bins=80,
+                color="darkblue",
+                hist_kws={"edgecolor": "black"},
+                kde_kws={"linewidth": 4},
+                ax=axs[i],
             )
 
             if variable.value:
-                axs[i].plot(
-                    [
+                sns.lineplot(
+                    x=[
                         variable.value,
                         variable.value,
                     ],
-                    [0, max(n)],
+                    y=[0, s_mode], ax=axs[i],
+                    color="black"
                 )
-            axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
+
+            axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Density")
             i += 1
         plt.savefig(os.path.join(self.logs_dir_path, "prior"))
 
