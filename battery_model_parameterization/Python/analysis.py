@@ -128,7 +128,7 @@ def load_chains_with_residual(logs_dir_name=None, logs_dir_path=None):
     result = result[result.p1 > theta_optimal[1] - 1]
     result = result[result.p1 < theta_optimal[1] + 1]
     result["chi_sq"] = (
-            result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
+        result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
     )
     result = result[result.chi_sq < 10]
     result.columns = ["sample number"] + variable_names + ["residuals", "chi_sq"]
@@ -156,7 +156,7 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
 
     priors = [
         eval(
-            f"pints.{v['prior_type']}({list(v['prior'].values())[0]},/"
+            f"pints.{v['prior_type']}({list(v['prior'].values())[0]},"
             f"{list(v['prior'].values())[1]})"
         )
         for v in metadata["variables"]
@@ -249,7 +249,7 @@ def compare_chain_convergence(logs_dir_names):
         true_values = [var["value"] for var in metadata["variables"]]
         priors = [
             eval(
-                f"pints.{var['prior_type']}({list(var['prior'].values())[0]},/"
+                f"pints.{var['prior_type']}({list(var['prior'].values())[0]},"
                 f"{list(var['prior'].values())[1]})"
             )
             for var in metadata["variables"]
@@ -333,12 +333,12 @@ def compare_chain_convergence(logs_dir_names):
 
 
 def pairwise(
-        logs_dir_name=None,
-        logs_dir_path=None,
-        kde=False,
-        heatmap=False,
-        opacity=None,
-        n_percentiles=None,
+    logs_dir_name=None,
+    logs_dir_path=None,
+    kde=False,
+    heatmap=False,
+    opacity=None,
+    n_percentiles=None,
 ):
     """
     (Adapted from pint.plot.pairwise)
@@ -377,8 +377,7 @@ def pairwise(
     true_values = [var["value"] for var in metadata["variables"]]
     priors = [
         eval(
-            f"pints.{v['prior_type']}({list(v['prior'].values())[0]},/"
-            f"{list(v['prior'].values())[1]})"
+            f"pints.{v['prior_type']}({list(v['prior'].values())[0]},{list(v['prior'].values())[1]})"
         )
         for v in metadata["variables"]
     ]
@@ -536,7 +535,7 @@ def pairwise(
 
 
 def _plot_confidence_intervals_grid(
-        n_variables, logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
+    n_variables, logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
 ):
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
@@ -545,7 +544,7 @@ def _plot_confidence_intervals_grid(
     result = load_chains_with_residual(logs_dir_path=logs_dir_path)
 
     theta_optimal = result.nsmallest(1, "residuals")[
-        result.columns[1: n_variables + 1]
+        result.columns[1 : n_variables + 1]
     ].values.flatten()
 
     # recover true values from metadata
@@ -612,7 +611,7 @@ def _plot_confidence_intervals_grid(
 
 
 def _plot_confidence_intervals_bivariate(
-        logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
+    logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
 ):
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
@@ -739,11 +738,11 @@ def gelman_rubin_convergence_test(logs_dir_name=None, logs_dir_path=None, burnin
         n_valid_iterations = len(chain)
         mean_all_chains = sum(chain_mean_list) / len(chain_mean_list)
         B = (n_valid_iterations / (n_chains - 1)) * (
-                (chain_mean_list - mean_all_chains) ** 2
+            (chain_mean_list - mean_all_chains) ** 2
         ).sum()
         W = sum(chain_var_list) / len(chain_var_list)
         V = ((n_valid_iterations - 1) / n_valid_iterations) * W + (n_chains + 1) / (
-                n_chains * n_valid_iterations
+            n_chains * n_valid_iterations
         ) * B
         gelman_rubin_factors.append(V)
         chains = load_chains(logs_dir_path=logs_dir_path, concat=False)
@@ -773,11 +772,11 @@ def gelman_rubin_convergence_test(logs_dir_name=None, logs_dir_path=None, burnin
         n_valid_iterations = len(chain)
         mean_all_chains = sum(chain_mean_list) / len(chain_mean_list)
         B = (n_valid_iterations / (n_chains - 1)) * (
-                (chain_mean_list - mean_all_chains) ** 2
+            (chain_mean_list - mean_all_chains) ** 2
         ).sum()
         W = sum(chain_var_list) / len(chain_var_list)
         V = ((n_valid_iterations - 1) / n_valid_iterations) * W + (n_chains + 1) / (
-                n_chains * n_valid_iterations
+            n_chains * n_valid_iterations
         ) * B
         gelman_rubin_factors.append(V)
 

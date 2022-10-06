@@ -50,12 +50,12 @@ class BaseSamplingProblem(pints.ForwardModelS1):
     """
 
     def __init__(
-            self,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            transform_type: str,
-            project_tag: str = "",
+        self,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        transform_type: str,
+        project_tag: str = "",
     ):
 
         super().__init__()
@@ -74,7 +74,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
 
     @property
     def transforms(self):
-        return {"log10": lambda x: 10 ** x}
+        return {"log10": lambda x: 10**x}
 
     @property
     def inverse_transform(self):
@@ -118,15 +118,17 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         for variable in self.variables:
             sample = variable.prior.sample(7000).flatten()
 
-            s_mode = 1
+            s_mode = stats.binned_statistic(
+                x=sample, values=sample, statistic="count", bins=80
+            ).statistic.max()
+
             sns.distplot(
                 sample,
                 hist=True,
-                kde=True,
+                kde=False,
                 bins=80,
                 color="darkblue",
                 hist_kws={"edgecolor": "black"},
-                kde_kws={"linewidth": 4},
                 ax=axs[i],
             )
 
@@ -136,11 +138,13 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                         variable.value,
                         variable.value,
                     ],
-                    y=[0, s_mode], ax=axs[i],
-                    color="black"
+                    y=[0, s_mode],
+                    ax=axs[i],
+                    color="black",
+                    linewidth=4,
                 )
 
-            axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Density")
+            axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
             i += 1
         plt.savefig(os.path.join(self.logs_dir_path, "prior"))
 
@@ -196,14 +200,42 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             df = pd.DataFrame(results)
             df_summary = pd.DataFrame(summary)
 
+            # Add prior plots to column 0 (histograms)
+            for i, variable in list(zip([i for i in range(1, rows)], self.variables)):
+                sample = variable.prior.sample(7000).flatten()
+
+                s_mode = stats.binned_statistic(
+                    x=sample, values=sample, statistic="count", bins=80
+                ).statistic.max()
+                sns.distplot(
+                    sample,
+                    hist=True,
+                    kde=False,
+                    bins=80,
+                    color="grey",
+                    ax=ax[i][0],
+                )
+
+                if variable.value:
+                    sns.lineplot(
+                        x=[
+                            variable.value,
+                            variable.value,
+                        ],
+                        y=[0, s_mode],
+                        ax=ax[i][0],
+                        color="black",
+                        linewidth=4,
+                    )
+
             # Generate plots using df and summary df
             for i, var in list(zip([i for i in range(1, rows)], variable_names)):
                 # column 0: plot a histogram for each variable
                 sns.distplot(
                     df[var],
                     hist=True,
-                    kde=True,
-                    bins=int(180 / 5),
+                    kde=False,
+                    bins=80,
                     color="darkblue",
                     hist_kws={"edgecolor": "black"},
                     kde_kws={"linewidth": 4},
