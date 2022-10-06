@@ -152,7 +152,7 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
     variable_names = [
         f"{metadata['transform type']} {var['name']}" for var in metadata["variables"]
     ]
-    true_values = [var["true_value"] for var in metadata["variables"]]
+    true_values = [var["value"] for var in metadata["variables"]]
 
     priors = [
         eval(
@@ -246,7 +246,7 @@ def compare_chain_convergence(logs_dir_names):
             f"{metadata['transform type']} {var['name']}"
             for var in metadata["variables"]
         ]
-        true_values = [var["true_value"] for var in metadata["variables"]]
+        true_values = [var["value"] for var in metadata["variables"]]
         priors = [
             eval(
                 f"pints.{var['prior_type']}({list(var['prior'].values())[0]},/"
@@ -374,7 +374,7 @@ def pairwise(
     variable_names = [
         f"{metadata['transform type']} {var['name']}" for var in metadata["variables"]
     ]
-    true_values = [var["true_value"] for var in metadata["variables"]]
+    true_values = [var["value"] for var in metadata["variables"]]
     priors = [
         eval(
             f"pints.{v['prior_type']}({list(v['prior'].values())[0]},/"
@@ -549,7 +549,7 @@ def _plot_confidence_intervals_grid(
     ].values.flatten()
 
     # recover true values from metadata
-    true_values = [var["true_value"] for var in metadata["variables"]]
+    true_values = [var["value"] for var in metadata["variables"]]
 
     result = result[result.chi_sq < chi_sq_limit]
 
@@ -626,7 +626,7 @@ def _plot_confidence_intervals_bivariate(
     metadata = load_metadata(logs_dir_path=logs_dir_path)
 
     # recover true values from metadata
-    true_values = [var["true_value"] for var in metadata["variables"]]
+    true_values = [var["value"] for var in metadata["variables"]]
 
     result = result[result.chi_sq < chi_sq_limit]
 
