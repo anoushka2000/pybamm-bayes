@@ -8,3 +8,5 @@ scipy
 plotly
 ipython
 coverage
+seaborn
+tqdm
