@@ -5,7 +5,7 @@ import unittest
 import pints
 import pybamm
 from battery_model_parameterization import (
-    IdentifiabilityAnalysis,
+    MCMCIdentifiabilityAnalysis,
     Variable,
     marquis_2019,
 )
@@ -34,7 +34,7 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
             experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
         )
 
-        cls.identifiability_problem = IdentifiabilityAnalysis(
+        cls.identifiability_problem = MCMCIdentifiabilityAnalysis(
             battery_simulation=cls.simulation,
             parameter_values=cls.parameter_values,
             variables=cls.variables,

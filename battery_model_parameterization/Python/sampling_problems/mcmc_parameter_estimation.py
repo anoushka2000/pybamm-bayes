@@ -27,7 +27,8 @@ def _fmt_parameters(parameters):
 
 class ParameterEstimation(BaseSamplingProblem):
     """
-    Defines parameter estimations problem for a battery model.
+    Class for conducting parameter estimation on a battery model
+    using Markov Chain Monte Carlo (MCMC) methods.
 
     Parameters
     ----------

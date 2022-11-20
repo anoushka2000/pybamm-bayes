@@ -24,10 +24,11 @@ def _fmt_parameters(parameters):
     return {k: str(v) for k, v in parameters.items()}
 
 
-class IdentifiabilityAnalysis(BaseSamplingProblem):
+class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
     Class for conducting non-linear identifiability analysis on
-    battery simulation parameters.
+    battery simulation parameters using Markov Chain Monte Carlo (MCMC)
+    methods.
 
     Parameters
     ----------

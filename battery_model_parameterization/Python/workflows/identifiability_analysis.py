@@ -1,6 +1,6 @@
 import pints
 import pybamm
-from battery_model_parameterization import (IdentifiabilityAnalysis, Variable,
+from battery_model_parameterization import (MCMCIdentifiabilityAnalysis, Variable,
                                             marquis_2019)
 
 # define priors for variables being analysed
@@ -27,7 +27,7 @@ simulation = pybamm.Simulation(
     experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
 )
 
-identifiability_problem = IdentifiabilityAnalysis(
+identifiability_problem = MCMCIdentifiabilityAnalysis(
     battery_simulation=simulation,
     variables=variables,
     parameter_values=param,
