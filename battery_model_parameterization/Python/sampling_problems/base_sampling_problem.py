@@ -45,15 +45,16 @@ class BaseSamplingProblem(pints.ForwardModel):
     """
 
     def __init__(
-        self,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        transform_type: str,
-        project_tag: str = "",
+            self,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            transform_type: str,
+            project_tag: str = "",
     ):
 
         super().__init__()
+        self.method = None
         self.battery_simulation = battery_simulation
         self.parameter_values = parameter_values
         self.variables = variables
@@ -68,7 +69,7 @@ class BaseSamplingProblem(pints.ForwardModel):
 
     @property
     def transforms(self):
-        return {"log10": lambda x: 10**x}
+        return {"log10": lambda x: 10 ** x, "None": lambda x: x}
 
     @property
     def inverse_transform(self):
@@ -110,9 +111,15 @@ class BaseSamplingProblem(pints.ForwardModel):
         fig.subplots_adjust(hspace=0.9)
         fig.suptitle("Prior Distributions")
         for variable in self.variables:
-            n, bins, patches = axs[i].hist(
-                variable.prior.sample(7000), bins=80, alpha=0.6
-            )
+            if self.method == "BOLFI":
+                lower, range = variable.bounds[0], variable.bounds[1]-variable.bounds[0]
+                n, bins, patches = axs[i].hist(
+                    lower + variable.prior.distribution.rvs(size=7000,)*range, bins=80, alpha=0.6
+                )
+            else:
+                n, bins, patches = axs[i].hist(
+                    variable.prior.sample(7000), bins=80, alpha=0.6
+                )
 
             if variable.value:
                 axs[i].plot(

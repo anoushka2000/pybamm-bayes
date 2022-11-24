@@ -4,6 +4,7 @@
 from .Python.sampling_problems.base_sampling_problem import *
 from .Python.sampling_problems.mcmc_identifiability_analysis import *
 from .Python.sampling_problems.mcmc_parameter_estimation import *
+from .Python.sampling_problems.bolfi_identifiability_analysis import *
 from .Python.variable import Variable
 
 # Parameter Sets
