@@ -71,6 +71,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             project_tag=project_tag,
         )
 
+        self.method = "MCMC"
         self.generated_data = False
         self.true_values = np.array([v.value for v in self.variables])
         self.noise = noise
