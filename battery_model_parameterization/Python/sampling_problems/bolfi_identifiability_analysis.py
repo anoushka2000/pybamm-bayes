@@ -217,7 +217,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             update_interval: int = 10,
             acq_noise_var: float = 0.1,
             n_evidence: int = 1500,
-            sampling_iterations: int = 1000,
+            sampling_iterations: int = 10,
             n_chains=4,
 
     ):
@@ -249,13 +249,12 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             Sampling chains (shape: iteration, chains, parameters).
         """
         bounds = {var.name: var.bounds for var in self.variables}
-        print(bounds)
 
         model = elfi.ElfiModel()
 
         for var in self.variables:
 
-            elfi.Prior(distribution=var.prior.distribution, model=model, name=var.name)
+            elfi.Prior(var.prior.distribution.name, var.prior_loc, var.prior_scale, model=model, name=var.name)
 
         elfi.Simulator(self.simulate, *[model[var.name] for var in self.variables],
                        observed=self.data, name='elfi_simulator')
@@ -290,13 +289,14 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 "sampling_method": "BOLFI",
                 "min_discrepancy": opt_res,
                 "sample_means_and_95CIs": sampled_posterior.sample_means_and_95CIs,
+                "n_chains": n_chains
             }
         )
 
         chain_columns = [f"p{i}" for i in range(sampled_posterior.chains[0].shape[-1])]
         chain_idx = 0
         for chain in sampled_posterior.chains:
-            pd.DataFrame(chain, columns=chain_columns).to_csv(path_or_buf=f"chain_{chain_idx}.csv")
+            pd.DataFrame(chain, columns=chain_columns).to_csv(path_or_buf=os.path.join(self.logs_dir_path, f"chain_{chain_idx}.csv"))
             chain_idx += 1
 
         with open(
