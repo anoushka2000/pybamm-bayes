@@ -8,4 +8,6 @@ scipy
 plotly
 ipython
 coverage
+seaborn
+tqdm
 elfi~=0.8.4

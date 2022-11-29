@@ -6,8 +6,9 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import \
-    BaseSamplingProblem  # noqa: E501
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
+    BaseSamplingProblem,
+)
 from battery_model_parameterization.Python.variable import Variable
 
 
@@ -249,6 +250,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
         )
+
+        self.chains = chains
 
         #  evaluate optimal value for each parameter
         theta_optimal = np.array(

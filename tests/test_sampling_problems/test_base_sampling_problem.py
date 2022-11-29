@@ -57,6 +57,13 @@ class TestBaseSamplingProblem(unittest.TestCase):
         actual = os.path.join(self.sampling_problem.logs_dir_path, "prior.png")
         compare_images(expected, actual, tol=0.5)
 
+    def test_plot_results_summary(self):
+        self.sampling_problem.plot_results_summary()
+        file_exists = os.path.exists(
+            os.path.join(self.sampling_problem.logs_dir_path, "results_summary.png")
+        )
+        self.assertTrue(file_exists)
+
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.sampling_problem.logs_dir_path)

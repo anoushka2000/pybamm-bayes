@@ -3,9 +3,14 @@ from datetime import datetime
 from typing import List
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import pints
 import pints.plot
 import pybamm
+import seaborn as sns
+from scipy import stats
+import tqdm
 from battery_model_parameterization.Python.variable import Variable
 
 
@@ -22,7 +27,7 @@ def _fmt_parameters(parameters):
     return {k: str(v) for k, v in parameters.items()}
 
 
-class BaseSamplingProblem(pints.ForwardModel):
+class BaseSamplingProblem(pints.ForwardModelS1):
     """
     Base class for using MCMC sampling  of battery simulation parameters.
 
@@ -63,6 +68,7 @@ class BaseSamplingProblem(pints.ForwardModel):
         self.logs_dir_path = self.create_logs_dir()
         self.default_inputs = {v.name: v.value for v in self.variables}
         self.residuals = []
+        self.chains = pd.DataFrame()
 
         if not os.path.isdir(self.logs_dir_path):
             os.makedirs(self.logs_dir_path)
@@ -113,22 +119,36 @@ class BaseSamplingProblem(pints.ForwardModel):
         for variable in self.variables:
             if self.method == "BOLFI":
                 lower, range = variable.bounds[0], variable.bounds[1]-variable.bounds[0]
-                n, bins, patches = axs[i].hist(
-                    lower + variable.prior.distribution.rvs(size=7000,)*range, bins=80, alpha=0.6
-                )
+                sample = lower + variable.prior.distribution.rvs(size=7000,)*range
             else:
-                n, bins, patches = axs[i].hist(
-                    variable.prior.sample(7000), bins=80, alpha=0.6
-                )
+                sample = variable.prior.sample(7000)
+
+            s_mode = stats.binned_statistic(
+                x=sample, values=sample, statistic="count", bins=80
+            ).statistic.max()
+
+            sns.distplot(
+                sample,
+                hist=True,
+                kde=False,
+                bins=80,
+                color="darkblue",
+                hist_kws={"edgecolor": "black"},
+                ax=axs[i],
+            )
 
             if variable.value:
-                axs[i].plot(
-                    [
+                sns.lineplot(
+                    x=[
                         variable.value,
                         variable.value,
                     ],
-                    [0, max(n)],
+                    y=[0, s_mode],
+                    ax=axs[i],
+                    color="black",
+                    linewidth=4,
                 )
+
             axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
             i += 1
         plt.savefig(os.path.join(self.logs_dir_path, "prior"))
@@ -141,3 +161,109 @@ class BaseSamplingProblem(pints.ForwardModel):
         plt.xlabel("Time (s)")
         plt.ylabel("Voltage (V)")
         plt.savefig(os.path.join(self.logs_dir_path, "data"))
+
+    def plot_results_summary(self):
+
+        variable_names = [var.name for var in self.variables]
+
+        # Set up axis
+        rows = len(variable_names) + 1
+        fig, ax = plt.subplots(rows, 2, figsize=(8, rows * 3))
+
+        # Calculate summary from chains
+        posterior_distributions = [
+            np.random.normal(
+                loc=self.chains[column].mean(),
+                scale=self.chains[column].std(),
+                size=100,
+            )
+            for column in self.chains.columns
+        ]
+        results = []
+        summary = []
+
+        if len(posterior_distributions) > 1:
+            for i, input_set in tqdm.tqdm(enumerate(zip(*posterior_distributions))):
+                inputs = dict(zip(variable_names, input_set))
+                solution_V = self.simulate(theta=list(input_set), times=self.times)
+                summary.append(
+                    {
+                        **inputs,
+                        "Residual": abs(self.data - solution_V).sum() / len(solution_V),
+                    }
+                )
+
+                for t, V in zip(self.times, solution_V):
+                    results.append(
+                        {
+                            **inputs,
+                            "Time [s]": t,
+                            "Voltage [V]": V,
+                            "run": i,
+                        }
+                    )
+            df = pd.DataFrame(results)
+            df_summary = pd.DataFrame(summary)
+
+            # Add prior plots to column 0 (histograms)
+            for i, variable in list(zip([i for i in range(1, rows)], self.variables)):
+                sample = variable.prior.sample(7000).flatten()
+
+                s_mode = stats.binned_statistic(
+                    x=sample, values=sample, statistic="count", bins=80
+                ).statistic.max()
+                sns.distplot(
+                    sample,
+                    hist=True,
+                    kde=False,
+                    bins=80,
+                    color="grey",
+                    ax=ax[i][0],
+                )
+
+                if variable.value:
+                    sns.lineplot(
+                        x=[
+                            variable.value,
+                            variable.value,
+                        ],
+                        y=[0, s_mode],
+                        ax=ax[i][0],
+                        color="black",
+                        linewidth=4,
+                    )
+
+            # Generate plots using df and summary df
+            for i, var in list(zip([i for i in range(1, rows)], variable_names)):
+                # column 0: plot a histogram for each variable
+                sns.distplot(
+                    df[var],
+                    hist=True,
+                    kde=False,
+                    bins=80,
+                    color="darkblue",
+                    hist_kws={"edgecolor": "black"},
+                    kde_kws={"linewidth": 4},
+                    ax=ax[i][0],
+                )
+
+                # column 1: plot voltage colored by variable for each variable
+                sns.lineplot(
+                    data=df, x="Time [s]", y="Voltage [V]", hue=df[var], ax=ax[i][1]
+                )
+
+            sns.scatterplot(
+                data=df_summary,
+                x=variable_names[0],
+                y=variable_names[1],
+                hue="Residual",
+                ax=ax[0][1],
+            )
+
+            sns.lineplot(
+                data=df, x="Time [s]", y="Voltage [V]", errorbar=("sd", 1), ax=ax[0][0]
+            )
+            ax[0][0].set_ylabel("Voltage with one standard deviation")
+
+            fig.tight_layout()
+        plt.savefig(os.path.join(self.logs_dir_path, "results_summary"))

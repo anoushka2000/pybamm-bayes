@@ -1,8 +1,8 @@
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization import (ParameterEstimation, Variable,
-                                            chen_2020)
+
+from battery_model_parameterization import ParameterEstimation, Variable, chen_2020
 
 # define priors for variables being analysed
 log_prior_j0_n = pints.GaussianLogPrior(-5.5, 1)
@@ -44,3 +44,5 @@ estimation_problem.plot_priors()
 chains = estimation_problem.run(
     estimation_problem, burnin=1, n_iteration=5, n_chains=2, n_workers=3
 )
+
+estimation_problem.plot_results_summary()

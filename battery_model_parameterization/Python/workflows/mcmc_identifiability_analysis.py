@@ -39,3 +39,5 @@ identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
 chains = identifiability_problem.run(burnin=1, n_iteration=5, n_chains=2, n_workers=3)
+
+identifiability_problem.plot_results_summary()
