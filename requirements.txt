@@ -11,3 +11,4 @@ coverage
 seaborn
 tqdm
 elfi~=0.8.4
+jupyter
