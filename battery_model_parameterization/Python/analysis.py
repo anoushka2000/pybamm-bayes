@@ -5,6 +5,7 @@ import json
 import os
 import warnings
 
+import elfi  # noqa: F401
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
@@ -79,9 +80,12 @@ def load_chains(logs_dir_name=None, logs_dir_path=None, concat=True):
     for name in chain_file_names:
         df_list.append(pd.read_csv(name))
     if concat:
-        return pd.concat(df_list)
+        chains = pd.concat(df_list)
     else:
-        return df_list
+        chains = df_list
+    if "Unnamed: 0" in chains.columns:
+        chains.drop(columns="Unnamed: 0", inplace=True)
+    return chains
 
 
 def load_chains_with_residual(logs_dir_name=None, logs_dir_path=None):
@@ -149,18 +153,30 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
     metadata = load_metadata(logs_dir_path=logs_dir_path)
 
     # recover variable definition from metadata
+    if metadata["transform type"] == "None":
+        transfrom_type = " "
+    else:
+        transfrom_type = metadata["transform type"]
+
     variable_names = [
-        f"{metadata['transform type']} {var['name']}" for var in metadata["variables"]
+        f"{transfrom_type} {var['name']}" for var in metadata["variables"]
     ]
     true_values = [var["value"] for var in metadata["variables"]]
 
-    priors = [
-        eval(
-            f"pints.{v['prior_type']}({list(v['prior'].values())[0]},"
-            f"{list(v['prior'].values())[1]})"
-        )
-        for v in metadata["variables"]
-    ]
+    if metadata["sampling_method"] == "BOLFI":
+        priors = [
+            eval('elfi.Prior("' + v["prior_type"] + '", 0, 1)')
+            for v in metadata["variables"]
+        ]
+        bounds = [v["bounds"] for v in metadata["variables"]]
+    else:
+        priors = [
+            eval(
+                f"pints.{v['prior_type']}({list(v['prior'].values())[0]},/"
+                f"{list(v['prior'].values())[1]})"
+            )
+            for v in metadata["variables"]
+        ]
 
     # load chains
     chains = load_chains(logs_dir_path)
@@ -204,12 +220,25 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
             axes[i, 1].set_ylim([round(true_values[i] - 2), round(true_values[i] + 2)])
 
         # add prior histogram
-        axes[i, 0].hist(
-            priors[i].sample(int(len(chains) / n_chains)),
-            bins=xbins[:, i],
-            alpha=0.5,
-            color="black",
-        )
+        if metadata["sampling_method"] == "BOLFI":
+            lower, rng = bounds[i][0], bounds[i][1] - bounds[i][0]
+            axes[i, 0].hist(
+                lower
+                + priors[i].distribution.rvs(
+                    size=int(len(chains) / n_chains),
+                )
+                * rng,
+                bins=xbins[:, i],
+                alpha=0.5,
+                color="black",
+            )
+        else:
+            axes[i, 0].hist(
+                priors[i].sample(int(len(chains) / n_chains)),
+                bins=xbins[:, i],
+                alpha=0.5,
+                color="black",
+            )
 
         # plot true value on histogram
         axes[i, 0].plot([true_values[i], true_values[i]], [0.0, max_n], "--", c="k")
@@ -234,7 +263,6 @@ def compare_chain_convergence(logs_dir_names):
     line_styles = ["-", "--", "-.", ":"] * 10
 
     for i in range(len(logs_dir_names)):
-
         line_style = line_styles[i]
         color = color_list[i]
         logs_dir_name = logs_dir_names[i]
@@ -298,8 +326,7 @@ def compare_chain_convergence(logs_dir_names):
                 # add trace subplot
                 axes[i, 1].set_xlabel("Iteration")
                 axes[i, 1].set_ylabel(variable_names[i])
-                axes[i, 1].plot(samples_j[:, i],
-                                alpha=0.8, color=color)
+                axes[i, 1].plot(samples_j[:, i], alpha=0.8, color=color)
 
                 # set y limit for trace subplot
                 axes[i, 1].set_ylim(

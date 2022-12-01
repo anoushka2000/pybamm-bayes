@@ -7,8 +7,9 @@ import numpy as np
 import pandas as pd
 import pybamm
 
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import \
-    BaseSamplingProblem  # noqa: E501
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
+    BaseSamplingProblem,
+)
 from battery_model_parameterization.Python.variable import Variable
 
 
@@ -81,6 +82,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         self.true_values = np.array([v.value for v in self.variables])
         self.noise = noise
         self.target_resolution = target_resolution
+        self.sampled_posterior = None
 
         if battery_simulation.operating_mode == "without experiment":
             if times is None:
@@ -98,7 +100,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             battery_simulation.solve(inputs=inputs)
             self.times = battery_simulation.solution["Time [s]"].entries
 
-        data = self.simulate(self.true_values)
+        data = self.simulate(self.true_values).flatten()
         self.data = data + np.random.normal(0, self.noise, data.shape)
 
         for k, v in self.metadata.items():
@@ -147,6 +149,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             theta = [t[0] for t in theta]
 
         inputs = dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
+        print(inputs)
 
         try:
             # solve with CasadiSolver
@@ -198,12 +201,12 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
 
             self.residuals.append(ess)
         self.generated_data = True
-        return output
+        return output.flatten()
 
     def plot_pairwise(self):
-        plot = self.bolfi.plot_discrepancy()
+        plot = self.sampled_posterior.plot_pairs()
         fig = plot[0].get_figure()
-        fig.savefig(os.path.join(self.logs_dir_path, "discrepancy"))
+        fig.savefig(os.path.join(self.logs_dir_path, "pairwise_plot"))
 
     def plot_discrepancy(self):
         plot = self.bolfi.plot_discrepancy()
@@ -217,9 +220,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             update_interval: int = 10,
             acq_noise_var: float = 0.1,
             n_evidence: int = 1500,
-            sampling_iterations: int = 10,
+            sampling_iterations: int = 1000,
             n_chains=4,
-
     ):
         """
         Parameters
@@ -249,31 +251,58 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             Sampling chains (shape: iteration, chains, parameters).
         """
         bounds = {var.name: var.bounds for var in self.variables}
+        print(bounds)
 
         model = elfi.ElfiModel()
 
         for var in self.variables:
+            elfi.Prior(
+                var.prior.distribution.name,
+                var.prior_loc,
+                var.prior_scale,
+                model=model,
+                name=var.name,
+            )
 
-            elfi.Prior(var.prior.distribution.name, var.prior_loc, var.prior_scale, model=model, name=var.name)
-
-        elfi.Simulator(self.simulate, *[model[var.name] for var in self.variables],
-                       observed=self.data, name='elfi_simulator')
+        elfi.Simulator(
+            self.simulate,
+            *[model[var.name] for var in self.variables],
+            observed=self.data,
+            name="elfi_simulator",
+        )
         sumstats = []
         for i in range(0, len(self.data), self.target_resolution):
-            sumstats.append(elfi.Summary(lambda x: x[i], model['elfi_simulator'], name=f'point {i}'))
-        elfi.Distance('euclidean', *sumstats, name='euclidean_distance')
+            sumstats.append(
+                elfi.Summary(lambda x: x[i], model["elfi_simulator"], name=f"point {i}")
+            )
+        elfi.Distance("euclidean", *sumstats, name="euclidean_distance")
 
-        self.bolfi = elfi.BOLFI(elfi.Operation(np.log, model['euclidean_distance']),
-                                batch_size=batch_size,
-                                initial_evidence=initial_evidence,
-                                update_interval=update_interval,
-                                acq_noise_var=acq_noise_var,
-                                bounds=bounds)
+        # save model schematic to logs
+        drawing = elfi.draw(model)
+        drawing.format = "png"
+        drawing.render(directory=self.logs_dir_path)
+
+        self.bolfi = elfi.BOLFI(
+            elfi.Operation(np.log, model["euclidean_distance"]),
+            batch_size=batch_size,
+            initial_evidence=initial_evidence,
+            update_interval=update_interval,
+            acq_noise_var=acq_noise_var,
+            bounds=bounds,
+        )
+
         # Fit the surrogate model
-        # (a Gaussian Process regression model for the discrepancy given the parameters.)
-        posterior_surrogate = self.bolfi.fit(n_evidence=n_evidence)
-        opt_res = {param: value[0] for param, value in self.bolfi.extract_result().x_min.items()}
-        sampled_posterior = self.bolfi.sample(sampling_iterations, info_freq=sampling_iterations // 10, n_chains=n_chains)
+        # (Gaussian Process regression model for discrepancy given parameters.)
+        self.bolfi.fit(n_evidence=n_evidence)
+        opt_res = {
+            param: value[0]
+            for param, value in self.bolfi.extract_result().x_min.items()
+        }
+        self.plot_discrepancy()
+
+        self.sampled_posterior = self.bolfi.sample(
+            sampling_iterations, info_freq=sampling_iterations // 10, n_chains=n_chains
+        )
 
         with open(
                 os.path.join(self.logs_dir_path, "metadata.json"),
@@ -288,15 +317,25 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 "acq_noise_var": acq_noise_var,
                 "sampling_method": "BOLFI",
                 "min_discrepancy": opt_res,
-                "sample_means_and_95CIs": sampled_posterior.sample_means_and_95CIs,
-                "n_chains": n_chains
+                "sample_means_and_95CIs": self.sampled_posterior.sample_means_and_95CIs,
+                "n_chains": n_chains,
             }
         )
 
-        chain_columns = [f"p{i}" for i in range(sampled_posterior.chains[0].shape[-1])]
+        chain_columns = [
+            f"p{i}" for i in range(self.sampled_posterior.chains[0].shape[-1])
+        ]
         chain_idx = 0
-        for chain in sampled_posterior.chains:
-            pd.DataFrame(chain, columns=chain_columns).to_csv(path_or_buf=os.path.join(self.logs_dir_path, f"chain_{chain_idx}.csv"))
+
+        chain_df_list = []
+
+        for chain in self.sampled_posterior.chains:
+            df = pd.DataFrame(chain, columns=chain_columns)
+            df.to_csv(
+                path_or_buf=os.path.join(self.logs_dir_path, f"chain_{chain_idx}.csv"),
+                index=False,
+            )
+            chain_df_list.append(df)
             chain_idx += 1
 
         with open(
@@ -304,5 +343,5 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 "w",
         ) as outfile:
             json.dump(metadata, outfile)
-
-        return sampled_posterior.chains
+        self.chains = pd.concat(chain_df_list)
+        return self.chains

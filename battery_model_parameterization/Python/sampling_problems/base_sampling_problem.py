@@ -50,12 +50,12 @@ class BaseSamplingProblem(pints.ForwardModelS1):
     """
 
     def __init__(
-            self,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            transform_type: str,
-            project_tag: str = "",
+        self,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        transform_type: str,
+        project_tag: str = "",
     ):
 
         super().__init__()
@@ -75,7 +75,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
 
     @property
     def transforms(self):
-        return {"log10": lambda x: 10 ** x, "None": lambda x: x}
+        return {"log10": lambda x: 10**x, "None": lambda x: x}
 
     @property
     def inverse_transform(self):
@@ -118,10 +118,20 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         fig.suptitle("Prior Distributions")
         for variable in self.variables:
             if self.method == "BOLFI":
-                lower, range = variable.bounds[0], variable.bounds[1]-variable.bounds[0]
-                sample = lower + variable.prior.distribution.rvs(size=7000,)*range
+                lower, range = (
+                    variable.bounds[0],
+                    variable.bounds[1] - variable.bounds[0],
+                )
+                sample = (
+                    lower
+                    + variable.prior.distribution.rvs(
+                        size=7000,
+                    )
+                    * range
+                )
             else:
-                sample = variable.prior.sample(7000)
+                sample = variable.prior.sample(7000).flatten()
+                # print(sample.shape)
 
             s_mode = stats.binned_statistic(
                 x=sample, values=sample, statistic="count", bins=80
@@ -185,7 +195,10 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         if len(posterior_distributions) > 1:
             for i, input_set in tqdm.tqdm(enumerate(zip(*posterior_distributions))):
                 inputs = dict(zip(variable_names, input_set))
-                solution_V = self.simulate(theta=list(input_set), times=self.times)
+                if self.method == "BOLFI":
+                    solution_V = self.simulate(*list(input_set))
+                else:
+                    solution_V = self.simulate(theta=list(input_set), times=self.times)
                 summary.append(
                     {
                         **inputs,
@@ -212,6 +225,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                 s_mode = stats.binned_statistic(
                     x=sample, values=sample, statistic="count", bins=80
                 ).statistic.max()
+                print(f"smode {s_mode}")
                 sns.distplot(
                     sample,
                     hist=True,

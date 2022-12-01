@@ -1,7 +1,10 @@
 import pints
 import pybamm
-from battery_model_parameterization import (MCMCIdentifiabilityAnalysis, Variable,
-                                            marquis_2019)
+from battery_model_parameterization import (
+    MCMCIdentifiabilityAnalysis,
+    Variable,
+    marquis_2019,
+)
 
 # define priors for variables being analysed
 log_prior_j0_n = pints.GaussianLogPrior(-5.5, 1)
@@ -33,11 +36,13 @@ identifiability_problem = MCMCIdentifiabilityAnalysis(
     parameter_values=param,
     transform_type="log10",
     noise=0.005,
-    project_tag="example",
+    project_tag="PopulationMCMC",
 )
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
-chains = identifiability_problem.run(burnin=1, n_iteration=5, n_chains=2, n_workers=3)
+chains = identifiability_problem.run(
+    burnin=1, n_iteration=5, n_chains=2, n_workers=3, sampling_method="PopulationMCMC"
+)
 
 identifiability_problem.plot_results_summary()

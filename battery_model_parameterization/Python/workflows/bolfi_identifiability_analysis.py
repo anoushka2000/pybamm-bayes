@@ -1,11 +1,11 @@
 import elfi
 import pybamm
 
-from battery_model_parameterization import (BOLFIIdentifiabilityAnalysis, Variable)
+from battery_model_parameterization import BOLFIIdentifiabilityAnalysis, Variable
 
 # define priors for variables being analysed
-prior_Ds_n = elfi.Prior("uniform", 0.1, 10, name='Ds_n')
-prior_Ds_p = elfi.Prior("uniform", 0.1, 10, name='Ds_p')
+prior_Ds_n = elfi.Prior("uniform", 0.1, 10, name="Ds_n")
+prior_Ds_p = elfi.Prior("uniform", 0.1, 10, name="Ds_p")
 
 # create a `Variable` object for each variables being analysed
 # the `value` here is the 'ground truth' used to create synthetic data
@@ -36,7 +36,9 @@ def graphite_mcmb2528_diffusivity_Dualfoil1998(sto, T):
         Solid diffusivity
     """
 
-    D_ref = 1e-14 * pybamm.InputParameter("Ds_n")  # default = 3.9 * 10 ** (-14) "Ds_p")  # default = 1 * 10 ** (-13)
+    D_ref = 1e-14 * pybamm.InputParameter(
+        "Ds_n"
+    )  # default = 3.9 * 10 ** (-14) "Ds_p")  # default = 1 * 10 ** (-13)
     E_D_s = 42770
     arrhenius = pybamm.exp(E_D_s / pybamm.constants.R * (1 / 298.15 - 1 / T))
 
@@ -69,16 +71,16 @@ def lico2_diffusivity_Dualfoil1998(sto, T):
 
 
 model = pybamm.lithium_ion.SPMe()
-model.convert_to_format = "python"
 param = pybamm.ParameterValues("Marquis2019")
-param["Negative electrode diffusivity [m2.s-1]"] = graphite_mcmb2528_diffusivity_Dualfoil1998
+param[
+    "Negative electrode diffusivity [m2.s-1]"
+] = graphite_mcmb2528_diffusivity_Dualfoil1998
 param["Positive electrode diffusivity [m2.s-1]"] = lico2_diffusivity_Dualfoil1998
 
 simulation = pybamm.Simulation(
     model,
     parameter_values=param,
     experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
-    solver=pybamm.CasadiSolver("fast"),
 )
 
 identifiability_problem = BOLFIIdentifiabilityAnalysis(
@@ -86,11 +88,12 @@ identifiability_problem = BOLFIIdentifiabilityAnalysis(
     variables=variables,
     parameter_values=param,
     transform_type="None",
-    noise=0.005,
+    noise=0.001,
     target_resolution=30,
     project_tag="bolfi_example",
 )
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
-chains = identifiability_problem.run()
+chains = identifiability_problem.run(sampling_iterations=500)
+identifiability_problem.plot_results_summary()
