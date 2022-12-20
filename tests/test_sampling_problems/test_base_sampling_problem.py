@@ -24,7 +24,7 @@ class TestBaseSamplingProblem(unittest.TestCase):
         cls.variables = [Dsn, j0_n]
 
         # setup battery simulation
-        model = pybamm.lithium_ion.DFN()
+        model = pybamm.lithium_ion.SPMe()
         cls.parameter_values = marquis_2019(cls.variables)
         cls.simulation = pybamm.Simulation(
             model,
@@ -39,6 +39,7 @@ class TestBaseSamplingProblem(unittest.TestCase):
             transform_type="log10",
             project_tag="test",
         )
+        cls.test_data = pd.read_csv(os.path.join(here, "test_data.csv"))
 
     def test_create_logs_dir(self):
         self.assertTrue(os.path.exists(self.sampling_problem.logs_dir_path))
@@ -57,14 +58,6 @@ class TestBaseSamplingProblem(unittest.TestCase):
         self.sampling_problem.plot_priors()
         actual = os.path.join(self.sampling_problem.logs_dir_path, "prior.png")
         compare_images(expected, actual, tol=0.5)
-
-    def test_plot_results_summary(self):
-        self.sampling_problem.chains = pd.read_csv("test_chain.csv")
-        self.sampling_problem.plot_results_summary()
-        file_exists = os.path.exists(
-            os.path.join(self.sampling_problem.logs_dir_path, "results_summary.png")
-        )
-        self.assertTrue(file_exists)
 
     @classmethod
     def tearDownClass(cls):

@@ -20,20 +20,18 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
     def setUpClass(cls):
         # setup variables
 
-        prior_Ds_n = elfi.Prior("uniform", -12, -10, name="Ds_n")
-        prior_Ds_p = elfi.Prior("uniform", -12, -10, name="Ds_p")
+        prior_j0_n = elfi.Prior("norm", 5.5, 0.5, name="j0_n")
+        prior_j0_p = elfi.Prior("norm", 6.5, 0.5, name="j0_p")
+        j0_n = Variable(name="j0_n", value=4.698, prior=prior_j0_n, bounds=(4, 6))
+        j0_p = Variable(name="j0_p", value=6.22, prior=prior_j0_p, bounds=(5, 7))
 
-        Ds_n = Variable(name="Ds_n", value=-11, prior=prior_Ds_n, bounds=(-12, -10))
-        Ds_p = Variable(name="Ds_p", value=-11, prior=prior_Ds_p, bounds=(-12, -10))
-
-        cls.variables = [Ds_n, Ds_p]
+        cls.variables = [j0_n, j0_p]
 
         # setup battery simulation
         model = pybamm.lithium_ion.SPMe()
         cls.parameter_values = marquis_2019(cls.variables)
         cls.simulation = pybamm.Simulation(
             model,
-            solver=pybamm.CasadiSolver("fast"),
             experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
         )
 
@@ -41,8 +39,8 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             battery_simulation=cls.simulation,
             parameter_values=cls.parameter_values,
             variables=cls.variables,
-            transform_type="log10",
-            noise=0.005,
+            transform_type="negated_log10",
+            noise=0.001,
             target_resolution=30,
             project_tag="test",
         )
@@ -72,11 +70,13 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         self.assertFalse(output is None)
 
     def test_run(self):
-        n_iteration = 5
-        n_chains = 3
+        n_iteration = 50
+        n_chains = 4
+        n_evidence = 1500
 
         chains = self.identifiability_problem.run(
-            sampling_iterations=n_iteration, n_chains=n_chains
+            sampling_iterations=n_iteration, n_chains=n_chains,
+            n_evidence=n_evidence,
         )
 
         self.assertEqual(len(chains.columns), len(self.variables))

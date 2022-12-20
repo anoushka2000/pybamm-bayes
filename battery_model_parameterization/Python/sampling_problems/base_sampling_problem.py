@@ -162,7 +162,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         plt.ylabel("Voltage (V)")
         plt.savefig(os.path.join(self.logs_dir_path, "data"))
 
-    def plot_results_summary(self):
+    def plot_results_summary(self, forward_evaluations=7000):
 
         variable_names = [var.name for var in self.variables]
 
@@ -175,7 +175,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             b=(self.chains.max() - loc) / scale,
             loc=loc,
             scale=scale,
-        ).rvs(size=(7000, len(variable_names)))
+        ).rvs(size=(forward_evaluations, len(variable_names)))
 
         results = []
         summary = []
