@@ -1,11 +1,13 @@
 import json
 import os
 from typing import List, Optional
-
+import time
 import elfi
 import numpy as np
 import pandas as pd
 import pybamm
+import elfi.visualization.interactive as visin
+import matplotlib.pyplot as plt
 
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
@@ -103,12 +105,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         data = self.simulate(self.true_values).flatten()
         self.data = data + np.random.normal(0, self.noise, data.shape)
 
-        for k, v in self.metadata.items():
-            print(k)
-            print(type(v))
-
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
-            print(self.metadata.items())
             outfile.write(json.dumps(self.metadata))
 
     @property
@@ -149,7 +146,6 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             theta = [t[0] for t in theta]
 
         inputs = dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
-        print(inputs)
 
         try:
             # solve with CasadiSolver
@@ -213,6 +209,42 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         fig = plot[0].get_figure()
         fig.savefig(os.path.join(self.logs_dir_path, "discrepancy"))
 
+    def plot_acquistion_surface(self):
+        f, _ = plt.subplots(1, 2, figsize=(
+            13, 6), sharex='row', sharey='row')
+
+        gp = self.bolfi.target_model
+
+        # Draw the GP surface
+        visin.draw_contour(
+            gp.predict_mean,
+            gp.bounds,
+            self.bolfi.target_model.parameter_names,
+            title='GP target surface',
+            points=gp.X,
+            axes=f.axes[0],)
+
+        displays = [gp.instance]
+
+        # Update
+        visin._update_interactive(displays, options={})
+
+        acq_index = self.bolfi._get_acquisition_index(self.bolfi.state['n_batches'])
+
+        def acq(x):
+            return self.bolfi.acquisition_method.evaluate(x, acq_index)
+
+        # Draw the acquisition surface
+        visin.draw_contour(
+            acq,
+            gp.bounds,
+            self.bolfi.target_model.parameter_names,
+            title='Acquisition surface',
+            points=None,
+            axes=f.axes[1],)
+
+        f.savefig(os.path.join(self.logs_dir_path, "acquisition_surface"))
+
     def run(
             self,
             batch_size: int = 1,
@@ -250,8 +282,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         chains: np.ndarray
             Sampling chains (shape: iteration, chains, parameters).
         """
+
         bounds = {var.name: var.bounds for var in self.variables}
-        print(bounds)
 
         model = elfi.ElfiModel()
 
@@ -293,16 +325,20 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
 
         # Fit the surrogate model
         # (Gaussian Process regression model for discrepancy given parameters.)
+        training_start_time = time.time()
         self.bolfi.fit(n_evidence=n_evidence)
+        training_end_time = time.time()
         opt_res = {
             param: value[0]
             for param, value in self.bolfi.extract_result().x_min.items()
         }
         self.plot_discrepancy()
 
+        sampling_start_time = time.time()
         self.sampled_posterior = self.bolfi.sample(
-            sampling_iterations, info_freq=sampling_iterations // 10, n_chains=n_chains
+            sampling_iterations, n_chains=n_chains
         )
+        sampling_end_time = time.time()
 
         with open(
                 os.path.join(self.logs_dir_path, "metadata.json"),
@@ -313,6 +349,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         metadata.update(
             {
                 "initial_evidence": initial_evidence,
+                "training_time": training_start_time-training_end_time,
+                "sampling_time": sampling_start_time-sampling_end_time,
                 "update_interval": update_interval,
                 "acq_noise_var": acq_noise_var,
                 "sampling_method": "BOLFI",

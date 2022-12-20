@@ -39,7 +39,7 @@ class Variable:
             if prior_loc:
                 self.prior_loc = prior_loc
             elif prior.distribution.name == "norm":
-                self.prior_loc = (bounds[1] - bounds[0]) / 2  # mean is center of bounds
+                self.prior_loc = (bounds[1] + bounds[0]) / 2  # mean is center of bounds
             elif prior.distribution.name == "uniform":
                 self.prior_loc = bounds[
                     0
@@ -59,9 +59,9 @@ class Variable:
                         abs(bounds[1] - self.prior_loc) / 5
                 )  # 5 standard deviations fall within bounds
             elif prior.distribution.name == "uniform":
-                self.prior_scale = bounds[
+                self.prior_scale = abs(bounds[
                     1
-                ]  # loc for uniform distribution is upper bound
+                ])  # loc for uniform distribution is upper bound
             else:
                 raise ValueError(
                     "'prior_scale' argument must be provided for \
