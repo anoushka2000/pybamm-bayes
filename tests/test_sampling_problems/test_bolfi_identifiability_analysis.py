@@ -84,4 +84,6 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(TestBOLFIIdentifiabilityAnalysis.identifiability_problem.logs_dir_path)
+        shutil.rmtree(
+            TestBOLFIIdentifiabilityAnalysis.identifiability_problem.logs_dir_path
+        )
