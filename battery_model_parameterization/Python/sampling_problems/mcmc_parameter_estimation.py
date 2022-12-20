@@ -6,8 +6,9 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import \
-    BaseSamplingProblem  # noqa: E501
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
+    BaseSamplingProblem,
+)
 from battery_model_parameterization.Python.variable import Variable
 from scipy.interpolate import interp1d
 
@@ -50,13 +51,13 @@ class ParameterEstimation(BaseSamplingProblem):
     """
 
     def __init__(
-        self,
-        data: pd.DataFrame,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        transform_type: str,
-        project_tag: str = "",
+            self,
+            data: pd.DataFrame,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            transform_type: str,
+            project_tag: str = "",
     ):
 
         super().__init__(
@@ -88,7 +89,7 @@ class ParameterEstimation(BaseSamplingProblem):
             )
 
         if not np.array_equal(
-            self.battery_simulation.solution["Time [s]"].entries, self.times
+                self.battery_simulation.solution["Time [s]"].entries, self.times
         ):
             # if simulation did not solve at times in data
             # (e.g. for experiments)
@@ -178,12 +179,12 @@ class ParameterEstimation(BaseSamplingProblem):
         return output
 
     def run(
-        self,
-        burnin: int = 0,
-        n_iteration: int = 2000,
-        n_chains: int = 12,
-        n_workers: int = 4,
-        sampling_method: str = "MetropolisRandomWalkMCMC",
+            self,
+            burnin: int = 0,
+            n_iteration: int = 2000,
+            n_chains: int = 12,
+            n_workers: int = 4,
+            sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -268,8 +269,8 @@ class ParameterEstimation(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "r",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -285,8 +286,8 @@ class ParameterEstimation(BaseSamplingProblem):
         )
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "w",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "w",
         ) as outfile:
             json.dump(metadata, outfile)
 

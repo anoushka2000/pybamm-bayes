@@ -49,12 +49,12 @@ class BaseSamplingProblem(pints.ForwardModelS1):
     """
 
     def __init__(
-            self,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            transform_type: str,
-            project_tag: str = "",
+        self,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        transform_type: str,
+        project_tag: str = "",
     ):
 
         super().__init__()
@@ -126,11 +126,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     variable.bounds[1] - variable.bounds[0],
                 )
                 sample = (
-                        lower
-                        + variable.prior.distribution.rvs(
+                    lower
+                    + variable.prior.distribution.rvs(
                         size=7000,
-                )
-                        * rng
+                    )
+                    * rng
                 )
             else:
                 sample = variable.prior.sample(7000).flatten()
@@ -241,11 +241,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                         variable.bounds[1] - variable.bounds[0],
                     )
                     sample = (
-                            lower
-                            + variable.prior.distribution.rvs(
+                        lower
+                        + variable.prior.distribution.rvs(
                             size=7000,
-                    )
-                            * rng
+                        )
+                        * rng
                     )
                 else:
                     sample = variable.prior.sample(7000).flatten()
