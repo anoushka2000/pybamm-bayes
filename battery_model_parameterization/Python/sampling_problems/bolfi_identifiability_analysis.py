@@ -1,17 +1,16 @@
 import json
 import os
-from typing import List, Optional
 import time
+from typing import List, Optional
+
 import elfi
+import elfi.visualization.interactive as visin
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pybamm
-import elfi.visualization.interactive as visin
-import matplotlib.pyplot as plt
-
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
-    BaseSamplingProblem,
-)
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import \
+    BaseSamplingProblem  # noqa: E501
 from battery_model_parameterization.Python.variable import Variable
 
 
@@ -60,15 +59,15 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
     """
 
     def __init__(
-            self,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            transform_type: str,
-            noise: float,
-            target_resolution: int = 30,
-            times: Optional[np.ndarray] = None,
-            project_tag: str = "",
+        self,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        transform_type: str,
+        noise: float,
+        target_resolution: int = 30,
+        times: Optional[np.ndarray] = None,
+        project_tag: str = "",
     ):
 
         super().__init__(
@@ -210,8 +209,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         fig.savefig(os.path.join(self.logs_dir_path, "discrepancy"))
 
     def plot_acquistion_surface(self):
-        f, _ = plt.subplots(1, 2, figsize=(
-            13, 6), sharex='row', sharey='row')
+        f, _ = plt.subplots(1, 2, figsize=(13, 6), sharex="row", sharey="row")
 
         gp = self.bolfi.target_model
 
@@ -220,16 +218,17 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             gp.predict_mean,
             gp.bounds,
             self.bolfi.target_model.parameter_names,
-            title='GP target surface',
+            title="GP target surface",
             points=gp.X,
-            axes=f.axes[0],)
+            axes=f.axes[0],
+        )
 
         displays = [gp.instance]
 
         # Update
         visin._update_interactive(displays, options={})
 
-        acq_index = self.bolfi._get_acquisition_index(self.bolfi.state['n_batches'])
+        acq_index = self.bolfi._get_acquisition_index(self.bolfi.state["n_batches"])
 
         def acq(x):
             return self.bolfi.acquisition_method.evaluate(x, acq_index)
@@ -239,21 +238,22 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             acq,
             gp.bounds,
             self.bolfi.target_model.parameter_names,
-            title='Acquisition surface',
+            title="Acquisition surface",
             points=None,
-            axes=f.axes[1],)
+            axes=f.axes[1],
+        )
 
         f.savefig(os.path.join(self.logs_dir_path, "acquisition_surface"))
 
     def run(
-            self,
-            batch_size: int = 1,
-            initial_evidence: int = 50,
-            update_interval: int = 10,
-            acq_noise_var: float = 0.1,
-            n_evidence: int = 1500,
-            sampling_iterations: int = 1000,
-            n_chains=4,
+        self,
+        batch_size: int = 1,
+        initial_evidence: int = 50,
+        update_interval: int = 10,
+        acq_noise_var: float = 0.1,
+        n_evidence: int = 1500,
+        sampling_iterations: int = 1000,
+        n_chains=4,
     ):
         """
         Parameters
@@ -341,16 +341,16 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         sampling_end_time = time.time()
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "r",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "r",
         ) as outfile:
             metadata = json.load(outfile)
 
         metadata.update(
             {
                 "initial_evidence": initial_evidence,
-                "training_time": training_start_time-training_end_time,
-                "sampling_time": sampling_start_time-sampling_end_time,
+                "training_time": training_start_time - training_end_time,
+                "sampling_time": sampling_start_time - sampling_end_time,
                 "update_interval": update_interval,
                 "acq_noise_var": acq_noise_var,
                 "sampling_method": "BOLFI",
@@ -377,8 +377,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             chain_idx += 1
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "w",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "w",
         ) as outfile:
             json.dump(metadata, outfile)
         self.chains = pd.concat(chain_df_list)

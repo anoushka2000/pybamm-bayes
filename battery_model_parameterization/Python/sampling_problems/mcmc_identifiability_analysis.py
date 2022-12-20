@@ -6,9 +6,8 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
-    BaseSamplingProblem,
-)
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import \
+    BaseSamplingProblem  # noqa: E501
 from battery_model_parameterization.Python.variable import Variable
 
 
@@ -54,14 +53,14 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
 
     def __init__(
-            self,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            transform_type: str,
-            noise: float,
-            times: Optional[np.ndarray] = None,
-            project_tag: str = "",
+        self,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        transform_type: str,
+        noise: float,
+        times: Optional[np.ndarray] = None,
+        project_tag: str = "",
     ):
 
         super().__init__(
@@ -183,12 +182,12 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         return output
 
     def run(
-            self,
-            burnin: int = 0,
-            n_iteration: int = 2000,
-            n_chains: int = 12,
-            n_workers: int = 4,
-            sampling_method: str = "MetropolisRandomWalkMCMC",
+        self,
+        burnin: int = 0,
+        n_iteration: int = 2000,
+        n_chains: int = 12,
+        n_workers: int = 4,
+        sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -246,8 +245,11 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         print("Running...")
         chains = mcmc.run()
         print("Done!")
-        summary_stats = pints.MCMCSummary(chains=chains, time=mcmc.time(),
-                                          parameter_names=[v.name for v in self.variables])
+        summary_stats = pints.MCMCSummary(
+            chains=chains,
+            time=mcmc.time(),
+            parameter_names=[v.name for v in self.variables],
+        )
 
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
@@ -273,8 +275,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "r",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -291,13 +293,13 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 "mean": summary_stats.mean().tolist(),
                 "std": summary_stats.std().tolist(),
                 "rhat": summary_stats.rhat().tolist(),
-                "time": summary_stats.time()
+                "time": summary_stats.time(),
             }
         )
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "w",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "w",
         ) as outfile:
             json.dump(metadata, outfile)
 

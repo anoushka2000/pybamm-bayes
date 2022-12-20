@@ -1,7 +1,7 @@
 import elfi
 import pybamm
-
-from battery_model_parameterization import BOLFIIdentifiabilityAnalysis, Variable
+from battery_model_parameterization import (BOLFIIdentifiabilityAnalysis,
+                                            Variable)
 
 # define priors for variables being analysed
 prior_Ds_n = elfi.Prior("uniform", 0.1, 10, name="Ds_n")

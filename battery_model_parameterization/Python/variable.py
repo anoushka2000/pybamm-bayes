@@ -29,7 +29,7 @@ class Variable:
     """
 
     def __init__(
-            self, name, value, prior, bounds=None, prior_loc=None, prior_scale=None
+        self, name, value, prior, bounds=None, prior_loc=None, prior_scale=None
     ):
         self.name = name
         self.value = value
@@ -56,12 +56,12 @@ class Variable:
                 self.prior_scale = prior_scale
             elif prior.distribution.name == "norm":
                 self.prior_scale = (
-                        abs(bounds[1] - self.prior_loc) / 5
+                    abs(bounds[1] - self.prior_loc) / 5
                 )  # 5 standard deviations fall within bounds
             elif prior.distribution.name == "uniform":
-                self.prior_scale = abs(bounds[
-                    1
-                ])  # loc for uniform distribution is upper bound
+                self.prior_scale = abs(
+                    bounds[1]
+                )  # loc for uniform distribution is upper bound
             else:
                 raise ValueError(
                     "'prior_scale' argument must be provided for \

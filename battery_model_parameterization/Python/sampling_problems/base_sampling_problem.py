@@ -3,15 +3,14 @@ from datetime import datetime
 from typing import List
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import pints
 import pints.plot
 import pybamm
 import seaborn as sns
-from scipy import stats
 import tqdm
 from battery_model_parameterization.Python.variable import Variable
+from scipy import stats
 
 
 def _fmt_variables(variables):
@@ -50,12 +49,12 @@ class BaseSamplingProblem(pints.ForwardModelS1):
     """
 
     def __init__(
-            self,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            transform_type: str,
-            project_tag: str = "",
+        self,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        transform_type: str,
+        project_tag: str = "",
     ):
 
         super().__init__()
@@ -75,8 +74,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
 
     @property
     def transforms(self):
-        return {"log10": lambda x: 10 ** float(x), "None": lambda x: x,
-                "negated_log10": lambda x: 10 ** float(-x)}
+        return {
+            "log10": lambda x: 10 ** float(x),
+            "None": lambda x: x,
+            "negated_log10": lambda x: 10 ** float(-x),
+        }
 
     @property
     def inverse_transform(self):
@@ -124,11 +126,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     variable.bounds[1] - variable.bounds[0],
                 )
                 sample = (
-                        lower
-                        + variable.prior.distribution.rvs(
-                    size=7000,
-                )
-                        * rng
+                    lower
+                    + variable.prior.distribution.rvs(
+                        size=7000,
+                    )
+                    * rng
                 )
             else:
                 sample = variable.prior.sample(7000).flatten()
@@ -143,7 +145,9 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             )
 
             if variable.value:
-                axs[i].axvline(x=variable.value, ymax=0.7, color="darkblue", ls="--", lw=1)
+                axs[i].axvline(
+                    x=variable.value, ymax=0.7, color="darkblue", ls="--", lw=1
+                )
 
             axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
             i += 1
@@ -166,10 +170,12 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         loc = self.chains.mean()
         scale = self.chains.std()
         # Fit a truncated normal distribution to chains
-        posterior_samples = stats.truncnorm(a=(self.chains.min() - loc) / scale,
-                                            b=(self.chains.max() - loc) / scale,
-                                            loc=loc,
-                                            scale=scale).rvs(size=(7000, len(variable_names)))
+        posterior_samples = stats.truncnorm(
+            a=(self.chains.min() - loc) / scale,
+            b=(self.chains.max() - loc) / scale,
+            loc=loc,
+            scale=scale,
+        ).rvs(size=(7000, len(variable_names)))
 
         results = []
         summary = []
@@ -201,21 +207,23 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             df = pd.DataFrame(results)
             df_summary = pd.DataFrame(summary)
             # used to generate color bar for residual plot
-            residual_plot = plt.scatter(df_summary[variable_names[0]],
-                                        df_summary[variable_names[1]],
-                                        c=df_summary.Residual,
-                                        cmap=sns.cubehelix_palette(as_cmap=True)
-                                        )
+            residual_plot = plt.scatter(
+                df_summary[variable_names[0]],
+                df_summary[variable_names[1]],
+                c=df_summary.Residual,
+                cmap=sns.cubehelix_palette(as_cmap=True),
+            )
             plt.clf()
 
             voltage_scratch_plots = []
 
             for var in variable_names:
-                plot = plt.scatter(df["Time [s]"],
-                                   df["Voltage [V]"],
-                                   c=df[var],
-                                   cmap=sns.cubehelix_palette(as_cmap=True)
-                                   )
+                plot = plt.scatter(
+                    df["Time [s]"],
+                    df["Voltage [V]"],
+                    c=df[var],
+                    cmap=sns.cubehelix_palette(as_cmap=True),
+                )
 
                 voltage_scratch_plots.append(plot)
                 plt.clf()
@@ -233,11 +241,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                         variable.bounds[1] - variable.bounds[0],
                     )
                     sample = (
-                            lower
-                            + variable.prior.distribution.rvs(
-                        size=7000,
-                    )
-                            * rng
+                        lower
+                        + variable.prior.distribution.rvs(
+                            size=7000,
+                        )
+                        * rng
                     )
                 else:
                     sample = variable.prior.sample(7000).flatten()
@@ -253,7 +261,9 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                 )
 
                 if variable.value:
-                    ax[i][0].axvline(x=variable.value, ymax=0.7, color="darkblue", ls="--", lw=1)
+                    ax[i][0].axvline(
+                        x=variable.value, ymax=0.7, color="darkblue", ls="--", lw=1
+                    )
 
             # Generate plots using df and summary df
             for i, var in list(zip([i for i in range(1, rows)], variable_names)):
@@ -269,10 +279,15 @@ class BaseSamplingProblem(pints.ForwardModelS1):
 
                 # column 1: plot voltage colored by variable for each variable
                 sns.lineplot(
-                    data=df, x="Time [s]", y="Voltage [V]", hue=df[var], ax=ax[i][1], palette=sns.cubehelix_palette(as_cmap=True),
+                    data=df,
+                    x="Time [s]",
+                    y="Voltage [V]",
+                    hue=df[var],
+                    ax=ax[i][1],
+                    palette=sns.cubehelix_palette(as_cmap=True),
                 )
                 # add color bar
-                plt.colorbar(voltage_scratch_plots[i-1], ax=ax[i][1], label=var)
+                plt.colorbar(voltage_scratch_plots[i - 1], ax=ax[i][1], label=var)
                 # remove discrete legend
                 ax[i][1].legend_.remove()
 
