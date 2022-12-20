@@ -2,6 +2,7 @@ import os
 import shutil
 import unittest
 
+import pandas as pd
 import pints
 import pybamm
 from battery_model_parameterization import BaseSamplingProblem, Variable, marquis_2019
@@ -58,6 +59,7 @@ class TestBaseSamplingProblem(unittest.TestCase):
         compare_images(expected, actual, tol=0.5)
 
     def test_plot_results_summary(self):
+        self.sampling_problem.chains = pd.read_csv("test_chain.csv")
         self.sampling_problem.plot_results_summary()
         file_exists = os.path.exists(
             os.path.join(self.sampling_problem.logs_dir_path, "results_summary.png")
