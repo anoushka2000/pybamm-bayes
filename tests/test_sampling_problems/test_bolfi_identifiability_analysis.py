@@ -2,10 +2,10 @@ import os
 import shutil
 import unittest
 
-import pints
+import elfi
 import pybamm
 from battery_model_parameterization import (
-    IdentifiabilityAnalysis,
+    BOLFIIdentifiabilityAnalysis,
     Variable,
     marquis_2019,
 )
@@ -13,33 +13,35 @@ from battery_model_parameterization import (
 here = os.path.abspath(os.path.dirname(__file__))
 
 
-class TestIdentifiabilityAnalysis(unittest.TestCase):
+class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
     identifiability_problem = None
 
     @classmethod
     def setUpClass(cls):
         # setup variables
-        log_prior_Dsn = pints.GaussianLogPrior(-13, 1)
-        log_prior_j0_n = pints.GaussianLogPrior(-4.26, 1)
-        Dsn = Variable(name="Ds_n", value=-13.45, prior=log_prior_Dsn)
-        j0_n = Variable(name="j0_n", value=-4.698, prior=log_prior_j0_n)
-        cls.variables = [Dsn, j0_n]
+
+        prior_j0_n = elfi.Prior("norm", 5.5, 0.5, name="j0_n")
+        prior_j0_p = elfi.Prior("norm", 6.5, 0.5, name="j0_p")
+        j0_n = Variable(name="j0_n", value=4.698, prior=prior_j0_n, bounds=(4, 6))
+        j0_p = Variable(name="j0_p", value=6.22, prior=prior_j0_p, bounds=(5, 7))
+
+        cls.variables = [j0_n, j0_p]
 
         # setup battery simulation
-        model = pybamm.lithium_ion.DFN()
+        model = pybamm.lithium_ion.SPMe()
         cls.parameter_values = marquis_2019(cls.variables)
         cls.simulation = pybamm.Simulation(
             model,
-            solver=pybamm.CasadiSolver("fast"),
             experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
         )
 
-        cls.identifiability_problem = IdentifiabilityAnalysis(
+        cls.identifiability_problem = BOLFIIdentifiabilityAnalysis(
             battery_simulation=cls.simulation,
             parameter_values=cls.parameter_values,
             variables=cls.variables,
-            transform_type="log10",
-            noise=0.005,
+            transform_type="negated_log10",
+            noise=0.001,
+            target_resolution=30,
             project_tag="test",
         )
 
@@ -68,13 +70,13 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
         self.assertFalse(output is None)
 
     def test_run(self):
-        burnin = 2
-        n_iteration = 5
-        n_chains = 3
-        n_workers = 3
+        n_iteration = 50
+        n_chains = 4
+        n_evidence = 1500
 
         chains = self.identifiability_problem.run(
-            burnin, n_iteration, n_chains, n_workers
+            sampling_iterations=n_iteration, n_chains=n_chains,
+            n_evidence=n_evidence,
         )
 
         self.assertEqual(len(chains.columns), len(self.variables))
@@ -82,4 +84,6 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(TestIdentifiabilityAnalysis.identifiability_problem.logs_dir_path)
+        shutil.rmtree(
+            TestBOLFIIdentifiabilityAnalysis.identifiability_problem.logs_dir_path
+        )

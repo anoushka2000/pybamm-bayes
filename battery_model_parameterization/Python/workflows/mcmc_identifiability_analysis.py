@@ -1,8 +1,7 @@
 import pints
 import pybamm
-
 from battery_model_parameterization import (
-    IdentifiabilityAnalysis,
+    MCMCIdentifiabilityAnalysis,
     Variable,
     marquis_2019,
 )
@@ -20,7 +19,7 @@ j0_p = Variable(name="j0_p", value=-6.22, prior=log_prior_j0_p)
 
 variables = [j0_n, j0_p]
 
-model = pybamm.lithium_ion.DFN()
+model = pybamm.lithium_ion.SPMe()
 
 # create parameter set
 param = marquis_2019(variables)
@@ -31,17 +30,19 @@ simulation = pybamm.Simulation(
     experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
 )
 
-identifiability_problem = IdentifiabilityAnalysis(
+identifiability_problem = MCMCIdentifiabilityAnalysis(
     battery_simulation=simulation,
     variables=variables,
     parameter_values=param,
     transform_type="log10",
     noise=0.005,
-    project_tag="example",
+    project_tag="group_meeting_PopulationMCMC",
 )
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
-chains = identifiability_problem.run(burnin=1, n_iteration=5, n_chains=2, n_workers=3)
+chains = identifiability_problem.run(
+    burnin=1, n_iteration=10, n_chains=2, n_workers=3, sampling_method="PopulationMCMC"
+)
 
 identifiability_problem.plot_results_summary()

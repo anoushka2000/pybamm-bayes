@@ -1,4 +1,4 @@
-numpy
+numpy<1.24
 pybamm==22.8
 setuptools
 matplotlib
@@ -10,3 +10,5 @@ ipython
 coverage
 seaborn
 tqdm
+elfi~=0.8.4
+jupyter

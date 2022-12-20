@@ -1,9 +1,8 @@
 from functools import partial
 
 import pybamm
-from battery_model_parameterization.Python.workflows.utils.parameter_sets.utils import (
-    _exchange_current_density_inputs,
-)
+from battery_model_parameterization.Python.workflows.utils.parameter_sets.utils import \
+    _exchange_current_density_inputs
 
 
 def electrolyte_diffusivity_PeymanMPM(c_e, T):

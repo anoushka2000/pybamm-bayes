@@ -1,10 +1,13 @@
 import json
 import os
+import time
 from typing import List, Optional
 
+import elfi
+import elfi.visualization.interactive as visin
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pints
 import pybamm
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
@@ -16,7 +19,7 @@ def _fmt_variables(variables):
     lst = []
     for v in variables:
         var = v.__dict__.copy()
-        var["prior"] = var["prior"].__dict__
+        var["prior"] = "ElfiPrior"
         lst.append(var)
     return lst
 
@@ -25,10 +28,11 @@ def _fmt_parameters(parameters):
     return {k: str(v) for k, v in parameters.items()}
 
 
-class IdentifiabilityAnalysis(BaseSamplingProblem):
+class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
     """
     Class for conducting non-linear identifiability analysis on
-    battery simulation parameters.
+    battery simulation parameters using the Bayesian Optimization
+    for Likelihood-Free Inference (BOLFI) framework.
 
     Parameters
     ----------
@@ -43,9 +47,12 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
-        (only `log10` implemented for now)
+        (only `log10`  and `None` implemented for now)
     noise: float
         Scale of zero-mean noise added to synthetic data used to identify parameters.
+    target_resolution: int
+        Frequency of points over which discrepancy is calculated when training
+        Gaussian Process surrogate.
     times: np.ndarray
         Array of times at which simulation is evaluated.
     project_tag: str
@@ -59,6 +66,7 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
         variables: List[Variable],
         transform_type: str,
         noise: float,
+        target_resolution: int = 30,
         times: Optional[np.ndarray] = None,
         project_tag: str = "",
     ):
@@ -71,9 +79,12 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
             project_tag=project_tag,
         )
 
+        self.method = "BOLFI"
         self.generated_data = False
         self.true_values = np.array([v.value for v in self.variables])
         self.noise = noise
+        self.target_resolution = target_resolution
+        self.sampled_posterior = None
 
         if battery_simulation.operating_mode == "without experiment":
             if times is None:
@@ -91,7 +102,7 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
             battery_simulation.solve(inputs=inputs)
             self.times = battery_simulation.solution["Time [s]"].entries
 
-        data = self.simulate(theta=self.true_values, times=self.times)
+        data = self.simulate(self.true_values).flatten()
         self.data = data + np.random.normal(0, self.noise, data.shape)
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
@@ -110,21 +121,29 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
             "times": str(self.times),
         }
 
-    def simulate(self, theta, times):
+    def simulate(self, *theta, batch_size=1, random_state=0):
         """
         Simulate method used by pints sampler.
         Parameters
         ----------
-        theta: np.ndarray
+        theta: Tuple[float]
             Vector of input variable values.
-        times: np.ndarray
-            Array of times (in seconds) at which model is solved.
+        batch_size: int
+            Batch size used to update GP surrogate
+            (for compatibility with ELFI API).
+        random_state: int
+            Seed (for compatibility with ELFI API).
         Returns
         ----------
         output: np.ndarray
             Voltage time series.
         """
         variable_names = [v.name for v in self.variables]
+
+        theta = np.array(theta).flatten().tolist()
+
+        if not isinstance(theta[0], int) and not isinstance(theta[0], float):
+            theta = [t[0] for t in theta]
 
         inputs = dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
 
@@ -178,95 +197,144 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
 
             self.residuals.append(ess)
         self.generated_data = True
-        return output
+        return output.flatten()
+
+    def plot_pairwise(self):
+        plot = self.sampled_posterior.plot_pairs()
+        fig = plot[0].get_figure()
+        fig.savefig(os.path.join(self.logs_dir_path, "pairwise_plot"))
+
+    def plot_discrepancy(self):
+        plot = self.bolfi.plot_discrepancy()
+        fig = plot[0].get_figure()
+        fig.savefig(os.path.join(self.logs_dir_path, "discrepancy"))
+
+    def plot_acquistion_surface(self):
+        f, _ = plt.subplots(1, 2, figsize=(13, 6), sharex="row", sharey="row")
+
+        gp = self.bolfi.target_model
+
+        # Draw the GP surface
+        visin.draw_contour(
+            gp.predict_mean,
+            gp.bounds,
+            self.bolfi.target_model.parameter_names,
+            title="GP target surface",
+            points=gp.X,
+            axes=f.axes[0],
+        )
+
+        displays = [gp.instance]
+
+        # Update
+        visin._update_interactive(displays, options={})
+
+        acq_index = self.bolfi._get_acquisition_index(self.bolfi.state["n_batches"])
+
+        def acq(x):
+            return self.bolfi.acquisition_method.evaluate(x, acq_index)
+
+        # Draw the acquisition surface
+        visin.draw_contour(
+            acq,
+            gp.bounds,
+            self.bolfi.target_model.parameter_names,
+            title="Acquisition surface",
+            points=None,
+            axes=f.axes[1],
+        )
+
+        f.savefig(os.path.join(self.logs_dir_path, "acquisition_surface"))
 
     def run(
         self,
-        burnin: int = 0,
-        n_iteration: int = 2000,
-        n_chains: int = 12,
-        n_workers: int = 4,
-        sampling_method: str = "MetropolisRandomWalkMCMC",
+        batch_size: int = 1,
+        initial_evidence: int = 50,
+        update_interval: int = 10,
+        acq_noise_var: float = 0.1,
+        n_evidence: int = 1500,
+        sampling_iterations: int = 1000,
+        n_chains=4,
     ):
         """
         Parameters
         __________
-        burnin: int
-            Initial iterations discarded from each chain.
-        n_iteration: int
-            Number of samples per chain.
+        batch_size: int
+            Batch size used to train Gaussian Process (GP) surrogate.
+        initial_evidence: int
+            Number of number of initialization points (sampled straight
+            from the priors before starting to optimize the acquisition
+            of points).
+        update_interval: float
+             How often the GP hyperparameters are optimized.
+        acq_noise_var: int
+            Diagonal covariance of noise added to the acquired points
+            (defaults to 0.1).
+        n_evidence: str
+            Number of evidence points used to fit GP surrogate
+            (including `initial_evidence`).
+        sampling_iterations: int
+            Number of requested samples from the posterior for each chain.
         n_chains: int
-            Number of chain.
-        n_workers: int
-            Number of parallel processes.
-        sampling_method: str
-            Name of MCMC sampling class (from pints)
-            For a full list of samplers see:
-            https://pints.readthedocs.io/en/stable/mcmc_samplers/index.html
-            Defaults to MetropolisRandomWalkMCMC.
+            Number of independent chains.
 
         Returns
         -------
         chains: np.ndarray
             Sampling chains (shape: iteration, chains, parameters).
         """
-        sampling_method = "pints." + sampling_method
 
-        problem = pints.SingleOutputProblem(
-            self,
-            self.times,
-            self.data,
+        bounds = {var.name: var.bounds for var in self.variables}
+
+        model = elfi.ElfiModel()
+
+        for var in self.variables:
+            elfi.Prior(
+                var.prior.distribution.name,
+                var.prior_loc,
+                var.prior_scale,
+                model=model,
+                name=var.name,
+            )
+
+        elfi.Simulator(
+            self.simulate,
+            *[model[var.name] for var in self.variables],
+            observed=self.data,
+            name="elfi_simulator",
         )
-        log_likelihood = pints.GaussianKnownSigmaLogLikelihood(problem, self.noise)
-        log_posterior = pints.LogPosterior(log_likelihood, self.log_prior)
-        xs = [x * self.true_values for x in np.random.normal(1, 0.2, n_chains)]
+        sumstats = []
+        for i in range(0, len(self.data), self.target_resolution):
+            sumstats.append(
+                elfi.Summary(lambda x: x[i], model["elfi_simulator"], name=f"point {i}")
+            )
+        elfi.Distance("euclidean", *sumstats, name="euclidean_distance")
 
-        # Create MCMC routine
-        mcmc = pints.MCMCController(
-            log_posterior, n_chains, xs, method=eval(sampling_method)
-        )
-
-        # Add stopping criterion
-        mcmc.set_max_iterations(n_iteration)
-
-        # Logging
-        mcmc.set_log_to_screen(True)
-        mcmc.set_chain_filename(os.path.join(self.logs_dir_path, "chain.csv"))
-        mcmc.set_chain_storage(store_in_memory=True)
-        mcmc.set_log_pdf_filename(os.path.join(self.logs_dir_path, "log_pdf.csv"))
-
-        # Parallelization
-        # TODO: ForkingPickler(file, protocol).dump(obj)
-        #  TypeError: cannot pickle 'SwigPyObject' object
-        # mcmc.set_parallel(parallel=n_workers)
-
-        # Run
-        print("Running...")
-        chains = mcmc.run()
-        print("Done!")
-
-        chains = pd.DataFrame(
-            chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
+        self.bolfi = elfi.BOLFI(
+            elfi.Operation(np.log, model["euclidean_distance"]),
+            batch_size=batch_size,
+            initial_evidence=initial_evidence,
+            update_interval=update_interval,
+            acq_noise_var=acq_noise_var,
+            bounds=bounds,
         )
 
-        self.chains = chains
+        # Fit the surrogate model
+        # (Gaussian Process regression model for discrepancy given parameters.)
+        training_start_time = time.time()
+        self.bolfi.fit(n_evidence=n_evidence)
+        training_end_time = time.time()
+        opt_res = {
+            param: value[0]
+            for param, value in self.bolfi.extract_result().x_min.items()
+        }
+        self.plot_discrepancy()
 
-        #  evaluate optimal value for each parameter
-        theta_optimal = np.array(
-            [float(chains[column].mode().iloc[0]) for column in chains.columns]
+        sampling_start_time = time.time()
+        self.sampled_posterior = self.bolfi.sample(
+            sampling_iterations, n_chains=n_chains
         )
-
-        #  find residual at optimal value
-        y_hat = self.simulate(theta_optimal, times=self.times)
-        error_at_optimal = np.sum(abs(y_hat - self.data)) / len(self.data)
-
-        # chi_sq = distance in residuals between optimal value and all others
-        pd.DataFrame(
-            {
-                "residuals": self.residuals,
-                "chi_sq": self.residuals - error_at_optimal,
-            }
-        ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
+        sampling_end_time = time.time()
 
         with open(
             os.path.join(self.logs_dir_path, "metadata.json"),
@@ -276,19 +344,38 @@ class IdentifiabilityAnalysis(BaseSamplingProblem):
 
         metadata.update(
             {
-                "burnin": burnin,
-                "n_iteration": n_iteration,
+                "initial_evidence": initial_evidence,
+                "training_time": training_start_time - training_end_time,
+                "sampling_time": sampling_start_time - sampling_end_time,
+                "update_interval": update_interval,
+                "acq_noise_var": acq_noise_var,
+                "sampling_method": "BOLFI",
+                "min_discrepancy": opt_res,
+                "sample_means_and_95CIs": self.sampled_posterior.sample_means_and_95CIs,
                 "n_chains": n_chains,
-                "sampling_method": sampling_method,
-                "theta_optimal": theta_optimal.tolist(),
-                "error_at_optimal": error_at_optimal,
             }
         )
+
+        chain_columns = [
+            f"p{i}" for i in range(self.sampled_posterior.chains[0].shape[-1])
+        ]
+        chain_idx = 0
+
+        chain_df_list = []
+
+        for chain in self.sampled_posterior.chains:
+            df = pd.DataFrame(chain, columns=chain_columns)
+            df.to_csv(
+                path_or_buf=os.path.join(self.logs_dir_path, f"chain_{chain_idx}.csv"),
+                index=False,
+            )
+            chain_df_list.append(df)
+            chain_idx += 1
 
         with open(
             os.path.join(self.logs_dir_path, "metadata.json"),
             "w",
         ) as outfile:
             json.dump(metadata, outfile)
-
-        return chains
+        self.chains = pd.concat(chain_df_list)
+        return self.chains
