@@ -309,11 +309,6 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             )
         elfi.Distance("euclidean", *sumstats, name="euclidean_distance")
 
-        # save model schematic to logs
-        drawing = elfi.draw(model)
-        drawing.format = "png"
-        drawing.render(directory=self.logs_dir_path)
-
         self.bolfi = elfi.BOLFI(
             elfi.Operation(np.log, model["euclidean_distance"]),
             batch_size=batch_size,

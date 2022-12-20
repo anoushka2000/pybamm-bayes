@@ -13,7 +13,7 @@ from battery_model_parameterization import (
 here = os.path.abspath(os.path.dirname(__file__))
 
 
-class TestIdentifiabilityAnalysis(unittest.TestCase):
+class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
     identifiability_problem = None
 
     @classmethod
