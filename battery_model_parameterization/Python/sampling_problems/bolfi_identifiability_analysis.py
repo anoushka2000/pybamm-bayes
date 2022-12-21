@@ -9,9 +9,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pybamm
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
+
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (
     BaseSamplingProblem,
-)
+)  # noqa: E501
 from battery_model_parameterization.Python.variable import Variable
 
 
@@ -107,19 +108,6 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
-
-    @property
-    def metadata(self):
-        return {
-            "battery model": self.battery_simulation.model.name,
-            "parameter values": _fmt_parameters(self.parameter_values),
-            "default inputs": self.default_inputs,
-            "variables": _fmt_variables(self.variables),
-            "transform type": self.transform_type,
-            "noise": self.noise,
-            "project": self.project_tag,
-            "times": str(self.times),
-        }
 
     def simulate(self, *theta, batch_size=1, random_state=0):
         """

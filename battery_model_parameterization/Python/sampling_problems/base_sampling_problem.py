@@ -9,21 +9,13 @@ import pints.plot
 import pybamm
 import seaborn as sns
 import tqdm
+
 from battery_model_parameterization.Python.variable import Variable
-from scipy import stats
-
-
-def _fmt_variables(variables):
-    lst = []
-    for v in variables:
-        var = v.__dict__.copy()
-        var["prior"] = var["prior"].__dict__
-        lst.append(var)
-    return lst
-
-
-def _fmt_parameters(parameters):
-    return {k: str(v) for k, v in parameters.items()}
+from battery_model_parameterization.Python.analysis.utils import sample_from_posterior
+from battery_model_parameterization.Python.sampling_problems.utils import (
+    _fmt_parameters,
+    _fmt_variables,
+)
 
 
 class BaseSamplingProblem(pints.ForwardModelS1):
@@ -166,16 +158,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
 
         variable_names = [var.name for var in self.variables]
 
-        # Fit a truncated normal distribution to chains
-        loc = self.chains.mean()
-        scale = self.chains.std()
-        # Fit a truncated normal distribution to chains
-        posterior_samples = stats.truncnorm(
-            a=(self.chains.min() - loc) / scale,
-            b=(self.chains.max() - loc) / scale,
-            loc=loc,
-            scale=scale,
-        ).rvs(size=(forward_evaluations, len(variable_names)))
+        posterior_samples = sample_from_posterior(self.chains, forward_evaluations)
 
         results = []
         summary = []
@@ -206,6 +189,13 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     )
             df = pd.DataFrame(results)
             df_summary = pd.DataFrame(summary)
+
+            df_summary.to_csv(
+                os.path.join(self.logs_dir_path, "residual_over_posterior.csv")
+            )
+            df.to_csv(
+                os.path.join(self.logs_dir_path, "forward_model_over_posterior.csv")
+            )
             # used to generate color bar for residual plot
             residual_plot = plt.scatter(
                 df_summary[variable_names[0]],

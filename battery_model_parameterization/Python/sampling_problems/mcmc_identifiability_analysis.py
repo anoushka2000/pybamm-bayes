@@ -6,23 +6,15 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
+
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (
     BaseSamplingProblem,
-)
+)  # noqa: E501
 from battery_model_parameterization.Python.variable import Variable
-
-
-def _fmt_variables(variables):
-    lst = []
-    for v in variables:
-        var = v.__dict__.copy()
-        var["prior"] = var["prior"].__dict__
-        lst.append(var)
-    return lst
-
-
-def _fmt_parameters(parameters):
-    return {k: str(v) for k, v in parameters.items()}
+from battery_model_parameterization.Python.sampling_problems.utils import (
+    _fmt_variables,
+    _fmt_parameters,
+)
 
 
 class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
@@ -99,6 +91,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
 
+        self.battery_simulation.save(
+            os.path.join(self.logs_dir_path, "battery_simulation")
+        )
+
     @property
     def metadata(self):
         return {
@@ -110,6 +106,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             "noise": self.noise,
             "project": self.project_tag,
             "times": str(self.times),
+            "data": self.data,
         }
 
     def simulate(self, theta, times):
