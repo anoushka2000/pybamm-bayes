@@ -36,13 +36,13 @@ identifiability_problem = MCMCIdentifiabilityAnalysis(
     parameter_values=param,
     transform_type="log10",
     noise=0.005,
-    project_tag="group_meeting_PopulationMCMC",
+    project_tag="TEST_LOGS",
 )
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
 chains = identifiability_problem.run(
-    burnin=1, n_iteration=10, n_chains=2, n_workers=3, sampling_method="PopulationMCMC"
+    burnin=1, n_iteration=10, n_chains=2, n_workers=3, # sampling_method="PopulationMCMC"
 )
 
 identifiability_problem.plot_results_summary()

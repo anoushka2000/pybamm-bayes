@@ -109,6 +109,20 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
 
+    @property
+    def metadata(self):
+        return {
+            "battery model": self.battery_simulation.model.name,
+            "parameter values": _fmt_parameters(self.parameter_values),
+            "default inputs": self.default_inputs,
+            "variables": _fmt_variables(self.variables),
+            "transform type": self.transform_type,
+            "noise": self.noise,
+            "project": self.project_tag,
+            "times": str(self.times),
+            "data": str(self.data),
+        }
+
     def simulate(self, *theta, batch_size=1, random_state=0):
         """
         Simulate method used by pints sampler.

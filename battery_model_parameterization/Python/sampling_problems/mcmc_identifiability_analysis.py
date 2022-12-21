@@ -106,7 +106,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             "noise": self.noise,
             "project": self.project_tag,
             "times": str(self.times),
-            "data": self.data,
+            "data": str(self.data),
         }
 
     def simulate(self, theta, times):
