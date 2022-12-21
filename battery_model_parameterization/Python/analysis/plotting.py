@@ -1,143 +1,32 @@
 # TODO: separate loading and plotting
 
 import glob
-import json
 import os
 import warnings
 
-import elfi  # noqa: F401
+import elfi
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pints  # noqa: F401
+import pints
 import plotly.express as px
 import plotly.graph_objects as go
 import scipy.stats as stats
-from IPython.display import Image, display
+import seaborn as sns
 from plotly.subplots import make_subplots
 
-
-def _get_logs_path(logs_dir_name):
-    return os.path.join(os.getcwd(), "logs", logs_dir_name)
-
-
-def view_data(logs_dir_name=None, logs_dir_path=None):
-    """
-    Helper function to display data (voltage profile) plot in notebook.
-    """
-    if logs_dir_path is None and logs_dir_name:
-        logs_dir_path = _get_logs_path(logs_dir_name)
-    path = os.path.join(logs_dir_path, "data.png")
-    display(Image(filename=path))
-
-
-def load_metadata(logs_dir_name=None, logs_dir_path=None):
-    """
-    Parameters
-    ----------
-    logs_dir_name: str
-       Name of directory logging idenfiability problem results.
-    logs_dir_path: str
-        Absolute path to directory logging idenfiability problem results.
-
-    Returns
-    -------
-    Metadata associated with idenfiability problem.
-    """
-    if logs_dir_path is None:
-        logs_dir_path = _get_logs_path(logs_dir_name)
-
-    # load metadata
-    with open(os.path.join(logs_dir_path, "metadata.json"), "r") as j:
-        metadata = json.loads(j.read())
-    return metadata
-
-
-def load_chains(logs_dir_name=None, logs_dir_path=None, concat=True):
-    """
-    Parameters
-    ----------
-    logs_dir_name: str
-       Name of directory logging idenfiability problem results.
-    logs_dir_path: str
-       Absolute path to directory logging idenfiability problem results.
-    concat: bool
-        Concantenate chain DataFrames if True
-        else return list (defaults to True).
-
-    Returns
-    -------
-    DataFrame of chains. Each column is a parameter being sampled
-    (column names 'p0', 'p1' ...).
-    Chains are appended sequentially.
-    """
-    if logs_dir_path is None:
-        logs_dir_path = _get_logs_path(logs_dir_name)
-
-    chain_file_names = glob.glob(f"{logs_dir_path}/chain_?.csv")
-    df_list = []
-    for name in chain_file_names:
-        df_list.append(pd.read_csv(name))
-    if concat:
-        chains = pd.concat(df_list)
-    else:
-        chains = df_list
-    if "Unnamed: 0" in chains.columns:
-        chains.drop(columns="Unnamed: 0", inplace=True)
-    return chains
-
-
-def load_chains_with_residual(logs_dir_name=None, logs_dir_path=None):
-    """
-    Parameters
-    ----------
-    logs_dir_name: str
-       Name of directory logging idenfiability problem results.
-    logs_dir_path: str
-       Absolute path to directory logging idenfiability problem results.
-
-    Returns
-    -------
-    DataFrame of chains and residual .
-    Chains are appended interweaved to match order of evaluation.
-    (chain 1 sample 1, chain 2 sample 1,...chain n sample 1,...chain n sample n).
-    """
-    if logs_dir_path is None:
-        logs_dir_path = _get_logs_path(logs_dir_name)
-
-    metadata = load_metadata(logs_dir_path=logs_dir_path)
-
-    # recover variable definition from metadata
-    variable_names = [
-        f"{metadata['transform type']} {var['name']}" for var in metadata["variables"]
-    ]
-
-    # load chains
-    chain_file_names = glob.glob(f"{logs_dir_path}/chain_?.csv")
-    df_list = []
-    for name in chain_file_names:
-        df_list.append(pd.read_csv(name))
-
-    # load residual df
-    residuals = pd.read_csv(os.path.join(logs_dir_path, "residuals.csv"))
-    result = pd.concat(df_list).sort_index(kind="merge")
-    result = result.reset_index()
-    result["residuals"] = residuals.residuals
-    theta_optimal = result.nsmallest(1, "residuals")[["p0", "p1"]].values.flatten()
-
-    # filter to samples within one order of magnitude of true value
-    result = result[result.p0 > theta_optimal[0] - 1]
-    result = result[result.p0 < theta_optimal[0] + 1]
-    result = result[result.p1 > theta_optimal[1] - 1]
-    result = result[result.p1 < theta_optimal[1] + 1]
-    result["chi_sq"] = (
-        result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
-    )
-    result = result[result.chi_sq < 10]
-    result.columns = ["sample number"] + variable_names + ["residuals", "chi_sq"]
-
-    return result
+from battery_model_parameterization.Python.analysis.postprocessing import (
+    load_chains,
+    load_chains_with_residual,
+    load_metadata,
+    generate_residual_over_posterior,
+    run_forward_model_over_posterior,
+)
+from battery_model_parameterization.Python.analysis.utils import (
+    _get_logs_path,
+    _parse_priors,
+)
 
 
 def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
@@ -163,20 +52,7 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
     ]
     true_values = [var["value"] for var in metadata["variables"]]
 
-    if metadata["sampling_method"] == "BOLFI":
-        priors = [
-            eval('elfi.Prior("' + v["prior_type"] + '", 0, 1)')
-            for v in metadata["variables"]
-        ]
-        bounds = [v["bounds"] for v in metadata["variables"]]
-    else:
-        priors = [
-            eval(
-                f"pints.{v['prior_type']}({list(v['prior'].values())[0]},/"
-                f"{list(v['prior'].values())[1]})"
-            )
-            for v in metadata["variables"]
-        ]
+    priors, bounds = _parse_priors(metadata)
 
     # load chains
     chains = load_chains(logs_dir_path)
@@ -275,13 +151,7 @@ def compare_chain_convergence(logs_dir_names):
             for var in metadata["variables"]
         ]
         true_values = [var["value"] for var in metadata["variables"]]
-        priors = [
-            eval(
-                f"pints.{var['prior_type']}({list(var['prior'].values())[0]},"
-                f"{list(var['prior'].values())[1]})"
-            )
-            for var in metadata["variables"]
-        ]
+        priors, bounds = _parse_priors(metadata)
 
         # load chains
         chains = load_chains(logs_dir_path)
@@ -403,12 +273,7 @@ def pairwise(
         f"{metadata['transform type']} {var['name']}" for var in metadata["variables"]
     ]
     true_values = [var["value"] for var in metadata["variables"]]
-    priors = [
-        eval(
-            f"pints.{v['prior_type']}({list(v['prior'].values())[0]},{list(v['prior'].values())[1]})"  # noqa:  E501
-        )
-        for v in metadata["variables"]
-    ]
+    priors, bounds = _parse_priors(metadata)
 
     # load chains
     chain_file_names = glob.glob(f"{logs_dir_path}/chain_?.csv")
@@ -440,9 +305,24 @@ def pairwise(
 
                 axes[i, j].hist(samples[:, i], bins=xbins)  # , density=True)
 
+                if metadata["sampling_method"] == "BOLFI":
+                    lower, rng = (
+                        bounds[i][0],
+                        bounds[i][1] - bounds[i][0],
+                    )
+
+                    prior_samples = (
+                        lower
+                        + priors[i].distribution.rvs(
+                            size=len(samples),
+                        )
+                        * rng
+                    )
+                else:
+                    prior_samples = priors[i].sample(len(samples))
                 # add prior histogram
                 axes[i, j].hist(
-                    priors[i].sample(len(samples)),
+                    prior_samples,
                     bins=xbins,
                     alpha=0.5,
                     color="black",
@@ -572,7 +452,7 @@ def _plot_confidence_intervals_grid(
     result = load_chains_with_residual(logs_dir_path=logs_dir_path)
 
     theta_optimal = result.nsmallest(1, "residuals")[
-        result.columns[1: n_variables + 1]
+        result.columns[1 : n_variables + 1]
     ].values.flatten()
 
     # recover true values from metadata
@@ -654,7 +534,6 @@ def _plot_confidence_intervals_bivariate(
 
     # recover true values from metadata
     true_values = [var["value"] for var in metadata["variables"]]
-
     result = result[result.chi_sq < chi_sq_limit]
 
     # plotting
@@ -711,101 +590,160 @@ def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
 
     if n_variables < 3:
         # don't need grid
-        fig = _plot_confidence_intervals_bivariate(logs_dir_name, chi_sq_limit=10)
+        fig = _plot_confidence_intervals_bivariate(
+            logs_dir_name, chi_sq_limit=chi_sq_limit
+        )
     else:
-        fig = _plot_confidence_intervals_grid(logs_dir_name, n_variables, chi_sq_limit)
+        fig = _plot_confidence_intervals_grid(
+            logs_dir_name, n_variables, chi_sq_limit=chi_sq_limit
+        )
 
     return fig
 
 
-def gelman_rubin_convergence_test(logs_dir_name=None, logs_dir_path=None, burnin=500):
+def plot_residual(
+    logs_dir_name=None,
+    logs_dir_path=None,
+    from_stored=True,
+    variables=None,
+    n_evaluations=20,
+):
     """
-    Gelman Rubin statistic to diagnose if a chain has converged.
-    (If Gelman Rubin statistic < 1.1, parameter is identifiable).
+    Scatter plot of samples from posterior, coloured by residual
+    (mean squared error) between data and simulation using parameter values.
 
-     Parameters
-    ----------
+    Parameters
+    __________
     logs_dir_name: str
-       Name of directory logging idenfiability problem results.
+        Name of directory logging idenfiability problem results.
     logs_dir_path: str
-        Absolute path to directory logging idenfiability problem results.
-    burnin: int
-        Number of samples to ignore as burn-in in calculation.
-
-    Returns
-    --------
-    Dictionary with variable name as key and Gelman Rubin statistic as value.
+        Path to directory logging idenfiability problem results.
+        Overrides `logs_dir_name` if both are passed.
+    from_stored: bool
+        Use pre-calculated residuals (stored in `residual_over_posterior.csv`
+        in logs directory.
+    variables: List[str]
+        List of (two) variable names to plot. Variable names
+        should match variable names used when running sampling problem.
+    n_evaluations: int
+        Number of samples from posterior to calculate residual for.
+        Only used if `from_stored` set to `False`.
+        Defaults to `20`.
     """
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
+
+    if from_stored:
+        df = pd.read_csv(os.path.join(logs_dir_path, "residual_over_posterior.csv"))
+    else:
+        df = generate_residual_over_posterior(
+            logs_dir_path=logs_dir_path, n_evaluations=n_evaluations
+        )
+    if "Unnamed: 0" in df.columns:
+        df.drop(columns="Unnamed: 0", inplace=True)
+
+    variables = variables or list(df.columns)
+    if "Residual" in variables:
+        variables.remove("Residual")
+
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
+
+    # used to generate color bar for residual plot
+    residual_plot = plt.scatter(
+        df[variables[0]],
+        df[variables[1]],
+        c=df.Residual,
+        cmap=sns.cubehelix_palette(as_cmap=True),
+    )
+    plt.clf()
+
+    # Set up axis
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    plt.colorbar(residual_plot, ax=ax, label="Residual")
+
+    sns.scatterplot(data=df, x=variables[0], y=variables[1], hue="Residual", ax=ax)
+
+    plt.xlabel(f"{metadata['transform type']} {variables[0]}")
+    plt.ylabel(f"{metadata['transform type']} {variables[1]}")
+
+    ax.legend_.remove()
+
+    return fig
+
+
+def plot_forward_model_posterior_distribution(
+    logs_dir_name=None, logs_dir_path=None, from_stored=False, n_evaluations=20
+):
+    """
+    Voltage curves for parameter values sampled from posterior,
+    coloured by residual parameter values.
+
+    Parameters
+    __________
+    logs_dir_name: str
+        Name of directory logging identifiability problem results.
+    logs_dir_path: str
+        Path to directory logging identifiability problem results.
+        Overrides `logs_dir_name` if both are passed.
+    from_stored: bool
+        Use pre-calculated residuals (stored in `residual_over_posterior.csv`
+        in logs directory.
+    n_evaluations: int
+        Number of samples from posterior to calculate residual for.
+        Only used if `from_stored` set to `False`.
+        Defaults to `20`.
+    """
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name)
+
+    if from_stored:
+        df = pd.read_csv(
+            os.path.join(logs_dir_path, "forward_model_over_posterior.csv")
+        )
+    else:
+        df = run_forward_model_over_posterior(
+            logs_dir_path=logs_dir_path, n_evaluations=n_evaluations
+        )
+
+    if "Unnamed: 0" in df.columns:
+        df.drop(columns="Unnamed: 0", inplace=True)
+
     metadata = load_metadata(logs_dir_path=logs_dir_path)
     variable_names = [var["name"] for var in metadata["variables"]]
 
-    chains = load_chains(logs_dir_path=logs_dir_path, concat=False)
-    gelman_rubin_factors = []
-    n_chains = len(chains)
+    # used to generate color bars
+    voltage_scratch_plots = []
 
-    for parameter in chains[0].columns:
+    for var in variable_names:
+        plot = plt.scatter(
+            df["Time [s]"],
+            df["Voltage [V]"],
+            c=df[var],
+            cmap=sns.cubehelix_palette(as_cmap=True),
+        )
 
-        chain_mean_list = []
-        chain_var_list = []
+        voltage_scratch_plots.append(plot)
+        plt.clf()
 
-        for chain in chains:
-            chain = chain[burnin:]
+    rows = len(variable_names) + 1
 
-            p_chain = chain[parameter]
+    # set up axis
+    fig, ax = plt.subplots(rows, 1, figsize=(5, rows * 4))
 
-            # posterior mean of parameter
-            p_mean = p_chain.mean()
-            chain_mean_list.append(p_mean)
+    for i, var in list(zip([i for i in range(1, rows)], variable_names)):
+        # plot voltage colored by variable for each variable
+        sns.lineplot(
+            data=df,
+            x="Time [s]",
+            y="Voltage [V]",
+            hue=df[var],
+            ax=ax[i],
+            palette=sns.cubehelix_palette(as_cmap=True),
+        )
+        # add color bar
+        plt.colorbar(voltage_scratch_plots[i - 1], ax=ax[i], label=var)
+        # remove discrete legend
+        ax[i].legend_.remove()
 
-            # variance of samples in chain for parameter
-            intra_chain_var = ((p_chain - p_mean) ** 2).sum() / (len(p_chain) - 1)
-            chain_var_list.append(intra_chain_var)
-
-        n_valid_iterations = len(chain)
-        mean_all_chains = sum(chain_mean_list) / len(chain_mean_list)
-        B = (n_valid_iterations / (n_chains - 1)) * (
-            (chain_mean_list - mean_all_chains) ** 2
-        ).sum()
-        W = sum(chain_var_list) / len(chain_var_list)
-        V = ((n_valid_iterations - 1) / n_valid_iterations) * W + (n_chains + 1) / (
-            n_chains * n_valid_iterations
-        ) * B
-        gelman_rubin_factors.append(V)
-        chains = load_chains(logs_dir_path=logs_dir_path, concat=False)
-
-    gelman_rubin_factors = []
-
-    n_chains = len(chains)
-
-    for parameter in chains[0].columns:
-
-        chain_mean_list = []
-        chain_var_list = []
-
-        for chain in chains:
-            chain = chain[burnin:]
-
-            p_chain = chain[parameter]
-
-            # posterior mean of parameter
-            p_mean = p_chain.mean()
-            chain_mean_list.append(p_mean)
-
-            # variance of samples in chain for parameter
-            intra_chain_var = ((p_chain - p_mean) ** 2).sum() / (len(p_chain) - 1)
-            chain_var_list.append(intra_chain_var)
-
-        n_valid_iterations = len(chain)
-        mean_all_chains = sum(chain_mean_list) / len(chain_mean_list)
-        B = (n_valid_iterations / (n_chains - 1)) * (
-            (chain_mean_list - mean_all_chains) ** 2
-        ).sum()
-        W = sum(chain_var_list) / len(chain_var_list)
-        V = ((n_valid_iterations - 1) / n_valid_iterations) * W + (n_chains + 1) / (
-            n_chains * n_valid_iterations
-        ) * B
-        gelman_rubin_factors.append(V)
-
-    return dict(zip(variable_names, gelman_rubin_factors))
+    # voltage with one s.d. plot
+    sns.lineplot(data=df, x="Time [s]", y="Voltage [V]", errorbar=("sd", 1), ax=ax[0])
