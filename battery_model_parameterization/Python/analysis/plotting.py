@@ -127,23 +127,27 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
     plt.savefig(os.path.join(logs_dir_path, "chain_convergence"))
 
 
-def compare_chain_convergence(logs_dir_names):
+def compare_chain_convergence(log_dir_names=None, log_dir_paths=None):
     """
     Line plot of sample vs sampling iterations for each chain.
     Parameters
     ----------
-    logs_dir_names: List[str]
-       List of name of directories logging idenfiability problem results to compare.
+    log_dir_names: List[str]
+       List of name of directories logging identifiability problem results to compare.
+
+    log_dir_paths: List[str]
+       List of paths to directories logging identifiability problem results to compare.
+       Overides `log_dir_names`.
     """
     color_list = list(mcolors.TABLEAU_COLORS) * 10
     line_styles = ["-", "--", "-.", ":"] * 10
-
-    for i in range(len(logs_dir_names)):
+    if log_dir_paths is None:
+        log_dir_paths = [_get_logs_path(name) for name in log_dir_names]
+    for i in range(len(log_dir_paths)):
         line_style = line_styles[i]
         color = color_list[i]
-        logs_dir_name = logs_dir_names[i]
-        logs_dir_path = _get_logs_path(logs_dir_name)
-        metadata = load_metadata(logs_dir_name=logs_dir_name)
+        logs_dir_path = log_dir_paths[i]
+        metadata = load_metadata(logs_dir_path=logs_dir_path)
 
         # recover variable definition from metadata
         variable_names = [
@@ -154,7 +158,7 @@ def compare_chain_convergence(logs_dir_names):
         priors, bounds = _parse_priors(metadata)
 
         # load chains
-        chains = load_chains(logs_dir_path)
+        chains = load_chains(logs_dir_path=logs_dir_path)
         n_chains = metadata["n_chains"]
         n_param = len(variable_names)
         samples = chains.to_numpy().reshape(
@@ -225,8 +229,7 @@ def compare_chain_convergence(logs_dir_names):
     plt.tight_layout()
 
     # save in each project directory
-    for logs_dir_name in logs_dir_names:
-        logs_dir_path = _get_logs_path(logs_dir_name)
+    for logs_dir_path in log_dir_paths:
         plt.savefig(os.path.join(logs_dir_path, "comparison_chain_convergence"))
 
 
@@ -572,30 +575,34 @@ def _plot_confidence_intervals_bivariate(
     return fig
 
 
-def plot_confidence_intervals(logs_dir_name, chi_sq_limit=10):
+def plot_confidence_intervals(logs_dir_name=None,  logs_dir_path=None, chi_sq_limit=10):
     """
     Local confidence regions from sampled parameter pairs.
 
     Parameters
     ----------
     logs_dir_name: str
-       Name of directory logging idenfiability problem results.
-
+       Name of directory logging identifiability problem results.
+    logs_dir_path: str
+       Path to directory logging idenfiability problem results.
     chi_sq_limit: float
         Plot only parameters with chi_sq < chi_sq_limit
         (allows greater resolution)
     """
-    metadata = load_metadata(logs_dir_name)
+    if logs_dir_path is None:
+        logs_dir_path = _get_logs_path(logs_dir_name=logs_dir_name)
+
+    metadata = load_metadata(logs_dir_path=logs_dir_path)
     n_variables = len(metadata["variables"])
 
     if n_variables < 3:
         # don't need grid
         fig = _plot_confidence_intervals_bivariate(
-            logs_dir_name, chi_sq_limit=chi_sq_limit
+            logs_dir_path=logs_dir_path, chi_sq_limit=chi_sq_limit
         )
     else:
         fig = _plot_confidence_intervals_grid(
-            logs_dir_name, n_variables, chi_sq_limit=chi_sq_limit
+            logs_dir_path=logs_dir_path, n_variables=n_variables, chi_sq_limit=chi_sq_limit
         )
 
     return fig
@@ -658,14 +665,13 @@ def plot_residual(
     plt.clf()
 
     # Set up axis
-    fig, ax = plt.subplots(1, 1, figsize=(4, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(4, 4), tight_layout=True)
     plt.colorbar(residual_plot, ax=ax, label="Residual")
 
     sns.scatterplot(data=df, x=variables[0], y=variables[1], hue="Residual", ax=ax)
 
     plt.xlabel(f"{metadata['transform type']} {variables[0]}")
     plt.ylabel(f"{metadata['transform type']} {variables[1]}")
-
     ax.legend_.remove()
 
     return fig
