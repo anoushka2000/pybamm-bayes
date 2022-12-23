@@ -61,7 +61,8 @@ def sample_from_prior(metadata, n_samples=7000):
 
 def sample_from_posterior(chains, n_samples):
     """
-    Approximates posterior distribution by fitting a truncated normal distribution to chains,
+    Approximates posterior distribution by fitting a
+    truncated normal distribution to chains.
     Parameters
     __________
     chains: pd.DataFrame
