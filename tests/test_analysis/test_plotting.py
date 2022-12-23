@@ -2,23 +2,24 @@ import unittest
 import os
 from matplotlib.testing.compare import compare_images
 import matplotlib.pyplot as plt
-from battery_model_parameterization import (plot_chain_convergence,
-                                            compare_chain_convergence,
-                                            pairwise,
-                                            plot_confidence_intervals,
-                                            plot_residual,
-                                            plot_forward_model_posterior_distribution)
+from battery_model_parameterization import (
+    plot_chain_convergence,
+    compare_chain_convergence,
+    pairwise,
+    plot_confidence_intervals,
+    plot_residual,
+    plot_forward_model_posterior_distribution,
+)
 
 here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestPlotting(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         # setup variables
-        cls.logs_dir_path = os.path.join(here, 'TEST_LOGS')
-        cls.images_dir_path = os.path.join(here, 'test_images')
+        cls.logs_dir_path = os.path.join(here, "TEST_LOGS")
+        cls.images_dir_path = os.path.join(here, "test_images")
 
     def test_plot_chain_convergence(self):
         plot_chain_convergence(logs_dir_path=self.logs_dir_path)
@@ -28,9 +29,17 @@ class TestPlotting(unittest.TestCase):
         os.remove(generated_plot)
 
     def test_compare_chain_convergence(self):
-        compare_chain_convergence(log_dir_paths=[self.logs_dir_path, ])
-        baseline_plot = os.path.join(self.images_dir_path, "comparison_chain_convergence.png")
-        generated_plot = os.path.join(self.logs_dir_path, "comparison_chain_convergence.png")
+        compare_chain_convergence(
+            log_dir_paths=[
+                self.logs_dir_path,
+            ]
+        )
+        baseline_plot = os.path.join(
+            self.images_dir_path, "comparison_chain_convergence.png"
+        )
+        generated_plot = os.path.join(
+            self.logs_dir_path, "comparison_chain_convergence.png"
+        )
         compare_images(baseline_plot, generated_plot, 0.001)
         os.remove(generated_plot)
 

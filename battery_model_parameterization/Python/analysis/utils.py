@@ -38,6 +38,7 @@ def sample_from_prior(metadata, n_samples=7000):
     and samples from them.
     """
     priors, bounds = _parse_priors(metadata)
+    samples = {}
     for i in range(len(metadata["variables"])):
         variable = metadata["variables"][i]
         if metadata["sampling_method"] == "BOLFI":
@@ -54,7 +55,8 @@ def sample_from_prior(metadata, n_samples=7000):
             )
         else:
             sample = priors[i].sample(n_samples).flatten()
-    return sample
+        samples[variable["name"]] = sample
+    return samples
 
 
 def sample_from_posterior(chains, n_samples):
@@ -72,8 +74,8 @@ def sample_from_posterior(chains, n_samples):
     # Fit a truncated normal distribution to chains
     loc = chains.mean()
     scale = chains.std()
-    # Fit a truncated normal distribution to chains
 
+    # Fit a truncated normal distribution to chains
     posterior = stats.truncnorm(
         a=(chains.min() - loc) / scale,
         b=(chains.max() - loc) / scale,

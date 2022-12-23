@@ -155,7 +155,7 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
     # recover variable definition from metadata
     variable_names = [var["name"] for var in metadata["variables"]]
 
-    data = metadata["data"]
+    data = np.fromstring(metadata["data"][1:-1], sep=" ")
 
     posterior_samples = sample_from_posterior(chains, n_samples=n_evaluations)
 

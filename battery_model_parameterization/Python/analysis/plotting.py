@@ -575,7 +575,7 @@ def _plot_confidence_intervals_bivariate(
     return fig
 
 
-def plot_confidence_intervals(logs_dir_name=None,  logs_dir_path=None, chi_sq_limit=10):
+def plot_confidence_intervals(logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10):
     """
     Local confidence regions from sampled parameter pairs.
 
@@ -602,7 +602,9 @@ def plot_confidence_intervals(logs_dir_name=None,  logs_dir_path=None, chi_sq_li
         )
     else:
         fig = _plot_confidence_intervals_grid(
-            logs_dir_path=logs_dir_path, n_variables=n_variables, chi_sq_limit=chi_sq_limit
+            logs_dir_path=logs_dir_path,
+            n_variables=n_variables,
+            chi_sq_limit=chi_sq_limit,
         )
 
     return fig
