@@ -1,20 +1,18 @@
-# TODO: separate loading and plotting
-
 import glob
 import os
 import warnings
 
-import elfi
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pints
 import plotly.express as px
 import plotly.graph_objects as go
 import scipy.stats as stats
 import seaborn as sns
 from plotly.subplots import make_subplots
+import elfi  # noqa: F401
+import pints  # noqa: F401
 
 from battery_model_parameterization.Python.analysis.postprocessing import (
     load_chains,
@@ -455,7 +453,7 @@ def _plot_confidence_intervals_grid(
     result = load_chains_with_residual(logs_dir_path=logs_dir_path)
 
     theta_optimal = result.nsmallest(1, "residuals")[
-        result.columns[1 : n_variables + 1]
+        result.columns[1: n_variables + 1]
     ].values.flatten()
 
     # recover true values from metadata

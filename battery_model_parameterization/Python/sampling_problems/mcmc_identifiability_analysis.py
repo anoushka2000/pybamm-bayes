@@ -7,9 +7,9 @@ import pandas as pd
 import pints
 import pybamm
 
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
-)  # noqa: E501
+)
 from battery_model_parameterization.Python.variable import Variable
 from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_variables,
@@ -46,14 +46,14 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
 
     def __init__(
-        self,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        transform_type: str,
-        noise: float,
-        times: Optional[np.ndarray] = None,
-        project_tag: str = "",
+            self,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            transform_type: str,
+            noise: float,
+            times: Optional[np.ndarray] = None,
+            project_tag: str = "",
     ):
 
         super().__init__(
@@ -180,12 +180,12 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         return output
 
     def run(
-        self,
-        burnin: int = 0,
-        n_iteration: int = 2000,
-        n_chains: int = 12,
-        n_workers: int = 4,
-        sampling_method: str = "MetropolisRandomWalkMCMC",
+            self,
+            burnin: int = 0,
+            n_iteration: int = 2000,
+            n_chains: int = 12,
+            n_workers: int = 4,
+            sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -273,8 +273,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "r",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -296,8 +296,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         )
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "w",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "w",
         ) as outfile:
             json.dump(metadata, outfile)
 

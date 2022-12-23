@@ -10,9 +10,9 @@ import numpy as np
 import pandas as pd
 import pybamm
 
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (
+from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
-)  # noqa: E501
+)
 from battery_model_parameterization.Python.variable import Variable
 
 

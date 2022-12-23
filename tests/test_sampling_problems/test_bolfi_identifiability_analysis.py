@@ -75,7 +75,8 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         n_evidence = 1500
 
         chains = self.identifiability_problem.run(
-            sampling_iterations=n_iteration, n_chains=n_chains,
+            sampling_iterations=n_iteration,
+            n_chains=n_chains,
             n_evidence=n_evidence,
         )
 

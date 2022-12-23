@@ -9,14 +9,8 @@ prior_Ds_p = elfi.Prior("uniform", 0.1, 10, name="Ds_p")
 # create a `Variable` object for each variable being analysed
 # the `value` here is the 'ground truth' used to create synthetic data
 # the `value` needs to be in the sampling space
-Ds_n = Variable(name="Ds_n",
-                value=3,
-                prior=prior_Ds_n,
-                bounds=(0.1, 10))
-Ds_p = Variable(name="Ds_p",
-                value=1,
-                prior=prior_Ds_p,
-                bounds=(0.1, 10))
+Ds_n = Variable(name="Ds_n", value=3, prior=prior_Ds_n, bounds=(0.1, 10))
+Ds_p = Variable(name="Ds_p", value=1, prior=prior_Ds_p, bounds=(0.1, 10))
 
 variables = [Ds_n, Ds_p]
 
