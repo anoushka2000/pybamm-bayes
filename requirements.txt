@@ -12,3 +12,6 @@ seaborn
 tqdm
 elfi~=0.8.4
 jupyter
+
+# TODO: move to requirements_dev
+kaleido
