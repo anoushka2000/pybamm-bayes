@@ -68,7 +68,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         self.assertFalse(output is None)
 
     def test_run(self):
-        n_iteration = 50
+        n_iteration = 200
         n_chains = 4
         n_evidence = 1500
 
