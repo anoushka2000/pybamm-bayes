@@ -14,18 +14,16 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
-    identifiability_problem = None
 
     @classmethod
     def setUpClass(cls):
         # setup variables
+        prior_Ds_n = elfi.Prior("norm", 13, 0.5, name="Ds_n")
+        prior_Ds_p = elfi.Prior("norm", 12.5, 0.5, name="Ds_p")
+        Ds_n = Variable(name="Ds_n", value=13.4, prior=prior_Ds_n, bounds=(12, 14))
+        Ds_p = Variable(name="Ds_p", value=13, prior=prior_Ds_p, bounds=(12, 14))
 
-        prior_j0_n = elfi.Prior("norm", 5.5, 0.5, name="j0_n")
-        prior_j0_p = elfi.Prior("norm", 6.5, 0.5, name="j0_p")
-        j0_n = Variable(name="j0_n", value=4.698, prior=prior_j0_n, bounds=(4, 6))
-        j0_p = Variable(name="j0_p", value=6.22, prior=prior_j0_p, bounds=(5, 7))
-
-        cls.variables = [j0_n, j0_p]
+        cls.variables = [Ds_n, Ds_p]
 
         # setup battery simulation
         model = pybamm.lithium_ion.SPMe()
