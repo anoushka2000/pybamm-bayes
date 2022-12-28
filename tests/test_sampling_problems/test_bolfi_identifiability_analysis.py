@@ -18,10 +18,12 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # setup variables
-        prior_Ds_n = elfi.Prior("norm", 13, 0.5, name="Ds_n")
-        prior_Ds_p = elfi.Prior("norm", 12.5, 0.5, name="Ds_p")
-        Ds_n = Variable(name="Ds_n", value=13.4, prior=prior_Ds_n, bounds=(12, 14))
-        Ds_p = Variable(name="Ds_p", value=13, prior=prior_Ds_p, bounds=(12, 14))
+        prior_Ds_n = elfi.Prior("norm", 13, 1, name="Ds_n")
+        prior_Ds_p = elfi.Prior("norm", 12.5, 1, name="Ds_p")
+        Ds_n = Variable(name="Ds_n", value=13.4,  # prior_loc=-13, prior_scale=1,
+                        prior=prior_Ds_n, bounds=(12, 14))
+        Ds_p = Variable(name="Ds_p", value=13,  # prior_loc=-13, prior_scale=1,
+                        prior=prior_Ds_p, bounds=(12, 14))
 
         cls.variables = [Ds_n, Ds_p]
 
@@ -30,6 +32,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         cls.parameter_values = marquis_2019(cls.variables)
         cls.simulation = pybamm.Simulation(
             model,
+            parameter_values=cls.parameter_values,
             experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
         )
 
@@ -70,7 +73,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
     def test_run(self):
         n_iteration = 200
         n_chains = 4
-        n_evidence = 1500
+        n_evidence = 500
 
         chains = self.identifiability_problem.run(
             sampling_iterations=n_iteration,
