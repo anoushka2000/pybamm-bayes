@@ -40,6 +40,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             battery_simulation=cls.simulation,
             parameter_values=cls.parameter_values,
             variables=cls.variables,
+            output="Terminal voltage [V]",
             transform_type="negated_log10",
             noise=0.001,
             target_resolution=30,

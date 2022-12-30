@@ -45,6 +45,10 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         List of variables being identified in problem.
         Each variable listed in `variables` must be initialized
         as a pybamm.InputParameter in `parameter_values`.
+    output: str
+        Name of battery simulation output corresponding to observed quantity
+        recorded in data e.g "Terminal voltage [V]", "Terminal power [W]"
+        or "Current [A]".
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
@@ -65,6 +69,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         battery_simulation: pybamm.Simulation,
         parameter_values: pybamm.ParameterValues,
         variables: List[Variable],
+        output: str,
         transform_type: str,
         noise: float,
         target_resolution: int = 30,
@@ -76,6 +81,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             battery_simulation=battery_simulation,
             parameter_values=parameter_values,
             variables=variables,
+            output=output,
             transform_type=transform_type,
             project_tag=project_tag,
         )
@@ -138,7 +144,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         Returns
         ----------
         output: np.ndarray
-            Voltage time series.
+            Output time series.
         """
         variable_names = [v.name for v in self.variables]
 
@@ -155,8 +161,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.times
             )
             solution = self.battery_simulation.solution
-            V = solution["Terminal voltage [V]"]
-            output = V.entries
+            output = solution[self.output].entries
 
         except pybamm.SolverError:
             # CasadiSolver "fast" failed
@@ -165,8 +170,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                     inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times
                 )
                 solution = self.battery_simulation.solution
-                V = solution["Terminal voltage [V]"]
-                output = V.entries
+                output = solution[self.output].entries
 
             except pybamm.SolverError:
                 #  ScipySolver solver failed
@@ -175,8 +179,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                         inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
                     )
                     solution = self.battery_simulation.solution
-                    V = solution["Terminal voltage [V]"]
-                    output = V.entries
+                    output = solution[self.output].entries
 
                 except pybamm.SolverError as e:
 

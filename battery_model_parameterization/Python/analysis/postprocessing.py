@@ -16,7 +16,7 @@ from battery_model_parameterization.Python.analysis.utils import (
 
 def view_data(logs_dir_name=None, logs_dir_path=None):
     """
-    Helper function to display data (voltage profile) plot in notebook.
+    Helper function to display data (time series profile) plot in notebook.
     """
     if logs_dir_path is None and logs_dir_name:
         logs_dir_path = _get_logs_path(logs_dir_name)
@@ -129,7 +129,7 @@ def load_chains_with_residual(logs_dir_name=None, logs_dir_path=None):
 
 def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
     """
-    Calculates residual between simulated voltage and data for
+    Calculates residual between simulated output and data for
     values sampled from posterior distribution.
 
     Parameters
@@ -154,6 +154,7 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
 
     # recover variable definition from metadata
     variable_names = [var["name"] for var in metadata["variables"]]
+    output = metadata["output"]
 
     data = np.fromstring(metadata["data"][1:-1], sep=" ")
 
@@ -167,7 +168,7 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
                 t_eval=np.fromstring(metadata["times"][1:-1], sep=" "),
                 inputs=inputs.copy(),
             )
-            solution_V = solution["Terminal voltage [V]"].entries
+            solution_V = solution[output].entries
             summary.append(
                 {
                     **inputs,
@@ -181,7 +182,8 @@ def run_forward_model_over_posterior(
     logs_dir_name=None, logs_dir_path=None, n_evaluations=20
 ):
     """
-    Generates voltage curves for parameter values sampled from posterior distribution.
+    Generates time series curves for parameter values sampled
+    from the posterior distribution.
 
     Parameters
     __________
@@ -196,7 +198,7 @@ def run_forward_model_over_posterior(
 
     Returns
     _______
-    DataFrame with columns for voltage, time and correspomding parameter
+    DataFrame with columns for output, time and corresponding parameter
     values.
     """
     if logs_dir_path is None:
@@ -208,6 +210,8 @@ def run_forward_model_over_posterior(
 
     # recover variable definition from metadata
     variable_names = [var["name"] for var in metadata["variables"]]
+    output = metadata["output"]
+
     posterior_samples = sample_from_posterior(chains, n_samples=n_evaluations)
 
     if len(posterior_samples) > 1:
@@ -218,14 +222,14 @@ def run_forward_model_over_posterior(
                 t_eval=np.fromstring(metadata["times"][1:-1], sep=" "),
                 inputs=inputs.copy(),
             )
-            solution_V = solution["Terminal voltage [V]"].entries
+            solution_V = solution[output].entries
 
             for t, V in zip(solution.t, solution_V):
                 results.append(
                     {
                         **inputs,
                         "Time [s]": t,
-                        "Voltage [V]": V,
+                        output: V,
                         "run": i,
                     }
                 )
