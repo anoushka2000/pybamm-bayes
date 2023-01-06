@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
+from scipy.interpolate import interp1d
 
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
@@ -52,6 +53,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             variables: List[Variable],
             transform_type: str,
             noise: float,
+            error_axis: str = "y",
             times: Optional[np.ndarray] = None,
             project_tag: str = "",
     ):
@@ -68,6 +70,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         self.generated_data = False
         self.true_values = np.array([v.value for v in self.variables])
         self.noise = noise
+        self.error_axis = error_axis
 
         if battery_simulation.operating_mode == "without experiment":
             if times is None:
@@ -86,7 +89,12 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             self.times = battery_simulation.solution["Time [s]"].entries
 
         data = self.simulate(theta=self.true_values, times=self.times)
-        self.data = data + np.random.normal(0, self.noise, data.shape)
+        self.observable = data + np.random.normal(0, self.noise, data.shape)
+
+        if self.error_axis == "y":
+            self.data = self.observable
+        else:
+            self.data = self._interpolate_time_over_y_values(times=self.times, y_values=self.observable)
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
@@ -106,8 +114,28 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             "noise": self.noise,
             "project": self.project_tag,
             "times": str(self.times),
-            "data": str(self.data),
+            "data": str(self.observable),
         }
+
+    def _interpolate_time_over_y_values(self, times, y_values):
+        """
+        Parameters
+        ----------
+        times: np.ndarray
+            Times at which simulation was evaluated.
+        y_values: np.ndarray
+            Time series simulation output.
+
+        Returns
+        ----------
+        new_time: np.ndarray
+            Time interpolated over y-axis values.
+        """
+        y_function = interp1d(x=y_values, y=times)
+        min_y = y_values.min()
+        max_y = y_values.max()
+        new_y = np.linspace(start=min_y * (1 + 1e-8), stop=max_y * (1 - 1e-8), num=y_values.shape)
+        return y_function(new_y)
 
     def simulate(self, theta, times):
         """
@@ -166,6 +194,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     # array of zeros to maximize residual if solution did not converge
                     output = np.zeros(self.data.shape)
 
+        if self.error_axis == "x":
+            output = self._interpolate_time_over_y_values(times=self.times, y_values=output)
+
         if self.generated_data:
             try:
                 ess = np.sum(np.square((output - self.data) / self.noise)) / len(output)
@@ -177,6 +208,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
             self.residuals.append(ess)
         self.generated_data = True
+
         return output
 
     def run(
