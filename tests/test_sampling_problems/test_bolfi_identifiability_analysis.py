@@ -4,6 +4,7 @@ import unittest
 
 import elfi
 import pybamm
+from scipy.spatial.distance import cdist
 from battery_model_parameterization import (
     BOLFIIdentifiabilityAnalysis,
     Variable,
@@ -55,6 +56,11 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             len(self.identifiability_problem.times),
         )
 
+    def test_custom_discrepancy_metrics(self):
+        func = self.identifiability_problem.discrepancy_metrics['wasserstein_distance']
+        distance = func([0, 1, 3], [5, 6, 8])
+        self.assertEqual(5, distance)
+
     def test_metadata(self):
         self.assertIsInstance(self.identifiability_problem.metadata, dict)
 
@@ -79,6 +85,21 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             sampling_iterations=n_iteration,
             n_chains=n_chains,
             n_evidence=n_evidence,
+        )
+
+        self.assertEqual(len(chains.columns), len(self.variables))
+        self.assertEqual(len(chains), n_iteration * n_chains)
+
+    def test_run_with_callable_discrepancy(self):
+        n_iteration = 200
+        n_chains = 4
+        n_evidence = 500
+
+        chains = self.identifiability_problem.run(
+            sampling_iterations=n_iteration,
+            n_chains=n_chains,
+            n_evidence=n_evidence,
+            discrepancy_metric=lambda x, y: cdist(x, y, metric='euclidean')
         )
 
         self.assertEqual(len(chains.columns), len(self.variables))
