@@ -390,7 +390,6 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         ) as outfile:
             metadata = json.load(outfile)
 
-
         metadata.update(
             {
                 "initial_evidence": initial_evidence,
