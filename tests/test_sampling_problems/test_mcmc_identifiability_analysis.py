@@ -80,6 +80,20 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
         self.assertEqual(len(chains.columns), len(self.variables))
         self.assertEqual(len(chains), n_iteration * n_chains)
 
+    def test_run_x_axis_error(self):
+        burnin = 2
+        n_iteration = 5
+        n_chains = 3
+        n_workers = 3
+
+        self.identifiability_problem.error_axis = "x"
+        chains = self.identifiability_problem.run(
+            burnin, n_iteration, n_chains, n_workers
+        )
+
+        self.assertEqual(len(chains.columns), len(self.variables))
+        self.assertEqual(len(chains), n_iteration * n_chains)
+
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(TestIdentifiabilityAnalysis.identifiability_problem.logs_dir_path)

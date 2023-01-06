@@ -134,7 +134,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         y_function = interp1d(x=y_values, y=times)
         min_y = y_values.min()
         max_y = y_values.max()
-        new_y = np.linspace(start=min_y * (1 + 1e-8), stop=max_y * (1 - 1e-8), num=y_values.shape)
+        new_y = np.linspace(start=min_y * (1 + 1e-8), stop=max_y * (1 - 1e-8), num=int(y_values.shape[0]))
         return y_function(new_y)
 
     def simulate(self, theta, times):
