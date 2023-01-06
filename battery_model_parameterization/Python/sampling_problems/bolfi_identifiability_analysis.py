@@ -6,6 +6,7 @@ from typing import List, Optional, Dict, Union, Callable
 import elfi
 import elfi.visualization.interactive as visin
 import matplotlib.pyplot as plt
+import inspect
 import numpy as np
 import pandas as pd
 import pybamm
@@ -345,6 +346,10 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
 
         if isinstance(discrepancy_metric, str):
             discrepancy_metric = self.discrepancy_metrics[discrepancy_metric]
+            discrepancy_metric_name = discrepancy_metric
+
+        else:
+            discrepancy_metric_name = inspect.getsourcelines(discrepancy_metric)[0][0]
 
         if distance_kwargs:
             elfi.Distance(
@@ -385,6 +390,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         ) as outfile:
             metadata = json.load(outfile)
 
+
         metadata.update(
             {
                 "initial_evidence": initial_evidence,
@@ -396,7 +402,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 "min_discrepancy": opt_res,
                 "sample_means_and_95CIs": self.sampled_posterior.sample_means_and_95CIs,
                 "n_chains": n_chains,
-                "discrepancy": discrepancy_metric
+                "discrepancy": discrepancy_metric_name
             }
         )
 
