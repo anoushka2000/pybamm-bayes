@@ -304,11 +304,11 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         discrepancy_metric: Union[str, Callable]
             (Passed to elfi.Distance)
             If string it must be a valid metric from `scipy.spatial.distance.cdist`.
-            Is a callable, the signature must be `distance(X, Y)`, where X is a n x m
-            array containing n simulated values (summaries) in rows and Y is a 1 x m array
-            that contains the observed values (summaries). The callable should return
-            a vector of distances between the simulated summaries and the observed
-            summaries.
+            Is a callable, the signature must be `distance(X, Y)`,
+            where X is a n x m array containing n simulated values (summaries) in rows
+            and Y is a 1 x m array that contains the observed values (summaries).
+            The callable should return a vector of distances between the simulated
+            summaries and the observednsummaries.
         distance_kwargs: Dict
             Additional parameters may be required depending on the chosen distance.
             See the scipy.spatial.cdist documentation.
@@ -347,7 +347,9 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             discrepancy_metric = self.discrepancy_metrics[discrepancy_metric]
 
         if distance_kwargs:
-            elfi.Distance(discrepancy_metric, *sumstats, **distance_kwargs, name="distance")
+            elfi.Distance(
+                discrepancy_metric, *sumstats, **distance_kwargs, name="distance"
+            )
         else:
             elfi.Distance(discrepancy_metric, *sumstats, name="distance")
 
