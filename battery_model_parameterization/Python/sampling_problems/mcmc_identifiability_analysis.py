@@ -94,7 +94,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         if self.error_axis == "y":
             self.data = self.observable
         else:
-            self.data = self._interpolate_time_over_y_values(times=self.times, y_values=self.observable)
+            self.data = self._interpolate_time_over_y_values(
+                times=self.times,
+                y_values=self.observable
+            )
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
@@ -134,7 +137,11 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         y_function = interp1d(x=y_values, y=times)
         min_y = y_values.min()
         max_y = y_values.max()
-        new_y = np.linspace(start=min_y * (1 + 1e-8), stop=max_y * (1 - 1e-8), num=int(y_values.shape[0]))
+        new_y = np.linspace(
+            start=min_y * (1 + 1e-8),
+            stop=max_y * (1 - 1e-8),
+            num=int(y_values.shape[0])
+        )
         return y_function(new_y)
 
     def simulate(self, theta, times):
@@ -195,7 +202,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     output = np.zeros(self.data.shape)
 
         if self.error_axis == "x":
-            output = self._interpolate_time_over_y_values(times=self.times, y_values=output)
+            output = self._interpolate_time_over_y_values(
+                times=self.times,
+                y_values=output
+            )
 
         if self.generated_data:
             try:
