@@ -17,6 +17,7 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
 )
 from battery_model_parameterization.Python.logging import logger
 
+
 class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
     Class for conducting non-linear identifiability analysis on
