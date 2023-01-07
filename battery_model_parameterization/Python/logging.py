@@ -1,7 +1,7 @@
 from csv_logger import CsvLogger
 import logging
 
-###   LOGGER    ###
+#   LOGGER    #
 
 FORMAT = (
     "%(asctime)s.%(msecs)03d - [%(levelname)s] %(module)s.%(funcName)s(%(lineno)d): "
@@ -31,13 +31,16 @@ def get_new_logger(name, filename):
 # Create a custom logger
 logger = _get_new_logger(__name__)
 
-###   CSV LOGGER    ###
+
+#    CSV LOGGER    #
+# For solve time and solve time logging
 
 # Create csv logger
-csv_logger = lambda x: CsvLogger(filename=x,
-                                 delimiter=',',
-                                 level=logging.INFO,
-                                 fmt=f'%(asctime)s,%(message)s',
-                                 datefmt='%Y/%m/%d %H:%M:%S',
-                                 max_size=1024 * 30,  # 30 kilobytes,
-                                 header=['date', 'level', 'solve', 'solve_time [ms]'])
+def csv_logger(filename):
+    return CsvLogger(filename=filename,
+                     delimiter=',',
+                     level=logging.INFO,
+                     fmt='%(asctime)s,%(message)s',
+                     datefmt='%Y/%m/%d %H:%M:%S',
+                     max_size=1024 * 30,  # 30 kilobytes,
+                     header=['date', 'level', 'solve', 'solve_time [ms]'])

@@ -15,6 +15,7 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_variables,
     _fmt_parameters,
 )
+from battery_model_parameterization.Python.logging import csv_logger
 
 
 class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
@@ -68,6 +69,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         self.generated_data = False
         self.true_values = np.array([v.value for v in self.variables])
         self.noise = noise
+        self.csv_logger = csv_logger(
+            os.path.join(self.logs_dir_path, "solve_time_log.csv")
+        )
 
         if battery_simulation.operating_mode == "without experiment":
             if times is None:
@@ -135,6 +139,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             solution = self.battery_simulation.solution
             V = solution["Terminal voltage [V]"]
             output = V.entries
+            self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
         except pybamm.SolverError:
             # CasadiSolver "fast" failed
@@ -145,6 +150,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 solution = self.battery_simulation.solution
                 V = solution["Terminal voltage [V]"]
                 output = V.entries
+                self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
             except pybamm.SolverError:
                 #  ScipySolver solver failed
@@ -155,6 +161,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     solution = self.battery_simulation.solution
                     V = solution["Terminal voltage [V]"]
                     output = V.entries
+                    self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:
 
@@ -248,6 +255,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             time=mcmc.time(),
             parameter_names=[v.name for v in self.variables],
         )
+        self.csv_logger.info(["pints", mcmc.time()*1000])
 
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
