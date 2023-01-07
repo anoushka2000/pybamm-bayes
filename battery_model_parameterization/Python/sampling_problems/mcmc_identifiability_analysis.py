@@ -16,6 +16,7 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_parameters,
 )
 
+
 class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
     Class for conducting non-linear identifiability analysis on
@@ -250,7 +251,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             time=mcmc.time(),
             parameter_names=[v.name for v in self.variables],
         )
-        self.csv_logger.info(["pints", mcmc.time()*1000])
+        self.csv_logger.info(["pints", mcmc.time() * 1000])
 
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])

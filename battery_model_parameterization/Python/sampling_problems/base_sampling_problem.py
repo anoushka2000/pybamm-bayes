@@ -122,10 +122,9 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     variable.bounds[1] - variable.bounds[0],
                 )
                 sample = (
-                        lower
-                        + variable.prior.distribution.rvs(
-                    size=7000,
-                )
+                        lower + variable.prior.distribution.rvs(
+                            size=7000,
+                        )
                         * rng
                 )
             else:
@@ -237,8 +236,8 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     sample = (
                             lower
                             + variable.prior.distribution.rvs(
-                        size=7000,
-                    )
+                                size=7000,
+                            )
                             * rng
                     )
                 else:

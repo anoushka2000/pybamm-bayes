@@ -140,6 +140,7 @@ class ParameterEstimation(BaseSamplingProblem):
             solution = self.battery_simulation.solution
             V = solution["Terminal voltage [V]"]
             output = V.entries
+            self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
         except pybamm.SolverError:
             # CasadiSolver "fast" failed
@@ -150,6 +151,7 @@ class ParameterEstimation(BaseSamplingProblem):
                 solution = self.battery_simulation.solution
                 V = solution["Terminal voltage [V]"]
                 output = V.entries
+                self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
             except pybamm.SolverError:
                 #  Casadi solver failed
@@ -161,6 +163,7 @@ class ParameterEstimation(BaseSamplingProblem):
                     V = solution["Terminal voltage [V]"]
 
                     output = V.entries
+                    self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:
 
