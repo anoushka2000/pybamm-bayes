@@ -16,6 +16,7 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_parameters,
     _fmt_variables,
 )
+from battery_model_parameterization.Python.logging import logger
 
 
 class ParameterEstimation(BaseSamplingProblem):
@@ -250,10 +251,10 @@ class ParameterEstimation(BaseSamplingProblem):
         # mcmc.set_parallel(parallel=n_workers)
 
         # Run
-        print("Running...")
+        logger.info("Running...")
         chains = mcmc.run()
         self.chains = chains
-        print("Done!")
+        logger.info("Done!")
 
         self.csv_logger.info(["pints", mcmc.time() * 1000])
         chains = pd.DataFrame(

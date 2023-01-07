@@ -15,7 +15,7 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_variables,
     _fmt_parameters,
 )
-
+from battery_model_parameterization.Python.logging import logger
 
 class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
@@ -243,9 +243,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         # mcmc.set_parallel(parallel=n_workers)
 
         # Run
-        print("Running...")
+        logger.info("Running...")
         chains = mcmc.run()
-        print("Done!")
+        logger.info("Done!")
         summary_stats = pints.MCMCSummary(
             chains=chains,
             time=mcmc.time(),
