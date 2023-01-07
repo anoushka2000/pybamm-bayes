@@ -255,6 +255,7 @@ class ParameterEstimation(BaseSamplingProblem):
         self.chains = chains
         print("Done!")
 
+        self.csv_logger.info(["pints", mcmc.time() * 1000])
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
         )
