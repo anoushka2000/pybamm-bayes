@@ -15,8 +15,6 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_variables,
     _fmt_parameters,
 )
-from battery_model_parameterization.Python.logging import csv_logger
-
 
 class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
@@ -69,9 +67,6 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         self.generated_data = False
         self.true_values = np.array([v.value for v in self.variables])
         self.noise = noise
-        self.csv_logger = csv_logger(
-            os.path.join(self.logs_dir_path, "solve_time_log.csv")
-        )
 
         if battery_simulation.operating_mode == "without experiment":
             if times is None:
