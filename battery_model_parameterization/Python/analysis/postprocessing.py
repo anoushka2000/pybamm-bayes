@@ -168,11 +168,11 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
                 t_eval=np.fromstring(metadata["times"][1:-1], sep=" "),
                 inputs=inputs.copy(),
             )
-            solution_V = solution[output].entries
+            solution_var = solution[output].entries
             summary.append(
                 {
                     **inputs,
-                    "Residual": abs(data - solution_V).sum() / len(solution_V),
+                    "Residual": abs(data - solution_var).sum() / len(solution_var),
                 }
             )
     return pd.DataFrame(summary)
@@ -222,9 +222,9 @@ def run_forward_model_over_posterior(
                 t_eval=np.fromstring(metadata["times"][1:-1], sep=" "),
                 inputs=inputs.copy(),
             )
-            solution_V = solution[output].entries
+            solution_var = solution[output].entries
 
-            for t, V in zip(solution.t, solution_V):
+            for t, V in zip(solution.t, solution_var):
                 results.append(
                     {
                         **inputs,
