@@ -61,6 +61,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         self.residuals = []
         self.chains = pd.DataFrame()
 
+        # save battery simulation
+        self.battery_simulation.save(
+            os.path.join(self.logs_dir_path, "battery_simulation")
+        )
+
         if not os.path.isdir(self.logs_dir_path):
             os.makedirs(self.logs_dir_path)
 
