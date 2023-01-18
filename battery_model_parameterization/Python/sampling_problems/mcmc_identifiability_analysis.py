@@ -252,7 +252,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             time=mcmc.time(),
             parameter_names=[v.name for v in self.variables],
         )
-        self.csv_logger.info(["pints", mcmc.time() * 1000])
+        self.csv_logger.info(["pints", mcmc.time()])
 
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])

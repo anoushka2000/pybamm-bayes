@@ -43,4 +43,4 @@ def csv_logger(filename):
                      fmt='%(asctime)s,%(message)s',
                      datefmt='%Y/%m/%d %H:%M:%S',
                      max_size=1024 * 30,  # 30 kilobytes,
-                     header=['date', 'level', 'solve', 'solve_time [ms]'])
+                     header=['date', 'level', 'solve', 'solve_time [s]'])
