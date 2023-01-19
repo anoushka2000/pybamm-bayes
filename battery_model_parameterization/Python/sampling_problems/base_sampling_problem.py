@@ -16,6 +16,7 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_parameters,
     _fmt_variables,
 )
+from battery_model_parameterization.Python.logging import csv_logger
 
 
 class BaseSamplingProblem(pints.ForwardModelS1):
@@ -32,6 +33,10 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         List of variables being identified in problem.
         Each variable listed in `variables` must be initialized
         as a pybamm.InputParameter in `parameter_values`.
+    output: str
+        Name of battery simulation output corresponding to observed quantity
+        recorded in data e.g "Terminal voltage [V]", "Terminal power [W]"
+        or "Current [A]".
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
@@ -45,6 +50,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         battery_simulation: pybamm.Simulation,
         parameter_values: pybamm.ParameterValues,
         variables: List[Variable],
+        output: str,
         transform_type: str,
         project_tag: str = "",
     ):
@@ -54,12 +60,16 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         self.battery_simulation = battery_simulation
         self.parameter_values = parameter_values
         self.variables = variables
+        self.output = output
         self.transform_type = transform_type
         self.project_tag = project_tag
         self.logs_dir_path = self.create_logs_dir()
         self.default_inputs = {v.name: v.value for v in self.variables}
         self.residuals = []
         self.chains = pd.DataFrame()
+        self.csv_logger = csv_logger(
+            os.path.join(self.logs_dir_path, "solve_time_log.csv")
+        )
 
         if not os.path.isdir(self.logs_dir_path):
             os.makedirs(self.logs_dir_path)
@@ -93,6 +103,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             "parameter values": _fmt_parameters(self.parameter_values),
             "default inputs": self.default_inputs,
             "variables": _fmt_variables(self.variables),
+            "output": self.output,
             "transform type": self.transform_type,
             "project": self.project_tag,
         }
@@ -118,11 +129,10 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     variable.bounds[1] - variable.bounds[0],
                 )
                 sample = (
-                    lower
-                    + variable.prior.distribution.rvs(
-                        size=7000,
-                    )
-                    * rng
+                        lower + variable.prior.distribution.rvs(
+                            size=7000,
+                        )
+                        * rng
                 )
             else:
                 sample = variable.prior.sample(7000).flatten()
@@ -147,11 +157,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
 
     def plot_data(self):
         """
-        Plot of voltage profile used for fitting and save.
+        Plot of profile of time series data used and save.
         """
         plt.plot(self.battery_simulation.solution["Time [s]"].entries, self.data)
         plt.xlabel("Time (s)")
-        plt.ylabel("Voltage (V)")
+        plt.ylabel(self.output)
         plt.savefig(os.path.join(self.logs_dir_path, "data"))
 
     def plot_results_summary(self, forward_evaluations=7000):
@@ -183,7 +193,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                         {
                             **inputs,
                             "Time [s]": t,
-                            "Voltage [V]": V,
+                            self.output: V,
                             "run": i,
                         }
                     )
@@ -205,17 +215,17 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             )
             plt.clf()
 
-            voltage_scratch_plots = []
+            scratch_plots = []
 
             for var in variable_names:
                 plot = plt.scatter(
                     df["Time [s]"],
-                    df["Voltage [V]"],
+                    df[self.output],
                     c=df[var],
                     cmap=sns.cubehelix_palette(as_cmap=True),
                 )
 
-                voltage_scratch_plots.append(plot)
+                scratch_plots.append(plot)
                 plt.clf()
 
             # Set up axis
@@ -231,11 +241,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                         variable.bounds[1] - variable.bounds[0],
                     )
                     sample = (
-                        lower
-                        + variable.prior.distribution.rvs(
-                            size=7000,
-                        )
-                        * rng
+                            lower
+                            + variable.prior.distribution.rvs(
+                                size=7000,
+                            )
+                            * rng
                     )
                 else:
                     sample = variable.prior.sample(7000).flatten()
@@ -267,17 +277,17 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     ax=ax[i][0],
                 )
 
-                # column 1: plot voltage colored by variable for each variable
+                # column 1: plot output colored by variable for each variable
                 sns.lineplot(
                     data=df,
                     x="Time [s]",
-                    y="Voltage [V]",
+                    y=self.output,
                     hue=df[var],
                     ax=ax[i][1],
                     palette=sns.cubehelix_palette(as_cmap=True),
                 )
                 # add color bar
-                plt.colorbar(voltage_scratch_plots[i - 1], ax=ax[i][1], label=var)
+                plt.colorbar(scratch_plots[i - 1], ax=ax[i][1], label=var)
                 # remove discrete legend
                 ax[i][1].legend_.remove()
 
@@ -291,11 +301,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             # remove discrete legend
             ax[0][1].legend_.remove()
 
-            # Voltage with one s.d. plot
+            # Output vairable with one s.d. plot
             sns.lineplot(
-                data=df, x="Time [s]", y="Voltage [V]", errorbar=("sd", 1), ax=ax[0][0]
+                data=df, x="Time [s]", y=self.output, errorbar=("sd", 1), ax=ax[0][0]
             )
-            ax[0][0].set_ylabel("Voltage with one standard deviation")
+            ax[0][0].set_ylabel(f"{self.output} with one standard deviation")
             ax[1][0].set_ylabel("Frequency")
             ax[2][0].set_ylabel("Frequency")
 
