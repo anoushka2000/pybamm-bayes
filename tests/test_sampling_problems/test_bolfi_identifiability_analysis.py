@@ -20,6 +20,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         # setup variables
         prior_Ds_n = elfi.Prior("norm", 13, 1, name="Ds_n")
         prior_Ds_p = elfi.Prior("norm", 12.5, 1, name="Ds_p")
+
         Ds_n = Variable(name="Ds_n", value=13.4,
                         prior=prior_Ds_n, bounds=(12, 14))
         Ds_p = Variable(name="Ds_p", value=13,
@@ -40,6 +41,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             battery_simulation=cls.simulation,
             parameter_values=cls.parameter_values,
             variables=cls.variables,
+            output="Terminal voltage [V]",
             transform_type="negated_log10",
             noise=0.001,
             target_resolution=30,

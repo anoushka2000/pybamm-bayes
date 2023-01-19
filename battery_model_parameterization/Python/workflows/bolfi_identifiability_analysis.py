@@ -85,6 +85,7 @@ simulation = pybamm.Simulation(
 identifiability_problem = BOLFIIdentifiabilityAnalysis(
     battery_simulation=simulation,
     variables=variables,
+    output="Terminal voltage [V]",
     parameter_values=param,
     transform_type="log10",
     noise=0.001,

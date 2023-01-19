@@ -681,7 +681,7 @@ def plot_forward_model_posterior_distribution(
     logs_dir_name=None, logs_dir_path=None, from_stored=False, n_evaluations=20
 ):
     """
-    Voltage curves for parameter values sampled from posterior,
+    Time series curves for parameter values sampled from posterior,
     coloured by residual parameter values.
 
     Parameters
@@ -716,19 +716,20 @@ def plot_forward_model_posterior_distribution(
 
     metadata = load_metadata(logs_dir_path=logs_dir_path)
     variable_names = [var["name"] for var in metadata["variables"]]
+    output = metadata["output"]
 
     # used to generate color bars
-    voltage_scratch_plots = []
+    scratch_plots = []
 
     for var in variable_names:
         plot = plt.scatter(
             df["Time [s]"],
-            df["Voltage [V]"],
+            df[output],
             c=df[var],
             cmap=sns.cubehelix_palette(as_cmap=True),
         )
 
-        voltage_scratch_plots.append(plot)
+        scratch_plots.append(plot)
         plt.clf()
 
     rows = len(variable_names) + 1
@@ -737,19 +738,19 @@ def plot_forward_model_posterior_distribution(
     fig, ax = plt.subplots(rows, 1, figsize=(5, rows * 4))
 
     for i, var in list(zip([i for i in range(1, rows)], variable_names)):
-        # plot voltage colored by variable for each variable
+        # plot simulated profile colored by variable for each variable
         sns.lineplot(
             data=df,
             x="Time [s]",
-            y="Voltage [V]",
+            y=output,
             hue=df[var],
             ax=ax[i],
             palette=sns.cubehelix_palette(as_cmap=True),
         )
         # add color bar
-        plt.colorbar(voltage_scratch_plots[i - 1], ax=ax[i], label=var)
+        plt.colorbar(scratch_plots[i - 1], ax=ax[i], label=var)
         # remove discrete legend
         ax[i].legend_.remove()
 
-    # voltage with one s.d. plot
-    sns.lineplot(data=df, x="Time [s]", y="Voltage [V]", errorbar=("sd", 1), ax=ax[0])
+    # output with one s.d. plot
+    sns.lineplot(data=df, x="Time [s]", y=output, errorbar=("sd", 1), ax=ax[0])

@@ -34,6 +34,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         List of variables being identified in problem.
         Each variable listed in `variables` must be initialized
         as a pybamm.InputParameter in `parameter_values`.
+    output: str
+        Name of battery simulation output corresponding to observed quantity
+        recorded in data e.g "Terminal voltage [V]", "Terminal power [W]"
+        or "Current [A]".
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
@@ -51,6 +55,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             battery_simulation: pybamm.Simulation,
             parameter_values: pybamm.ParameterValues,
             variables: List[Variable],
+            output: str,
             transform_type: str,
             noise: float,
             times: Optional[np.ndarray] = None,
@@ -61,6 +66,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             battery_simulation=battery_simulation,
             parameter_values=parameter_values,
             variables=variables,
+            output=output,
             transform_type=transform_type,
             project_tag=project_tag,
         )
@@ -122,7 +128,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         Returns
         ----------
         output: np.ndarray
-            Voltage time series.
+            Output time series.
         """
         variable_names = [v.name for v in self.variables]
 
@@ -134,8 +140,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.times
             )
             solution = self.battery_simulation.solution
-            V = solution["Terminal voltage [V]"]
-            output = V.entries
+            output = solution[self.output].entries
+
             self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
         except pybamm.SolverError:
@@ -145,8 +151,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times
                 )
                 solution = self.battery_simulation.solution
-                V = solution["Terminal voltage [V]"]
-                output = V.entries
+                output = solution[self.output].entries
+
                 self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
             except pybamm.SolverError:
@@ -156,8 +162,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                         inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
                     )
                     solution = self.battery_simulation.solution
-                    V = solution["Terminal voltage [V]"]
-                    output = V.entries
+                    output = solution[self.output].entries
+
                     self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:
@@ -220,7 +226,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             self.times,
             self.data,
         )
+
         log_likelihood = pints.GaussianKnownSigmaLogLikelihood(problem, self.noise)
+
         log_posterior = pints.LogPosterior(log_likelihood, self.log_prior)
         xs = [x * self.true_values for x in np.random.normal(1, 0.2, n_chains)]
 
