@@ -41,12 +41,12 @@ class BaseSamplingProblem(pints.ForwardModelS1):
     """
 
     def __init__(
-        self,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        transform_type: str,
-        project_tag: str = "",
+            self,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            transform_type: str,
+            project_tag: str = "",
     ):
 
         super().__init__()
@@ -61,13 +61,14 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         self.residuals = []
         self.chains = pd.DataFrame()
 
+        # create logs directory
+        if not os.path.isdir(self.logs_dir_path):
+            os.makedirs(self.logs_dir_path)
+
         # save battery simulation
         self.battery_simulation.save(
             os.path.join(self.logs_dir_path, "battery_simulation")
         )
-
-        if not os.path.isdir(self.logs_dir_path):
-            os.makedirs(self.logs_dir_path)
 
     @property
     def transforms(self):
@@ -123,11 +124,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     variable.bounds[1] - variable.bounds[0],
                 )
                 sample = (
-                    lower
-                    + variable.prior.distribution.rvs(
-                        size=7000,
-                    )
-                    * rng
+                        lower
+                        + variable.prior.distribution.rvs(
+                    size=7000,
+                )
+                        * rng
                 )
             else:
                 sample = variable.prior.sample(7000).flatten()
@@ -154,7 +155,10 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         """
         Plot of voltage profile used for fitting and save.
         """
-        plt.plot(self.battery_simulation.solution["Time [s]"].entries, self.data)
+        if self.error_axis == "y":
+            plt.plot(self.data_reference_axis_values, self.data_output_axis_values)
+        else:
+            plt.plot(self.data_output_axis_values, self.data_reference_axis_values)
         plt.xlabel("Time (s)")
         plt.ylabel("Voltage (V)")
         plt.savefig(os.path.join(self.logs_dir_path, "data"))
@@ -175,20 +179,20 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                 if self.method == "BOLFI":
                     solution_V = self.simulate(*list(input_set))
                 else:
-                    solution_V = self.simulate(theta=list(input_set), times=self.times)
+                    solution_V = self.simulate(theta=list(input_set), times=self.t_eval)
                 summary.append(
                     {
                         **inputs,
-                        "Residual": abs(self.data - solution_V).sum() / len(solution_V),
+                        "Residual": abs(self.data_output_axis_values - solution_V).sum() / len(solution_V),
                     }
                 )
 
-                for t, V in zip(self.times, solution_V):
+                for ref, outp in zip(self.data_reference_axis_values, solution_V):
                     results.append(
                         {
                             **inputs,
-                            "Time [s]": t,
-                            "Voltage [V]": V,
+                            "Reference": ref,
+                            "Output": outp,
                             "run": i,
                         }
                     )
@@ -210,17 +214,17 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             )
             plt.clf()
 
-            voltage_scratch_plots = []
+            _scratch_plots = []
 
             for var in variable_names:
                 plot = plt.scatter(
-                    df["Time [s]"],
-                    df["Voltage [V]"],
+                    df["Reference"],
+                    df["Output"],
                     c=df[var],
                     cmap=sns.cubehelix_palette(as_cmap=True),
                 )
 
-                voltage_scratch_plots.append(plot)
+                _scratch_plots.append(plot)
                 plt.clf()
 
             # Set up axis
@@ -236,11 +240,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                         variable.bounds[1] - variable.bounds[0],
                     )
                     sample = (
-                        lower
-                        + variable.prior.distribution.rvs(
-                            size=7000,
-                        )
-                        * rng
+                            lower
+                            + variable.prior.distribution.rvs(
+                        size=7000,
+                    )
+                            * rng
                     )
                 else:
                     sample = variable.prior.sample(7000).flatten()
@@ -275,14 +279,14 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                 # column 1: plot voltage colored by variable for each variable
                 sns.lineplot(
                     data=df,
-                    x="Time [s]",
-                    y="Voltage [V]",
+                    x="Reference",
+                    y="Output",
                     hue=df[var],
                     ax=ax[i][1],
                     palette=sns.cubehelix_palette(as_cmap=True),
                 )
                 # add color bar
-                plt.colorbar(voltage_scratch_plots[i - 1], ax=ax[i][1], label=var)
+                plt.colorbar(_scratch_plots[i - 1], ax=ax[i][1], label=var)
                 # remove discrete legend
                 ax[i][1].legend_.remove()
 
@@ -298,9 +302,9 @@ class BaseSamplingProblem(pints.ForwardModelS1):
 
             # Voltage with one s.d. plot
             sns.lineplot(
-                data=df, x="Time [s]", y="Voltage [V]", errorbar=("sd", 1), ax=ax[0][0]
+                data=df, x="Reference", y="Output", errorbar=("sd", 1), ax=ax[0][0]
             )
-            ax[0][0].set_ylabel("Voltage with one standard deviation")
+            ax[0][0].set_ylabel("Output with one standard deviation")
             ax[1][0].set_ylabel("Frequency")
             ax[2][0].set_ylabel("Frequency")
 

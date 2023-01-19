@@ -6,16 +6,16 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
-from scipy.interpolate import interp1d
 
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
 )
-from battery_model_parameterization.Python.variable import Variable
 from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_variables,
     _fmt_parameters,
+    interpolate_time_over_y_values
 )
+from battery_model_parameterization.Python.variable import Variable
 
 
 class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
@@ -71,33 +71,11 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         self.true_values = np.array([v.value for v in self.variables])
         self.noise = noise
         self.error_axis = error_axis
+        self.t_eval = times
 
-        if battery_simulation.operating_mode == "without experiment":
-            if times is None:
-                raise ValueError(
-                    """If battery simulation is not operated using an experiment,\n
-                an array of times to evaluate simulation at must be passed."""
-                )
-
-            self.times = times
-
-        else:
-            inputs = dict(
-                zip([v.name for v in variables], [v.value for v in variables])
-            )
-            battery_simulation.solve(inputs=inputs)
-            self.times = battery_simulation.solution["Time [s]"].entries
-
-        data = self.simulate(theta=self.true_values, times=self.times)
-        self.observable = data + np.random.normal(0, self.noise, data.shape)
-
-        if self.error_axis == "y":
-            self.data = self.observable
-        else:
-            self.data = self._interpolate_time_over_y_values(
-                times=self.times,
-                y_values=self.observable
-            )
+        data_to_fit = self.generate_synthetic_data()
+        self.data_reference_axis_values = data_to_fit[0]
+        self.data_output_axis_values = data_to_fit[1]
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
@@ -105,6 +83,47 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         self.battery_simulation.save(
             os.path.join(self.logs_dir_path, "battery_simulation")
         )
+
+    def generate_synthetic_data(self):
+
+        inputs = dict(
+            zip([v.name for v in self.variables],
+                [v.value for v in self.variables])
+        )
+
+        if self.battery_simulation.operating_mode == "without experiment":
+            if self.t_eval is None:
+                raise ValueError(
+                    """If battery simulation is not operated using an experiment,\n
+                an array of times to evaluate simulation at must be passed."""
+                )
+            else:
+                self.battery_simulation.solve(inputs=inputs, t_eval=self.t_eval)
+        else:
+            # solve simulation initialized with experiment
+            self.battery_simulation.solve(inputs=inputs)
+            times = self.battery_simulation.solution["Time [s]"].entries
+
+        data = self.simulate(theta=self.true_values, times=self.t_eval)
+
+        if self.error_axis == "y":
+            reference_axis_values = times
+            output_values = data  # + np.random.normal(0, self.noise, data.shape)
+        else:
+            dx = np.diff(data)
+            if not (np.all(dx >= 0) or np.all(dx <= 0)):
+                raise NotImplementedError(
+                    "Only `error_axis` supported for non-monotonic profiles."
+                )
+
+            # 'reference axis' is `y` (e.g Voltage): interpolating over this axis
+            # `output_values` are time: error calculation is done w.r.t these
+            output_values, reference_axis_values = interpolate_time_over_y_values(
+                times=self.t_eval,
+                y_values=data
+            )
+
+        return reference_axis_values, output_values
 
     @property
     def metadata(self):
@@ -116,33 +135,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             "transform type": self.transform_type,
             "noise": self.noise,
             "project": self.project_tag,
-            "times": str(self.times),
-            "data": str(self.observable),
+            "error axis": self.error_axis,
+            "data_reference_axis_values": str(self.data_reference_axis_values),
+            "data_output": str(self.data_output_axis_values),
         }
-
-    def _interpolate_time_over_y_values(self, times, y_values):
-        """
-        Parameters
-        ----------
-        times: np.ndarray
-            Times at which simulation was evaluated.
-        y_values: np.ndarray
-            Time series simulation output.
-
-        Returns
-        ----------
-        new_time: np.ndarray
-            Time interpolated over y-axis values.
-        """
-        y_function = interp1d(x=y_values, y=times)
-        min_y = y_values.min()
-        max_y = y_values.max()
-        new_y = np.linspace(
-            start=min_y * (1 + 1e-8),
-            stop=max_y * (1 - 1e-8),
-            num=int(y_values.shape[0])
-        )
-        return y_function(new_y)
 
     def simulate(self, theta, times):
         """
@@ -165,7 +161,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(
-                inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.times
+                inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.t_eval
             )
             solution = self.battery_simulation.solution
             V = solution["Terminal voltage [V]"]
@@ -175,7 +171,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             # CasadiSolver "fast" failed
             try:
                 self.battery_simulation.solve(
-                    inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times
+                    inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.t_eval
                 )
                 solution = self.battery_simulation.solution
                 V = solution["Terminal voltage [V]"]
@@ -185,7 +181,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 #  ScipySolver solver failed
                 try:
                     self.battery_simulation.solve(
-                        inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
+                        inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.t_eval
                     )
                     solution = self.battery_simulation.solution
                     V = solution["Terminal voltage [V]"]
@@ -199,22 +195,26 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                         log.write(repr(e) + "\n")
 
                     # array of zeros to maximize residual if solution did not converge
-                    output = np.zeros(self.data.shape)
+                    output = np.zeros(self.data_output_axis_values.shape)
 
         if self.error_axis == "x":
-            output = self._interpolate_time_over_y_values(
-                times=self.times,
+            output = interpolate_time_over_y_values(
+                times=self.t_eval,
                 y_values=output
             )
 
         if self.generated_data:
             try:
-                ess = np.sum(np.square((output - self.data) / self.noise)) / len(output)
+                ess = np.sum(
+                    np.square((output - self.data_output_axis_values) / self.noise)
+                ) / len(output)
 
             except ValueError:
                 # arrays of unequal size due to incomplete solution
-                ess = np.sum(np.square(self.data / self.noise)) / len(self.data)
-                output = np.zeros(self.data.shape)
+                ess = np.sum(
+                    np.square(self.data_output_axis_values / self.noise)
+                ) / len(self.data_output_axis_values)
+                output = np.zeros(self.data_output_axis_values.shape)
 
             self.residuals.append(ess)
         self.generated_data = True
@@ -255,8 +255,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
         problem = pints.SingleOutputProblem(
             self,
-            self.times,
-            self.data,
+            self.data_reference_axis_values,
+            self.data_output_axis_values,
         )
         log_likelihood = pints.GaussianKnownSigmaLogLikelihood(problem, self.noise)
         log_posterior = pints.LogPosterior(log_likelihood, self.log_prior)
@@ -303,8 +303,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         )
 
         #  find residual at optimal value
-        y_hat = self.simulate(theta_optimal, times=self.times)
-        error_at_optimal = np.sum(abs(y_hat - self.data)) / len(self.data)
+        y_hat = self.simulate(theta_optimal, times=self.t_eval)
+        error_at_optimal = np.sum(abs(y_hat - self.data_output_axis_values)) / len(y_hat)
 
         # chi_sq = distance in residuals between optimal value and all others
         pd.DataFrame(

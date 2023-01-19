@@ -48,4 +48,4 @@ chains = identifiability_problem.run(
     n_workers=3,  # sampling_method="PopulationMCMC"
 )
 
-identifiability_problem.plot_results_summary()
+identifiability_problem.plot_results_summary(forward_evaluations=3)
