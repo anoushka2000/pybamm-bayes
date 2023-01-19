@@ -16,6 +16,7 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_parameters,
     _fmt_variables,
 )
+from battery_model_parameterization.Python.logging import logger
 
 
 class ParameterEstimation(BaseSamplingProblem):
@@ -152,6 +153,8 @@ class ParameterEstimation(BaseSamplingProblem):
             solution = self.battery_simulation.solution
             output = solution[self.output].entries
 
+            self.csv_logger.info(["Casadi fast", solution.solve_time.value])
+
         except pybamm.SolverError:
             # CasadiSolver "fast" failed
             try:
@@ -161,6 +164,8 @@ class ParameterEstimation(BaseSamplingProblem):
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries
 
+                self.csv_logger.info(["Casadi safe", solution.solve_time.value])
+
             except pybamm.SolverError:
                 #  Casadi solver failed
                 try:
@@ -168,7 +173,9 @@ class ParameterEstimation(BaseSamplingProblem):
                         inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
                     )
                     solution = self.battery_simulation.solution
-                    output = solution[self.output].entries
+
+                    output = V.entries
+                    self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:
 
@@ -255,11 +262,12 @@ class ParameterEstimation(BaseSamplingProblem):
         # mcmc.set_parallel(parallel=n_workers)
 
         # Run
-        print("Running...")
+        logger.info("Running...")
         chains = mcmc.run()
         self.chains = chains
-        print("Done!")
+        logger.info("Done!")
 
+        self.csv_logger.info(["pints", mcmc.time() * 1000])
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
         )

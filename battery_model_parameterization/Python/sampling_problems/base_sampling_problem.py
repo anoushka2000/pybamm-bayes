@@ -16,6 +16,7 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_parameters,
     _fmt_variables,
 )
+from battery_model_parameterization.Python.logging import csv_logger
 
 
 class BaseSamplingProblem(pints.ForwardModelS1):
@@ -66,6 +67,9 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         self.default_inputs = {v.name: v.value for v in self.variables}
         self.residuals = []
         self.chains = pd.DataFrame()
+        self.csv_logger = csv_logger(
+            os.path.join(self.logs_dir_path, "solve_time_log.csv")
+        )
 
         if not os.path.isdir(self.logs_dir_path):
             os.makedirs(self.logs_dir_path)
@@ -125,11 +129,10 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     variable.bounds[1] - variable.bounds[0],
                 )
                 sample = (
-                    lower
-                    + variable.prior.distribution.rvs(
-                        size=7000,
-                    )
-                    * rng
+                        lower + variable.prior.distribution.rvs(
+                            size=7000,
+                        )
+                        * rng
                 )
             else:
                 sample = variable.prior.sample(7000).flatten()
@@ -238,11 +241,11 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                         variable.bounds[1] - variable.bounds[0],
                     )
                     sample = (
-                        lower
-                        + variable.prior.distribution.rvs(
-                            size=7000,
-                        )
-                        * rng
+                            lower
+                            + variable.prior.distribution.rvs(
+                                size=7000,
+                            )
+                            * rng
                     )
                 else:
                     sample = variable.prior.sample(7000).flatten()
