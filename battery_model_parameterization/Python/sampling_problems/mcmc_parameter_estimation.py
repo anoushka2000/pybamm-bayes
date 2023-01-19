@@ -173,8 +173,8 @@ class ParameterEstimation(BaseSamplingProblem):
                         inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
                     )
                     solution = self.battery_simulation.solution
+                    output = solution[self.output].entries
 
-                    output = V.entries
                     self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:

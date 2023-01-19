@@ -162,7 +162,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             )
             solution = self.battery_simulation.solution
             output = solution[self.output].entries
-            
+
             self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
         except pybamm.SolverError:
@@ -173,7 +173,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 )
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries
-                
+
                 self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
             except pybamm.SolverError:
@@ -184,7 +184,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                     )
                     solution = self.battery_simulation.solution
                     output = solution[self.output].entries
-                    
+
                     self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:
