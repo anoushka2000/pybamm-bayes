@@ -33,6 +33,7 @@ estimation_problem = ParameterEstimation(
     data=data,
     battery_simulation=simulation,
     variables=variables,
+    output="Terminal voltage [V]",
     parameter_values=param,
     transform_type="log10",
     project_tag="example",

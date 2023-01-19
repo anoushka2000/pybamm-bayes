@@ -6,23 +6,16 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
+
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
 )
 from battery_model_parameterization.Python.variable import Variable
-
-
-def _fmt_variables(variables):
-    lst = []
-    for v in variables:
-        var = v.__dict__.copy()
-        var["prior"] = var["prior"].__dict__
-        lst.append(var)
-    return lst
-
-
-def _fmt_parameters(parameters):
-    return {k: str(v) for k, v in parameters.items()}
+from battery_model_parameterization.Python.sampling_problems.utils import (
+    _fmt_variables,
+    _fmt_parameters,
+)
+from battery_model_parameterization.Python.logging import logger
 
 
 class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
@@ -41,6 +34,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         List of variables being identified in problem.
         Each variable listed in `variables` must be initialized
         as a pybamm.InputParameter in `parameter_values`.
+    output: str
+        Name of battery simulation output corresponding to observed quantity
+        recorded in data e.g "Terminal voltage [V]", "Terminal power [W]"
+        or "Current [A]".
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
@@ -54,20 +51,22 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
 
     def __init__(
-        self,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        transform_type: str,
-        noise: float,
-        times: Optional[np.ndarray] = None,
-        project_tag: str = "",
+            self,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            output: str,
+            transform_type: str,
+            noise: float,
+            times: Optional[np.ndarray] = None,
+            project_tag: str = "",
     ):
 
         super().__init__(
             battery_simulation=battery_simulation,
             parameter_values=parameter_values,
             variables=variables,
+            output=output,
             transform_type=transform_type,
             project_tag=project_tag,
         )
@@ -99,6 +98,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
 
+        self.battery_simulation.save(
+            os.path.join(self.logs_dir_path, "battery_simulation")
+        )
+
     @property
     def metadata(self):
         return {
@@ -110,6 +113,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             "noise": self.noise,
             "project": self.project_tag,
             "times": str(self.times),
+            "data": str(self.data),
         }
 
     def simulate(self, theta, times):
@@ -124,7 +128,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         Returns
         ----------
         output: np.ndarray
-            Voltage time series.
+            Output time series.
         """
         variable_names = [v.name for v in self.variables]
 
@@ -136,8 +140,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.times
             )
             solution = self.battery_simulation.solution
-            V = solution["Terminal voltage [V]"]
-            output = V.entries
+            output = solution[self.output].entries
+
+            self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
         except pybamm.SolverError:
             # CasadiSolver "fast" failed
@@ -146,8 +151,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times
                 )
                 solution = self.battery_simulation.solution
-                V = solution["Terminal voltage [V]"]
-                output = V.entries
+                output = solution[self.output].entries
+
+                self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
             except pybamm.SolverError:
                 #  ScipySolver solver failed
@@ -156,8 +162,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                         inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
                     )
                     solution = self.battery_simulation.solution
-                    V = solution["Terminal voltage [V]"]
-                    output = V.entries
+                    output = solution[self.output].entries
+
+                    self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:
 
@@ -183,12 +190,12 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         return output
 
     def run(
-        self,
-        burnin: int = 0,
-        n_iteration: int = 2000,
-        n_chains: int = 12,
-        n_workers: int = 4,
-        sampling_method: str = "MetropolisRandomWalkMCMC",
+            self,
+            burnin: int = 0,
+            n_iteration: int = 2000,
+            n_chains: int = 12,
+            n_workers: int = 4,
+            sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -219,7 +226,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             self.times,
             self.data,
         )
+
         log_likelihood = pints.GaussianKnownSigmaLogLikelihood(problem, self.noise)
+
         log_posterior = pints.LogPosterior(log_likelihood, self.log_prior)
         xs = [x * self.true_values for x in np.random.normal(1, 0.2, n_chains)]
 
@@ -243,14 +252,15 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         # mcmc.set_parallel(parallel=n_workers)
 
         # Run
-        print("Running...")
+        logger.info("Running...")
         chains = mcmc.run()
-        print("Done!")
+        logger.info("Done!")
         summary_stats = pints.MCMCSummary(
             chains=chains,
             time=mcmc.time(),
             parameter_names=[v.name for v in self.variables],
         )
+        self.csv_logger.info(["pints", mcmc.time()])
 
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
@@ -276,8 +286,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "r",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -299,8 +309,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         )
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "w",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "w",
         ) as outfile:
             json.dump(metadata, outfile)
 

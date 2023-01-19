@@ -38,6 +38,7 @@ class TestParameterEstimation(unittest.TestCase):
             battery_simulation=cls.simulation,
             parameter_values=cls.parameter_values,
             variables=cls.variables,
+            output="Terminal voltage [V]",
             transform_type="log10",
             project_tag="test",
         )

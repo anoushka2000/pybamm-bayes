@@ -1,14 +1,17 @@
 import json
 import os
 import time
-from typing import List, Optional
+from typing import List, Optional, Dict, Union, Callable
 
 import elfi
 import elfi.visualization.interactive as visin
 import matplotlib.pyplot as plt
+import inspect
 import numpy as np
 import pandas as pd
 import pybamm
+from scipy.stats import wasserstein_distance
+
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
 )
@@ -44,6 +47,10 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         List of variables being identified in problem.
         Each variable listed in `variables` must be initialized
         as a pybamm.InputParameter in `parameter_values`.
+    output: str
+        Name of battery simulation output corresponding to observed quantity
+        recorded in data e.g "Terminal voltage [V]", "Terminal power [W]"
+        or "Current [A]".
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
@@ -64,6 +71,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         battery_simulation: pybamm.Simulation,
         parameter_values: pybamm.ParameterValues,
         variables: List[Variable],
+        output: str,
         transform_type: str,
         noise: float,
         target_resolution: int = 30,
@@ -75,6 +83,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             battery_simulation=battery_simulation,
             parameter_values=parameter_values,
             variables=variables,
+            output=output,
             transform_type=transform_type,
             project_tag=project_tag,
         )
@@ -119,6 +128,26 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             "noise": self.noise,
             "project": self.project_tag,
             "times": str(self.times),
+            "data": str(self.data),
+        }
+
+    @property
+    def discrepancy_metrics(self):
+        return {
+            "euclidean": "euclidean",
+            "minkowski": "minkowski",
+            "cityblock": "cityblock",
+            "seuclidean": "seuclidean",
+            "sqeuclidean": "sqeuclidean",
+            "cosine": "cosine",
+            "correlation": "correlation",
+            "hamming": "hamming",
+            "jaccard": "jaccard",
+            "chebyshev": "chebyshev",
+            "canberra": "canberra",
+            "braycurtis": "braycurtis",
+            "mahalanobis": "mahalanobis",
+            "wasserstein_distance": wasserstein_distance
         }
 
     def simulate(self, *theta, batch_size=1, random_state=0):
@@ -136,7 +165,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         Returns
         ----------
         output: np.ndarray
-            Voltage time series.
+            Output time series.
         """
         variable_names = [v.name for v in self.variables]
 
@@ -153,8 +182,9 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.times
             )
             solution = self.battery_simulation.solution
-            V = solution["Terminal voltage [V]"]
-            output = V.entries
+            output = solution[self.output].entries
+
+            self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
         except pybamm.SolverError:
             # CasadiSolver "fast" failed
@@ -163,8 +193,9 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                     inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times
                 )
                 solution = self.battery_simulation.solution
-                V = solution["Terminal voltage [V]"]
-                output = V.entries
+                output = solution[self.output].entries
+
+                self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
             except pybamm.SolverError:
                 #  ScipySolver solver failed
@@ -173,8 +204,9 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                         inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
                     )
                     solution = self.battery_simulation.solution
-                    V = solution["Terminal voltage [V]"]
-                    output = V.entries
+                    output = solution[self.output].entries
+
+                    self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:
 
@@ -247,14 +279,16 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         f.savefig(os.path.join(self.logs_dir_path, "acquisition_surface"))
 
     def run(
-        self,
-        batch_size: int = 1,
-        initial_evidence: int = 50,
-        update_interval: int = 10,
-        acq_noise_var: float = 0.1,
-        n_evidence: int = 1500,
-        sampling_iterations: int = 1000,
-        n_chains=4,
+            self,
+            batch_size: int = 1,
+            initial_evidence: int = 50,
+            update_interval: int = 10,
+            acq_noise_var: float = 0.1,
+            n_evidence: int = 1500,
+            sampling_iterations: int = 1000,
+            n_chains: int = 4,
+            discrepancy_metric: Union[str, Callable] = "euclidean",
+            distance_kwargs: Optional[Dict] = None
     ):
         """
         Parameters
@@ -277,7 +311,17 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             Number of requested samples from the posterior for each chain.
         n_chains: int
             Number of independent chains.
-
+        discrepancy_metric: Union[str, Callable]
+            (Passed to elfi.Distance)
+            If string it must be a valid metric from `scipy.spatial.distance.cdist`.
+            Is a callable, the signature must be `distance(X, Y)`,
+            where X is a n x m array containing n simulated values (summaries) in rows
+            and Y is a 1 x m array that contains the observed values (summaries).
+            The callable should return a vector of distances between the simulated
+            summaries and the observednsummaries.
+        distance_kwargs: Dict
+            Additional parameters may be required depending on the chosen distance.
+            See the scipy.spatial.cdist documentation.
         Returns
         -------
         chains: np.ndarray
@@ -308,10 +352,23 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             sumstats.append(
                 elfi.Summary(lambda x: x[i], model["elfi_simulator"], name=f"point {i}")
             )
-        elfi.Distance("euclidean", *sumstats, name="euclidean_distance")
+
+        if isinstance(discrepancy_metric, str):
+            discrepancy_metric = self.discrepancy_metrics[discrepancy_metric]
+            discrepancy_metric_name = discrepancy_metric
+
+        else:
+            discrepancy_metric_name = inspect.getsourcelines(discrepancy_metric)[0][0]
+
+        if distance_kwargs:
+            elfi.Distance(
+                discrepancy_metric, *sumstats, **distance_kwargs, name="distance"
+            )
+        else:
+            elfi.Distance(discrepancy_metric, *sumstats, name="distance")
 
         self.bolfi = elfi.BOLFI(
-            elfi.Operation(np.log, model["euclidean_distance"]),
+            elfi.Operation(np.log, model["distance"]),
             batch_size=batch_size,
             initial_evidence=initial_evidence,
             update_interval=update_interval,
@@ -337,8 +394,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         sampling_end_time = time.time()
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "r",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -353,7 +410,20 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 "min_discrepancy": opt_res,
                 "sample_means_and_95CIs": self.sampled_posterior.sample_means_and_95CIs,
                 "n_chains": n_chains,
+                "discrepancy": discrepancy_metric_name
             }
+        )
+        self.csv_logger.info(
+            [
+                "bolfi_training",
+                (training_start_time - training_end_time) * 1000  # seconds to ms
+            ]
+        )
+        self.csv_logger.info(
+            [
+                "bolfi_sampling",
+                (sampling_start_time - sampling_end_time) * 1000  # seconds to ms
+            ]
         )
 
         chain_columns = [
@@ -373,8 +443,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             chain_idx += 1
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "w",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "w",
         ) as outfile:
             json.dump(metadata, outfile)
         self.chains = pd.concat(chain_df_list)

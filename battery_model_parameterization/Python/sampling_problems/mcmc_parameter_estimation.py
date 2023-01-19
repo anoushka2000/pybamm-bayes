@@ -6,24 +6,17 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
+from scipy.interpolate import interp1d
+
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
 )
 from battery_model_parameterization.Python.variable import Variable
-from scipy.interpolate import interp1d
-
-
-def _fmt_variables(variables):
-    lst = []
-    for v in variables:
-        var = v.__dict__.copy()
-        var["prior"] = var["prior"].__dict__
-        lst.append(var)
-    return lst
-
-
-def _fmt_parameters(parameters):
-    return {k: str(v) for k, v in parameters.items()}
+from battery_model_parameterization.Python.sampling_problems.utils import (
+    _fmt_parameters,
+    _fmt_variables,
+)
+from battery_model_parameterization.Python.logging import logger
 
 
 class ParameterEstimation(BaseSamplingProblem):
@@ -34,14 +27,20 @@ class ParameterEstimation(BaseSamplingProblem):
     Parameters
     ----------
     data: pd.DataFrame
-        Experimental voltage profile as a data frame with columns
-        `time` (time in seconds) and `voltage` (voltage in volts).
+        Experimental data profile as a DataFrame with columns
+        `time` (time in seconds) and `output`.
+        (Ensure units of output data match dimensions of battery simulation
+        output variable).
     battery_simulation: pybamm.Simulation
         Battery simulation for which parameter identifiability is being tested.
     parameter_values: pybamm.ParameterValues
         Parameter values for the simulation with `variables` as inputs.[
     variables: List[Variable]
         List of variables being identified in problem.
+    output: str
+        Name of battery simulation output corresponding to observed quantity
+        recorded in data e.g "Terminal voltage [V]", "Terminal power [W]"
+        or "Current [A]".
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
@@ -56,12 +55,18 @@ class ParameterEstimation(BaseSamplingProblem):
             battery_simulation: pybamm.Simulation,
             parameter_values: pybamm.ParameterValues,
             variables: List[Variable],
+            output: str,
             transform_type: str,
             project_tag: str = "",
     ):
 
         super().__init__(
-            battery_simulation, parameter_values, variables, transform_type, project_tag
+            battery_simulation=battery_simulation,
+            parameter_values=parameter_values,
+            variables=variables,
+            output=output,
+            transform_type=transform_type,
+            project_tag=project_tag
         )
 
         initial_values = [v.value for v in self.variables]
@@ -69,7 +74,7 @@ class ParameterEstimation(BaseSamplingProblem):
         initial_values.append(1e-6)
         self.initial_values = np.array(initial_values)
         self.times = data["time"]
-        self.data = data["voltage"]
+        self.data = data["output"]
 
         self.battery_simulation.solve(
             inputs=self.default_inputs,
@@ -103,6 +108,19 @@ class ParameterEstimation(BaseSamplingProblem):
             outfile.write(json.dumps(self.metadata))
 
     @property
+    def metadata(self):
+        return {
+            "battery model": self.battery_simulation.model.name,
+            "parameter values": _fmt_parameters(self.parameter_values),
+            "default inputs": self.default_inputs,
+            "variables": _fmt_variables(self.variables),
+            "transform type": self.transform_type,
+            "project": self.project_tag,
+            "times": str(self.times),
+            "data": str(self.data),
+        }
+
+    @property
     def log_prior(self):
         # extra prior for unknown noise
         priors = [v.prior for v in self.variables]
@@ -121,7 +139,7 @@ class ParameterEstimation(BaseSamplingProblem):
         Returns
         ----------
         output: np.ndarray
-            Voltage time series.
+            Simulated time series.
         """
         variable_names = [v.name for v in self.variables]
         theta = theta[: len(variable_names) + 1]
@@ -133,8 +151,9 @@ class ParameterEstimation(BaseSamplingProblem):
                 inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.times
             )
             solution = self.battery_simulation.solution
-            V = solution["Terminal voltage [V]"]
-            output = V.entries
+            output = solution[self.output].entries
+
+            self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
         except pybamm.SolverError:
             # CasadiSolver "fast" failed
@@ -143,8 +162,9 @@ class ParameterEstimation(BaseSamplingProblem):
                     inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times
                 )
                 solution = self.battery_simulation.solution
-                V = solution["Terminal voltage [V]"]
-                output = V.entries
+                output = solution[self.output].entries
+
+                self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
             except pybamm.SolverError:
                 #  Casadi solver failed
@@ -153,9 +173,9 @@ class ParameterEstimation(BaseSamplingProblem):
                         inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
                     )
                     solution = self.battery_simulation.solution
-                    V = solution["Terminal voltage [V]"]
+                    output = solution[self.output].entries
 
-                    output = V.entries
+                    self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:
 
@@ -242,11 +262,12 @@ class ParameterEstimation(BaseSamplingProblem):
         # mcmc.set_parallel(parallel=n_workers)
 
         # Run
-        print("Running...")
+        logger.info("Running...")
         chains = mcmc.run()
         self.chains = chains
-        print("Done!")
+        logger.info("Done!")
 
+        self.csv_logger.info(["pints", mcmc.time() * 1000])
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
         )

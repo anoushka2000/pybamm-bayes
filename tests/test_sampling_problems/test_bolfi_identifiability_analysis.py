@@ -4,6 +4,7 @@ import unittest
 
 import elfi
 import pybamm
+from scipy.spatial.distance import cdist
 from battery_model_parameterization import (
     BOLFIIdentifiabilityAnalysis,
     Variable,
@@ -14,24 +15,26 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
-    identifiability_problem = None
 
     @classmethod
     def setUpClass(cls):
         # setup variables
+        prior_Ds_n = elfi.Prior("norm", 13, 1, name="Ds_n")
+        prior_Ds_p = elfi.Prior("norm", 12.5, 1, name="Ds_p")
 
-        prior_j0_n = elfi.Prior("norm", 5.5, 0.5, name="j0_n")
-        prior_j0_p = elfi.Prior("norm", 6.5, 0.5, name="j0_p")
-        j0_n = Variable(name="j0_n", value=4.698, prior=prior_j0_n, bounds=(4, 6))
-        j0_p = Variable(name="j0_p", value=6.22, prior=prior_j0_p, bounds=(5, 7))
+        Ds_n = Variable(name="Ds_n", value=13.4,
+                        prior=prior_Ds_n, bounds=(12, 14))
+        Ds_p = Variable(name="Ds_p", value=13,
+                        prior=prior_Ds_p, bounds=(12, 14))
 
-        cls.variables = [j0_n, j0_p]
+        cls.variables = [Ds_n, Ds_p]
 
         # setup battery simulation
         model = pybamm.lithium_ion.SPMe()
         cls.parameter_values = marquis_2019(cls.variables)
         cls.simulation = pybamm.Simulation(
             model,
+            parameter_values=cls.parameter_values,
             experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
         )
 
@@ -39,6 +42,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             battery_simulation=cls.simulation,
             parameter_values=cls.parameter_values,
             variables=cls.variables,
+            output="Terminal voltage [V]",
             transform_type="negated_log10",
             noise=0.001,
             target_resolution=30,
@@ -53,6 +57,11 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             len(self.identifiability_problem.data),
             len(self.identifiability_problem.times),
         )
+
+    def test_custom_discrepancy_metrics(self):
+        func = self.identifiability_problem.discrepancy_metrics['wasserstein_distance']
+        distance = func([0, 1, 3], [5, 6, 8])
+        self.assertEqual(5, distance)
 
     def test_metadata(self):
         self.assertIsInstance(self.identifiability_problem.metadata, dict)
@@ -70,13 +79,29 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         self.assertFalse(output is None)
 
     def test_run(self):
-        n_iteration = 50
+        n_iteration = 200
         n_chains = 4
-        n_evidence = 1500
+        n_evidence = 500
 
         chains = self.identifiability_problem.run(
-            sampling_iterations=n_iteration, n_chains=n_chains,
+            sampling_iterations=n_iteration,
+            n_chains=n_chains,
             n_evidence=n_evidence,
+        )
+
+        self.assertEqual(len(chains.columns), len(self.variables))
+        self.assertEqual(len(chains), n_iteration * n_chains)
+
+    def test_run_with_callable_discrepancy(self):
+        n_iteration = 200
+        n_chains = 4
+        n_evidence = 500
+
+        chains = self.identifiability_problem.run(
+            sampling_iterations=n_iteration,
+            n_chains=n_chains,
+            n_evidence=n_evidence,
+            discrepancy_metric=lambda x, y: cdist(x, y, metric='euclidean')
         )
 
         self.assertEqual(len(chains.columns), len(self.variables))
