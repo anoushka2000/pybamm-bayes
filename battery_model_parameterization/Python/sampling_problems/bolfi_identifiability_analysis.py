@@ -61,15 +61,15 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
     """
 
     def __init__(
-        self,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        transform_type: str,
-        noise: float,
-        target_resolution: int = 30,
-        times: Optional[np.ndarray] = None,
-        project_tag: str = "",
+            self,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            transform_type: str,
+            noise: float,
+            target_resolution: int = 30,
+            times: Optional[np.ndarray] = None,
+            project_tag: str = "",
     ):
 
         super().__init__(
@@ -157,6 +157,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             solution = self.battery_simulation.solution
             V = solution["Terminal voltage [V]"]
             output = V.entries
+            self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
         except pybamm.SolverError:
             # CasadiSolver "fast" failed
@@ -167,6 +168,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 solution = self.battery_simulation.solution
                 V = solution["Terminal voltage [V]"]
                 output = V.entries
+                self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
             except pybamm.SolverError:
                 #  ScipySolver solver failed
@@ -177,6 +179,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                     solution = self.battery_simulation.solution
                     V = solution["Terminal voltage [V]"]
                     output = V.entries
+                    self.csv_logger.info(["Scipy", solution.solve_time.value])
 
                 except pybamm.SolverError as e:
 
@@ -249,14 +252,14 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         f.savefig(os.path.join(self.logs_dir_path, "acquisition_surface"))
 
     def run(
-        self,
-        batch_size: int = 1,
-        initial_evidence: int = 50,
-        update_interval: int = 10,
-        acq_noise_var: float = 0.1,
-        n_evidence: int = 1500,
-        sampling_iterations: int = 1000,
-        n_chains=4,
+            self,
+            batch_size: int = 1,
+            initial_evidence: int = 50,
+            update_interval: int = 10,
+            acq_noise_var: float = 0.1,
+            n_evidence: int = 1500,
+            sampling_iterations: int = 1000,
+            n_chains=4,
     ):
         """
         Parameters
@@ -339,8 +342,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         sampling_end_time = time.time()
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "r",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -356,6 +359,18 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 "sample_means_and_95CIs": self.sampled_posterior.sample_means_and_95CIs,
                 "n_chains": n_chains,
             }
+        )
+        self.csv_logger.info(
+            [
+                "bolfi_training",
+                (training_start_time - training_end_time) * 1000  # seconds to ms
+            ]
+        )
+        self.csv_logger.info(
+            [
+                "bolfi_sampling",
+                (sampling_start_time - sampling_end_time) * 1000  # seconds to ms
+            ]
         )
 
         chain_columns = [
@@ -375,8 +390,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             chain_idx += 1
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "w",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "w",
         ) as outfile:
             json.dump(metadata, outfile)
         self.chains = pd.concat(chain_df_list)
