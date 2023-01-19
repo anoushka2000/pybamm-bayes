@@ -4,6 +4,7 @@ import unittest
 
 import elfi
 import pybamm
+from scipy.spatial.distance import cdist
 from battery_model_parameterization import (
     BOLFIIdentifiabilityAnalysis,
     Variable,
@@ -20,9 +21,10 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         # setup variables
         prior_Ds_n = elfi.Prior("norm", 13, 1, name="Ds_n")
         prior_Ds_p = elfi.Prior("norm", 12.5, 1, name="Ds_p")
-        Ds_n = Variable(name="Ds_n", value=13.4,  # prior_loc=-13, prior_scale=1,
+
+        Ds_n = Variable(name="Ds_n", value=13.4,
                         prior=prior_Ds_n, bounds=(12, 14))
-        Ds_p = Variable(name="Ds_p", value=13,  # prior_loc=-13, prior_scale=1,
+        Ds_p = Variable(name="Ds_p", value=13,
                         prior=prior_Ds_p, bounds=(12, 14))
 
         cls.variables = [Ds_n, Ds_p]
@@ -40,6 +42,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             battery_simulation=cls.simulation,
             parameter_values=cls.parameter_values,
             variables=cls.variables,
+            output="Terminal voltage [V]",
             transform_type="negated_log10",
             noise=0.001,
             target_resolution=30,
@@ -54,6 +57,11 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             len(self.identifiability_problem.data),
             len(self.identifiability_problem.times),
         )
+
+    def test_custom_discrepancy_metrics(self):
+        func = self.identifiability_problem.discrepancy_metrics['wasserstein_distance']
+        distance = func([0, 1, 3], [5, 6, 8])
+        self.assertEqual(5, distance)
 
     def test_metadata(self):
         self.assertIsInstance(self.identifiability_problem.metadata, dict)
@@ -79,6 +87,21 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             sampling_iterations=n_iteration,
             n_chains=n_chains,
             n_evidence=n_evidence,
+        )
+
+        self.assertEqual(len(chains.columns), len(self.variables))
+        self.assertEqual(len(chains), n_iteration * n_chains)
+
+    def test_run_with_callable_discrepancy(self):
+        n_iteration = 200
+        n_chains = 4
+        n_evidence = 500
+
+        chains = self.identifiability_problem.run(
+            sampling_iterations=n_iteration,
+            n_chains=n_chains,
+            n_evidence=n_evidence,
+            discrepancy_metric=lambda x, y: cdist(x, y, metric='euclidean')
         )
 
         self.assertEqual(len(chains.columns), len(self.variables))
