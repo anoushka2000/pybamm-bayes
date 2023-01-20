@@ -14,7 +14,6 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestIdentifiabilityAnalysis(unittest.TestCase):
-    identifiability_problem = None
 
     @classmethod
     def setUpClass(cls):
@@ -44,13 +43,24 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
             project_tag="test",
         )
 
+        cls.identifiability_problem_x_error = MCMCIdentifiabilityAnalysis(
+            battery_simulation=cls.simulation,
+            parameter_values=cls.parameter_values,
+            variables=cls.variables,
+            error_axis="x",
+            output="Terminal voltage [V]",
+            transform_type="log10",
+            noise=0.005,
+            project_tag="test_x",
+        )
+
     def test_init_(self):
         # test generated_data flag
         self.assertEqual(self.identifiability_problem.generated_data, True)
         # test data generation
         self.assertEqual(
-            len(self.identifiability_problem.data),
-            len(self.identifiability_problem.times),
+            len(self.identifiability_problem.data_output_axis_values),
+            len(self.identifiability_problem.data_reference_axis_values),
         )
 
     def test_metadata(self):
@@ -64,7 +74,7 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
 
     def test_simulate(self):
         output = self.identifiability_problem.simulate(
-            self.identifiability_problem.true_values, self.identifiability_problem.times
+            self.identifiability_problem.true_values, self.identifiability_problem.t_eval
         )
         self.assertFalse(output is None)
 
@@ -87,8 +97,7 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
         n_chains = 3
         n_workers = 3
 
-        self.identifiability_problem.error_axis = "x"
-        chains = self.identifiability_problem.run(
+        chains = self.identifiability_problem_x_error.run(
             burnin, n_iteration, n_chains, n_workers
         )
 
@@ -98,3 +107,4 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(TestIdentifiabilityAnalysis.identifiability_problem.logs_dir_path)
+        shutil.rmtree(TestIdentifiabilityAnalysis.identifiability_problem_x_error.logs_dir_path)

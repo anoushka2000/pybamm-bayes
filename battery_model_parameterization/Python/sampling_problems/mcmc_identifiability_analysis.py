@@ -104,32 +104,31 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     """If battery simulation is not operated using an experiment,\n
                 an array of times to evaluate simulation at must be passed."""
                 )
-            else:
-                self.battery_simulation.solve(inputs=inputs, t_eval=self.t_eval)
         else:
             # solve simulation initialized with experiment
             self.battery_simulation.solve(inputs=inputs)
-            times = self.battery_simulation.solution["Time [s]"].entries
+            # set `t_eval` attribute if argument not passed
+            self.t_eval = self.battery_simulation.solution["Time [s]"].entries
 
         data = self.simulate(theta=self.true_values, times=self.t_eval)
 
         if self.error_axis == "y":
-            reference_axis_values = times
-            output_values = data  # + np.random.normal(0, self.noise, data.shape)
+            reference_axis_values = self.t_eval
+            output_values = data
         else:
             dx = np.diff(data)
             if not (np.all(dx >= 0) or np.all(dx <= 0)):
                 raise NotImplementedError(
-                    "Only `error_axis` supported for non-monotonic profiles."
+                    "Only `error_axis-y` supported for non-monotonic profiles."
                 )
 
             # 'reference axis' is `y` (e.g Voltage): interpolating over this axis
             # `output_values` are time: error calculation is done w.r.t these
-            output_values, reference_axis_values = interpolate_time_over_y_values(
+            reference_axis_values, output_values = interpolate_time_over_y_values(
                 times=self.t_eval,
                 y_values=data
             )
-
+        output_values = output_values + np.random.normal(0, self.noise, data.shape)
         return reference_axis_values, output_values
 
     @property
@@ -208,7 +207,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     output = np.zeros(self.data_output_axis_values.shape)
 
         if self.error_axis == "x":
-            output = interpolate_time_over_y_values(
+            _, output = interpolate_time_over_y_values(
                 times=self.t_eval,
                 y_values=output
             )
