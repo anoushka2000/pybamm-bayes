@@ -46,13 +46,13 @@ class BaseSamplingProblem(pints.ForwardModelS1):
     """
 
     def __init__(
-        self,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        output: str,
-        transform_type: str,
-        project_tag: str = "",
+            self,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            output: str,
+            transform_type: str,
+            project_tag: str = "",
     ):
 
         super().__init__()
@@ -135,9 +135,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     variable.bounds[1] - variable.bounds[0],
                 )
                 sample = (
-                        lower + variable.prior.distribution.rvs(
-                            size=7000,
-                        )
+                        lower + variable.prior.distribution.rvs(size=7000)
                         * rng
                 )
             else:
@@ -187,17 +185,21 @@ class BaseSamplingProblem(pints.ForwardModelS1):
 
                 inputs = dict(zip(variable_names, input_set))
                 if self.method == "BOLFI":
-                    solution_V = self.simulate(*list(input_set))
+                    solution_var = self.simulate(*list(input_set))
                 else:
-                    solution_V = self.simulate(theta=list(input_set), times=self.t_eval)
+                    solution_var = self.simulate(
+                        theta=list(input_set), times=self.t_eval
+                    )
                 summary.append(
                     {
                         **inputs,
-                        "Residual": abs(self.data_output_axis_values - solution_V).sum() / len(solution_V),
+                        "Residual": abs(
+                            self.data_output_axis_values - solution_var
+                        ).sum() / len(solution_var),
                     }
                 )
 
-                for ref, outp in zip(self.data_reference_axis_values, solution_V):
+                for ref, outp in zip(self.data_reference_axis_values, solution_var):
                     results.append(
                         {
                             **inputs,
@@ -251,9 +253,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     )
                     sample = (
                             lower
-                            + variable.prior.distribution.rvs(
-                        size=7000,
-                    )
+                            + variable.prior.distribution.rvs(size=7000)
                             * rng
                     )
                 else:

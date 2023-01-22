@@ -178,7 +178,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             # CasadiSolver "fast" failed
             try:
                 self.battery_simulation.solve(
-                    inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.t_eval
+                    inputs=inputs,
+                    solver=pybamm.CasadiSolver("safe"),
+                    t_eval=self.t_eval
                 )
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries
@@ -189,7 +191,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 #  ScipySolver solver failed
                 try:
                     self.battery_simulation.solve(
-                        inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.t_eval
+                        inputs=inputs,
+                        solver=pybamm.ScipySolver(),
+                        t_eval=self.t_eval
                     )
                     solution = self.battery_simulation.solution
                     output = solution[self.output].entries
@@ -316,7 +320,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
         #  find residual at optimal value
         y_hat = self.simulate(theta_optimal, times=self.t_eval)
-        error_at_optimal = np.sum(abs(y_hat - self.data_output_axis_values)) / len(y_hat)
+        error_at_optimal = np.sum(
+            abs(y_hat - self.data_output_axis_values)
+        ) / len(y_hat)
 
         # chi_sq = distance in residuals between optimal value and all others
         pd.DataFrame(
