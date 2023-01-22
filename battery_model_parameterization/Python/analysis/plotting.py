@@ -33,7 +33,7 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
     Parameters
     ----------
     logs_dir_name: str
-       Name of directory logging idenfiability problem results.
+       Name of directory logging identifiability problem results.
     """
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
@@ -716,17 +716,21 @@ def plot_forward_model_posterior_distribution(
 
     metadata = load_metadata(logs_dir_path=logs_dir_path)
     variable_names = [var["name"] for var in metadata["variables"]]
-    output = metadata["output"]
-    if metadata["error axis"] == "y":
-        time_column = "Reference"
-        output_column = "Output"
 
-    elif metadata["error axis"] == "x":
-        time_column = "Output"
-        output_column = "Reference"
+    output_column = metadata["output"]
+    time_column = "Time [s]"
 
-    else:
-        raise NotImplementedError("'error axis' must be one of: 'x' or 'y'")
+    if "Time [s]" not in df.columns:
+        if metadata["error axis"] == "y":
+            time_column = "Reference"
+            output_column = "Output"
+
+        elif metadata["error axis"] == "x":
+            time_column = "Output"
+            output_column = "Reference"
+
+        else:
+            raise NotImplementedError("'error axis' must be one of: 'x' or 'y'")
 
     # used to generate color bars
     scratch_plots = []
