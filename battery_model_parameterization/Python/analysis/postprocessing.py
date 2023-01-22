@@ -12,6 +12,13 @@ from battery_model_parameterization.Python.analysis.utils import (
     _get_logs_path,
     sample_from_posterior,
 )
+from battery_model_parameterization.Python.sampling_problems.utils import interpolate_time_over_y_values
+
+TRANSFORMS = {
+    "log10": lambda x: 10 ** float(x),
+    "None": lambda x: x,
+    "negated_log10": lambda x: 10 ** float(-x),
+}
 
 
 def view_data(logs_dir_name=None, logs_dir_path=None):
@@ -121,7 +128,7 @@ def load_chains_with_residual(logs_dir_name=None, logs_dir_path=None):
 
     # calculate chi_sq
     result["chi_sq"] = (
-        result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
+            result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
     )
     result.columns = ["sample number"] + variable_names + ["residuals", "chi_sq"]
     return result
@@ -155,20 +162,29 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
     # recover variable definition from metadata
     variable_names = [var["name"] for var in metadata["variables"]]
     output = metadata["output"]
-
-    data = np.fromstring(metadata["data"][1:-1], sep=" ")
+    error_axis = metadata["error axis"]
+    times = metadata["t_eval"]
+    data = np.fromstring(metadata["data_output"][1:-1], sep=" ")
+    ref_axis = np.fromstring(metadata["data_reference_axis_values"][1:-1], sep=" ")
 
     posterior_samples = sample_from_posterior(chains, n_samples=n_evaluations)
 
     if len(posterior_samples) > 1:
         for i, input_set in tqdm.tqdm(enumerate(posterior_samples)):
+
+            input_set = [TRANSFORMS[metadata["transform type"]](i) for i in input_set]
             inputs = dict(zip(variable_names, input_set))
 
             solution = simulation.solve(
-                t_eval=np.fromstring(metadata["times"][1:-1], sep=" "),
+                t_eval=times,
                 inputs=inputs.copy(),
             )
             solution_var = solution[output].entries
+            print(inputs)
+
+            if error_axis == "x":
+                _, solution_var = interpolate_time_over_y_values(times, solution_var, new_y=ref_axis)
+
             summary.append(
                 {
                     **inputs,
@@ -179,7 +195,7 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
 
 
 def run_forward_model_over_posterior(
-    logs_dir_name=None, logs_dir_path=None, n_evaluations=20
+        logs_dir_name=None, logs_dir_path=None, n_evaluations=20
 ):
     """
     Generates time series curves for parameter values sampled
@@ -216,10 +232,11 @@ def run_forward_model_over_posterior(
 
     if len(posterior_samples) > 1:
         for i, input_set in tqdm.tqdm(enumerate(posterior_samples)):
+            input_set = [TRANSFORMS[metadata["transform type"]](i) for i in input_set]
             inputs = dict(zip(variable_names, input_set))
 
             solution = simulation.solve(
-                t_eval=np.fromstring(metadata["times"][1:-1], sep=" "),
+                t_eval=np.fromstring(metadata["t_eval"][1:-1], sep=" "),
                 inputs=inputs.copy(),
             )
             solution_var = solution[output].entries

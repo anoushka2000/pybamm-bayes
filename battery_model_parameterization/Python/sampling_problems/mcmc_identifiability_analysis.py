@@ -36,9 +36,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         Each variable listed in `variables` must be initialized
         as a pybamm.InputParameter in `parameter_values`.
     output: str
-        Name of battery simulation output corresponding to observed quantity
-        recorded in data e.g "Terminal voltage [V]", "Terminal power [W]"
-        or "Current [A]".
+        Name of battery simulation output time series to use for identifiability
+        e.g "Terminal voltage [V]", "Terminal power [W]" or "Current [A]".
     transform_type: str
         Transformation variable value input to battery model
         and sampling space.
@@ -126,7 +125,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             # `output_values` are time: error calculation is done w.r.t these
             reference_axis_values, output_values = interpolate_time_over_y_values(
                 times=self.t_eval,
-                y_values=data
+                y_values=data,
+                new_y=self.data_reference_axis_values
             )
         output_values = output_values + np.random.normal(0, self.noise, data.shape)
         return reference_axis_values, output_values
@@ -141,7 +141,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             "transform type": self.transform_type,
             "noise": self.noise,
             "project": self.project_tag,
+            "output": self.output,
             "error axis": self.error_axis,
+            "t_eval": str(self.t_eval),
             "data_reference_axis_values": str(self.data_reference_axis_values),
             "data_output": str(self.data_output_axis_values),
         }
@@ -213,7 +215,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         if self.error_axis == "x":
             _, output = interpolate_time_over_y_values(
                 times=self.t_eval,
-                y_values=output
+                y_values=output,
+                new_y=self.data_reference_axis_values
             )
 
         if self.generated_data:

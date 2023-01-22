@@ -2,7 +2,7 @@ import unittest
 import os
 from battery_model_parameterization import gelman_rubin_convergence_test
 
-here = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestDiagnostics(unittest.TestCase):

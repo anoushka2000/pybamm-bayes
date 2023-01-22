@@ -24,6 +24,7 @@ parameter_values = marquis_2019(variables)
 simulation = pybamm.Simulation(
     model,
     solver=pybamm.CasadiSolver("fast"),
+    parameter_values=parameter_values,
     experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
 )
 
