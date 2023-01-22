@@ -182,7 +182,6 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
                 inputs=inputs.copy(),
             )
             solution_var = solution[output].entries
-            print(inputs)
 
             if error_axis == "x":
                 _, solution_var = interpolate_time_over_y_values(times,

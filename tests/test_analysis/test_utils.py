@@ -21,11 +21,11 @@ class TestUtils(unittest.TestCase):
 
     def test_sample_from_prior(self):
         # Gaussian Log Priors with:
-        #   "mean": -5.5, "sd": 1.0
-        #   "mean": -6.5, "sd": 1.0
+        #   "mean": -13, "sd": 1.0
+        #   "mean": -4.26, "sd": 1.0
         samples = sample_from_prior(metadata=self.metadata, n_samples=7000)
-        self.assertAlmostEqual(list(samples.values())[0].mean(), -5.5, places=1)
-        self.assertAlmostEqual(list(samples.values())[1].mean(), -6.5, places=1)
+        self.assertAlmostEqual(list(samples.values())[0].mean(), -13, places=1)
+        self.assertAlmostEqual(list(samples.values())[1].mean(), -4.26, places=1)
         self.assertAlmostEqual(list(samples.values())[0].std(), 1.0, places=1)
         self.assertAlmostEqual(list(samples.values())[1].std(), 1.0, places=1)
 
