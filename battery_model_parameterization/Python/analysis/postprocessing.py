@@ -12,7 +12,9 @@ from battery_model_parameterization.Python.analysis.utils import (
     _get_logs_path,
     sample_from_posterior,
 )
-from battery_model_parameterization.Python.sampling_problems.utils import interpolate_time_over_y_values
+from battery_model_parameterization.Python.sampling_problems.utils import (
+    interpolate_time_over_y_values,
+)
 
 TRANSFORMS = {
     "log10": lambda x: 10 ** float(x),
@@ -183,7 +185,9 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
             print(inputs)
 
             if error_axis == "x":
-                _, solution_var = interpolate_time_over_y_values(times, solution_var, new_y=ref_axis)
+                _, solution_var = interpolate_time_over_y_values(times,
+                                                                 solution_var,
+                                                                 new_y=ref_axis)
 
             summary.append(
                 {

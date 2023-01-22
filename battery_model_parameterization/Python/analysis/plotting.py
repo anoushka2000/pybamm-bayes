@@ -314,10 +314,7 @@ def pairwise(
 
                     prior_samples = (
                             lower
-                            + priors[i].distribution.rvs(
-                        size=len(samples),
-                    )
-                            * rng
+                            + priors[i].distribution.rvs(size=len(samples)) * rng
                     )
                 else:
                     prior_samples = priors[i].sample(len(samples))
