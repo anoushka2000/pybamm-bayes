@@ -79,9 +79,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         self.error_axis = error_axis
         self.t_eval = times
 
-        data_to_fit = self.generate_synthetic_data()
-        self.data_reference_axis_values = data_to_fit[0]
-        self.data_output_axis_values = data_to_fit[1]
+        # automatically updated the first time `simulate` method
+        # is called, if reference axis is not time
+        self.data_reference_axis_values = times
+        self.data_output_axis_values = self.generate_synthetic_data()
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
@@ -128,7 +129,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 y_values=data,
             )
         output_values = output_values + np.random.normal(0, self.noise, data.shape)
-        return reference_axis_values, output_values
+        return output_values
 
     @property
     def metadata(self):
@@ -212,11 +213,18 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     output = np.zeros(self.data_output_axis_values.shape)
 
         if self.error_axis == "x":
-            _, output = interpolate_time_over_y_values(
-                times=self.t_eval,
-                y_values=output,
-                new_y=self.data_reference_axis_values
-            )
+            if self.generated_data:
+                _, output = interpolate_time_over_y_values(
+                    times=self.t_eval,
+                    y_values=output,
+                    new_y=self.data_reference_axis_values
+                )
+            else:
+                reference_values, output = interpolate_time_over_y_values(
+                    times=self.t_eval,
+                    y_values=output,
+                )
+                self.data_reference_axis_values = reference_values
 
         if self.generated_data:
             try:
