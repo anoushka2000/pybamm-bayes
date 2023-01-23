@@ -126,7 +126,6 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             reference_axis_values, output_values = interpolate_time_over_y_values(
                 times=self.t_eval,
                 y_values=data,
-                new_y=self.data_reference_axis_values
             )
         output_values = output_values + np.random.normal(0, self.noise, data.shape)
         return reference_axis_values, output_values
