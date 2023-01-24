@@ -79,8 +79,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         self.error_axis = error_axis
         self.t_eval = times
 
-        # automatically updated the first time `simulate` method
-        # is called, if reference axis is not time
+        # automatically updated the first time `simulate` method is called
+        # (if reference axis is not time)
         self.data_reference_axis_values = times
         self.data_output_axis_values = self.generate_synthetic_data()
 
@@ -225,6 +225,12 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     y_values=output,
                 )
                 self.data_reference_axis_values = reference_values
+
+        elif not self.generated_data:
+            self.data_reference_axis_values = battery_simulation.solution["Time [s]"].entries
+
+            if self.t_eval is None:
+                self.t_eval = battery_simulation.solution["Time [s]"].entries
 
         if self.generated_data:
             try:
