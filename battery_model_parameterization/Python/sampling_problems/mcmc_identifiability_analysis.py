@@ -227,10 +227,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 self.data_reference_axis_values = reference_values
 
         elif not self.generated_data:
-            self.data_reference_axis_values = battery_simulation.solution["Time [s]"].entries
+            self.data_reference_axis_values = self.battery_simulation.solution["Time [s]"].entries
 
             if self.t_eval is None:
-                self.t_eval = battery_simulation.solution["Time [s]"].entries
+                self.t_eval = self.battery_simulation.solution["Time [s]"].entries
 
         if self.generated_data:
             try:
