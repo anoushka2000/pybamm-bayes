@@ -19,6 +19,7 @@ from battery_model_parameterization.Python.sampling_problems.utils import (
 from battery_model_parameterization.Python.logging import logger
 
 
+# TODO: add error axis argument
 class ParameterEstimation(BaseSamplingProblem):
     """
     Class for conducting parameter estimation on a battery model
