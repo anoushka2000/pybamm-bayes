@@ -33,7 +33,7 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
     Parameters
     ----------
     logs_dir_name: str
-       Name of directory logging idenfiability problem results.
+       Name of directory logging identifiability problem results.
     """
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
@@ -232,12 +232,12 @@ def compare_chain_convergence(log_dir_names=None, log_dir_paths=None):
 
 
 def pairwise(
-    logs_dir_name=None,
-    logs_dir_path=None,
-    kde=False,
-    heatmap=False,
-    opacity=None,
-    n_percentiles=None,
+        logs_dir_name=None,
+        logs_dir_path=None,
+        kde=False,
+        heatmap=False,
+        opacity=None,
+        n_percentiles=None,
 ):
     """
     (Adapted from pint.plot.pairwise)
@@ -313,11 +313,8 @@ def pairwise(
                     )
 
                     prior_samples = (
-                        lower
-                        + priors[i].distribution.rvs(
-                            size=len(samples),
-                        )
-                        * rng
+                            lower
+                            + priors[i].distribution.rvs(size=len(samples)) * rng
                     )
                 else:
                     prior_samples = priors[i].sample(len(samples))
@@ -444,7 +441,7 @@ def pairwise(
 
 
 def _plot_confidence_intervals_grid(
-    n_variables, logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
+        n_variables, logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
 ):
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
@@ -520,7 +517,7 @@ def _plot_confidence_intervals_grid(
 
 
 def _plot_confidence_intervals_bivariate(
-    logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
+        logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
 ):
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
@@ -609,11 +606,11 @@ def plot_confidence_intervals(logs_dir_name=None, logs_dir_path=None, chi_sq_lim
 
 
 def plot_residual(
-    logs_dir_name=None,
-    logs_dir_path=None,
-    from_stored=True,
-    variables=None,
-    n_evaluations=20,
+        logs_dir_name=None,
+        logs_dir_path=None,
+        from_stored=True,
+        variables=None,
+        n_evaluations=20,
 ):
     """
     Scatter plot of samples from posterior, coloured by residual
@@ -678,7 +675,7 @@ def plot_residual(
 
 
 def plot_forward_model_posterior_distribution(
-    logs_dir_name=None, logs_dir_path=None, from_stored=False, n_evaluations=20
+        logs_dir_name=None, logs_dir_path=None, from_stored=False, n_evaluations=20
 ):
     """
     Time series curves for parameter values sampled from posterior,
@@ -716,15 +713,29 @@ def plot_forward_model_posterior_distribution(
 
     metadata = load_metadata(logs_dir_path=logs_dir_path)
     variable_names = [var["name"] for var in metadata["variables"]]
-    output = metadata["output"]
+
+    output_column = metadata["output"]
+    time_column = "Time [s]"
+
+    if "Time [s]" not in df.columns:
+        if metadata["error axis"] == "y":
+            time_column = "Reference"
+            output_column = "Output"
+
+        elif metadata["error axis"] == "x":
+            time_column = "Output"
+            output_column = "Reference"
+
+        else:
+            raise NotImplementedError("'error axis' must be one of: 'x' or 'y'")
 
     # used to generate color bars
     scratch_plots = []
 
     for var in variable_names:
         plot = plt.scatter(
-            df["Time [s]"],
-            df[output],
+            df[time_column],
+            df[output_column],
             c=df[var],
             cmap=sns.cubehelix_palette(as_cmap=True),
         )
@@ -741,8 +752,8 @@ def plot_forward_model_posterior_distribution(
         # plot simulated profile colored by variable for each variable
         sns.lineplot(
             data=df,
-            x="Time [s]",
-            y=output,
+            x=time_column,
+            y=output_column,
             hue=df[var],
             ax=ax[i],
             palette=sns.cubehelix_palette(as_cmap=True),
@@ -753,4 +764,4 @@ def plot_forward_model_posterior_distribution(
         ax[i].legend_.remove()
 
     # output with one s.d. plot
-    sns.lineplot(data=df, x="Time [s]", y=output, errorbar=("sd", 1), ax=ax[0])
+    sns.lineplot(data=df, x=time_column, y=output_column, errorbar=("sd", 1), ax=ax[0])

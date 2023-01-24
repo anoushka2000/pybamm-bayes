@@ -1,44 +1,43 @@
+import os
+
 import pints
 import pybamm
+
 from battery_model_parameterization import (
     MCMCIdentifiabilityAnalysis,
     Variable,
     marquis_2019,
 )
 
-# define priors for variables being analysed
-log_prior_j0_n = pints.GaussianLogPrior(-5.5, 1)
-log_prior_j0_p = pints.GaussianLogPrior(-6.5, 1)
+here = os.path.abspath(os.path.dirname(__file__))
 
-# create a `Variable` object variables being analysed
-# the `value` here is the 'ground truth' used to create synthetic data
-# the `value` needs to be in the sampling space
-# (in this case a `log10` transformation is applied)
+# setup variables
+log_prior_Dsn = pints.GaussianLogPrior(-13, 1)
+log_prior_j0_n = pints.GaussianLogPrior(-4.26, 1)
+Dsn = Variable(name="Ds_n", value=-13.45, prior=log_prior_Dsn)
 j0_n = Variable(name="j0_n", value=-4.698, prior=log_prior_j0_n)
-j0_p = Variable(name="j0_p", value=-6.22, prior=log_prior_j0_p)
+variables = [Dsn, j0_n]
 
-variables = [j0_n, j0_p]
-
-model = pybamm.lithium_ion.SPMe()
-
-# create parameter set
-param = marquis_2019(variables)
-
+# setup battery simulation
+model = pybamm.lithium_ion.DFN()
+parameter_values = marquis_2019(variables)
 simulation = pybamm.Simulation(
     model,
-    parameter_values=param,
+    solver=pybamm.CasadiSolver("fast"),
+    parameter_values=parameter_values,
     experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
 )
 
 identifiability_problem = MCMCIdentifiabilityAnalysis(
     battery_simulation=simulation,
+    parameter_values=parameter_values,
     variables=variables,
     output="Terminal voltage [V]",
-    parameter_values=param,
     transform_type="log10",
     noise=0.005,
-    project_tag="generalized",
+    project_tag="test",
 )
+
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
@@ -47,7 +46,6 @@ chains = identifiability_problem.run(
     n_iteration=10,
     n_chains=2,
     n_workers=3,
-    # sampling_method="PopulationMCMC"
 )
 
-identifiability_problem.plot_results_summary()
+identifiability_problem.plot_results_summary(forward_evaluations=10)
