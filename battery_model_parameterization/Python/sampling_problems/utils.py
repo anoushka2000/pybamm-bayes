@@ -43,6 +43,6 @@ def interpolate_time_over_y_values(times, y_values, new_y=None):
             stop=max_y * (1 - 1e-8),
             num=int(y_values.shape[0])
         )
-    y_function = interp1d(x=y_values, y=times)
+    y_function = interp1d(x=y_values, y=times, fill_value="extrapolate")
     interpolated_time = y_function(new_y)
     return new_y, interpolated_time

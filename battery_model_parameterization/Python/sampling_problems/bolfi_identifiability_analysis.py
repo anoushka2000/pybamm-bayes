@@ -197,26 +197,15 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
 
                 self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
-            except pybamm.SolverError:
-                #  ScipySolver solver failed
-                try:
-                    self.battery_simulation.solve(
-                        inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times
-                    )
-                    solution = self.battery_simulation.solution
-                    output = solution[self.output].entries
+            except pybamm.SolverError as e:
 
-                    self.csv_logger.info(["Scipy", solution.solve_time.value])
+                with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
+                    log.write("**************\n")
+                    log.write(np.array2string(theta) + "\n")
+                    log.write(repr(e) + "\n")
 
-                except pybamm.SolverError as e:
-
-                    with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
-                        log.write("**************\n")
-                        log.write(np.array2string(theta) + "\n")
-                        log.write(repr(e) + "\n")
-
-                    # array of zeros to maximize residual if solution did not converge
-                    output = np.zeros(self.data.shape)
+                # array of zeros to maximize residual if solution did not converge
+                output = np.zeros(self.data.shape)
 
         if self.generated_data:
             try:

@@ -32,6 +32,7 @@ identifiability_problem = MCMCIdentifiabilityAnalysis(
     battery_simulation=simulation,
     parameter_values=parameter_values,
     variables=variables,
+    error_axis="y",
     output="Terminal voltage [V]",
     transform_type="log10",
     noise=0.005,
