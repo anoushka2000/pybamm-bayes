@@ -108,7 +108,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             # solve simulation initialized with experiment
             self.battery_simulation.solve(inputs=inputs)
             # set `t_eval` attribute if argument not passed
-            self.t_eval = self.battery_simulation.solution["Time [s]"].entries
+            self.t_eval = self.battery_simulation.solution.t
 
         data = self.simulate(theta=self.true_values, times=self.t_eval)
 
@@ -173,7 +173,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             )
             solution = self.battery_simulation.solution
             output = solution[self.output].entries
-            output_times = solution["Time [s]"].entries
+            output_times = solution.t
 
             self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
@@ -187,7 +187,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 )
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries
-                output_times = solution["Time [s]"].entries
+                output_times = solution.t
 
                 self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
@@ -200,7 +200,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
                 # array of zeros to maximize residual if solution did not converge
                 output = np.zeros(self.data_output_axis_values.shape)
-                output_times = solution["Time [s]"].entries
+                output_times = solution.t
 
         if self.error_axis == "x":
             if self.generated_data:
@@ -217,10 +217,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 self.data_reference_axis_values = reference_values
 
         elif not self.generated_data:
-            self.data_reference_axis_values = solution["Time [s]"].entries
+            self.data_reference_axis_values = solution.t
 
             if self.t_eval is None:
-                self.t_eval = solution["Time [s]"].entries
+                self.t_eval = solution.t
 
         if self.generated_data:
             try:
