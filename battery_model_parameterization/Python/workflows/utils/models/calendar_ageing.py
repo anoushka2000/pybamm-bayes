@@ -1,13 +1,8 @@
-import os
-import datetime
-from functools import partial
-import numpy as np
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 import pybamm
-import plotly
-import seaborn as sns
+import numpy as np
+from battery_model_parameterization.Python.workflows.utils.parameter_sets import schimpe2018
+import pandas as pd
+
 pybamm.set_logging_level("INFO")
 
 
@@ -26,16 +21,23 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
         ######################
         # Variables
         ######################
-        L_sei_norm = pybamm.Variable("Normalized SEI thickness [m]")
+        #         L_sei = pybamm.Variable("SEI thickness [m]")
+        L_sei = pybamm.Variable("SEI thickness [m]")
         L_sei_init = pybamm.Parameter("Initial SEI thickness [m]")
-        L_sei = L_sei_norm * L_sei_init
+
+        # TODO: Calculation attempt 1
+        Q = pybamm.Variable("Cell capacity [A.h]")
+        Q_init = pybamm.Parameter("Nominal cell capacity [A.h]")
 
         # mol/m3 of lithium lost to SEI
         V_bar_SEI = pybamm.Parameter("SEI partial molar volume [m3.mol-1]")
         eps = pybamm.Parameter("Negative electrode active material volume fraction")
         R = pybamm.Parameter("Negative particle radius [m]")
-        a = 3 * eps / R
-        n_SEI = L_sei * a / V_bar_SEI  # [m]*[SA/V m^2/m^3] --> dimn moles of sei/ V_bar_SEI --> moles/m^3 of Li in SEI
+        a = 3 * eps / R  # [m^-1]
+        n_SEI = L_sei * a / V_bar_SEI  # 1/[m3.mol-1] --> dimn moles of sei/ V_bar_SEI --> mol.m-3 of Li in SEI
+
+        # TODO: Calculation attempt 2
+        Q_sei_irr = (L_sei - L_sei_init) * V_bar_SEI  # [m]*[m3.mol-1]  --> [A.h]
 
         # Negative particle concentration as a function of SEI thickness
         c_s_init = pybamm.Parameter(
@@ -48,6 +50,12 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
         c_s_max = pybamm.Parameter(
             "Maximum concentration in negative electrode [mol.m-3]"
         )
+
+        # TODO: Calculation attempt 3
+        Q_Li_init = pybamm.Parameter("Cyclable lithium capacity [A.h]")
+        Q_Li = Q_Li_init - (c_s / c_s_max) * Q_Li_init
+        #         Q_Li = ((c_s_init - n_SEI) / c_s_max)*Q_Li_init
+
         T = pybamm.Parameter("Ambient temperature [K]")
         U_n = param.n.prim.U_dimensional(c_s / c_s_max, T)  # OCP_n(conc of Li in anode, T)
         delta_phi = U_n  # (phi_s - phi_e - Un = 0) => phi_s - phi_e = Un
@@ -57,7 +65,7 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
         # j_sei << => j_interc <<0
 
         # SEI growth rate
-        U_sei = pybamm.Parameter("SEI open-circuit potential [V]") # ageing
+        U_sei = pybamm.Parameter("SEI open-circuit potential [V]")
         eta_SEI = delta_phi - U_sei
 
         # Thermal prefactor for reaction, interstitial and EC models
@@ -66,12 +74,12 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
         # Define alpha_SEI depending on whether it is symmetric or asymmetric. This
         # applies to "reaction limited" and "EC reaction limited"
         if self.options["SEI"].endswith("(asymmetric)"):
-            alpha_SEI = pybamm.Parameter("SEI growth transfer coefficient") # ageing
+            alpha_SEI = pybamm.Parameter("SEI growth transfer coefficient")
         else:
             alpha_SEI = 0.5
 
         if self.options["SEI"].startswith("reaction limited"):
-            j0_sei = pybamm.Parameter("SEI reaction exchange current density [A.m-2]") # ageing
+            j0_sei = pybamm.Parameter("SEI reaction exchange current density [A.m-2]")
             # Scott Marquis thesis (eq. 5.92)
             j_sei = -j0_sei * pybamm.exp(-0.5 * F_RT * eta_SEI)
 
@@ -128,8 +136,13 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
 
         # LHS: d L_sei/ dt  [dT/ dt = 0]
         # RHS: L_sei, L_sei^-1   [eta_sei, T]
-        self.rhs[L_sei_norm] = (-V_bar_SEI * j_sei / (param.F * z_sei)) / L_sei_init
-        self.initial_conditions[L_sei_norm] = 1  # L_sei_init/L_sei_init
+        self.rhs[L_sei] = -V_bar_SEI * j_sei / (param.F * z_sei)
+        self.initial_conditions[L_sei] = L_sei_init
+
+        # TODO: Calculation attempt 1 (Scott Marquis thesis (eq. 5.89a)
+        SAn = pybamm.Parameter("Electrode area [m2]")
+        self.rhs[Q] = SAn * j_sei
+        self.initial_conditions[Q] = Q_init
 
         U_p = param.p.prim.U_init_dim
 
@@ -144,11 +157,15 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
             #   = param.p.prim.U_init_dim - param.n.prim.U_dimensional((c_s_init - L_sei * a / V_bar_SEI) / c_s_max, T)
             "Negative particle concentration [mol.m-3]": c_s,
             "Ambient temperature [K]": T,
-            "Normalized SEI thickness [m]": L_sei_norm,
             "SEI thickness [m]": L_sei,
             "SEI current density [A.m-2]": j_sei,
             "SEI volumetric current density [A.m-3]": a * j_sei,
             "SEI reaction overpotential [V]": eta_SEI,
+            "Cell capacity [A.h]": Q,  # TODO: Calculation attempt 1
+            "Cell capacity [A.h]": pybamm.Parameter("Nominal cell capacity [A.h]") - Q_sei_irr,
+            # TODO: Calculation attempt 2
+            "Current cyclable lithium capacity [A.h]": Q_Li
+            # TODO: Calculation attempt 3 (post processing to Q_loss below)
         }
 
         self.events = [
@@ -172,3 +189,43 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
     @property
     def default_var_pts(self):
         return {}
+
+
+def capacity_loss_from_calendar_ageing(cell_data: pd.DataFrame):
+    parameter_values = pybamm.ParameterValues("Chen2020")
+    parameter_values.update(schimpe2018(), check_already_exists=False)
+    parameter_values.update({"Ambient temperature [K]": cell_data.TdegK.values[0]})
+
+    limit_option = "reaction limited"
+    model = CalendarAgeing(options={"SEI": limit_option})
+    simulation = pybamm.Simulation(model, parameter_values=parameter_values, solver=pybamm.CasadiSolver("fast"))
+    t_max = cell_data.t_hrs.max() * 3600
+    t_eval = np.linspace(0, t_max, num=500)
+    simulation.solve(t_eval, initial_soc=1)
+    solution = simulation.solution
+
+    relative_capacity_lst = []
+    param = pybamm.LithiumIonParameters()
+
+    esoh_solver = pybamm.lithium_ion.ElectrodeSOHSolver(parameter_values, param)
+
+    Vmin = parameter_values["Lower voltage cut-off [V]"]
+    Vmax = parameter_values["Upper voltage cut-off [V]"]
+
+    Q_n = parameter_values["Negative electrode capacity [A.h]"]
+    Q_p = parameter_values["Positive electrode capacity [A.h]"]
+
+    Q_Li_solution = solution["Current cyclable lithium capacity [A.h]"].entries
+    V_solution = solution["Terminal voltage [V]"].entries
+
+    for i in range(len(Q_Li_solution)):
+        Q_Li = Q_Li_solution[i]
+        #     Vmax = V_solution[i]  # TODO: Calculation attempt 3.b)
+        n_Li = (Q_Li * 3600) / param.F.value
+        inputs = {"V_min": Vmin, "V_max": Vmax, "C_n": Q_n, "C_p": Q_p, "n_Li": n_Li}
+
+        esoh_sol = esoh_solver.solve(inputs)
+        relative_capacity = esoh_sol["C"].entries[0] / parameter_values["Nominal cell capacity [A.h]"]
+        relative_capacity_lst.append(relative_capacity)
+
+    return relative_capacity_lst
