@@ -46,6 +46,8 @@ class ParameterEstimation(BaseSamplingProblem):
         Transformation variable value input to battery model
         and sampling space.
         (only `log10` implemented for now)
+     initial_soc: float
+        SOC to initialize battery simulation at.
     project_tag: str
         Project identifier (prefix to logs dir name).
     """
@@ -58,6 +60,7 @@ class ParameterEstimation(BaseSamplingProblem):
             variables: List[Variable],
             output: str,
             transform_type: str,
+            initial_soc: float = 1,
             project_tag: str = "",
     ):
 
@@ -81,6 +84,7 @@ class ParameterEstimation(BaseSamplingProblem):
             inputs=self.default_inputs,
             solver=pybamm.CasadiSolver("safe"),
             t_eval=self.times,
+            initial_soc=initial_soc
         )
 
         simulation_end_time = max(self.battery_simulation.solution["Time [s]"].entries)
@@ -149,7 +153,10 @@ class ParameterEstimation(BaseSamplingProblem):
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(
-                inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.times
+                inputs=inputs,
+                solver=pybamm.CasadiSolver("fast"),
+                t_eval=self.times,
+                initial_soc=initial_soc
             )
             solution = self.battery_simulation.solution
             output = solution[self.output].entries
@@ -160,7 +167,10 @@ class ParameterEstimation(BaseSamplingProblem):
             # CasadiSolver "fast" failed
             try:
                 self.battery_simulation.solve(
-                    inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times
+                    inputs=inputs,
+                    solver=pybamm.CasadiSolver("safe"),
+                    t_eval=self.times,
+                    initial_soc=initial_soc
                 )
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries

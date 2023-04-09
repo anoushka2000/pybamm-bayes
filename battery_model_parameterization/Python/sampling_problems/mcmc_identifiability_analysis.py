@@ -44,6 +44,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         (only `log10` implemented for now)
     noise: float
         Scale of zero-mean noise added to synthetic data used to identify parameters.
+     initial_soc: float
+        SOC to initialize battery simulation at.
     times: np.ndarray
         Array of times at which simulation is evaluated.
     project_tag: str
@@ -58,6 +60,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             output: str,
             transform_type: str,
             noise: float,
+            initial_soc: float = 1,
             error_axis: str = "y",
             times: Optional[np.ndarray] = None,
             project_tag: str = "",
@@ -106,7 +109,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 )
         else:
             # solve simulation initialized with experiment
-            self.battery_simulation.solve(inputs=inputs)
+            self.battery_simulation.solve(inputs=inputs, initial_soc=initial_soc)
             # set `t_eval` attribute if argument not passed
             self.t_eval = self.battery_simulation.solution.t
 
@@ -169,7 +172,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(
-                inputs=inputs, solver=pybamm.CasadiSolver("fast"), t_eval=self.t_eval
+                inputs=inputs,
+                solver=pybamm.CasadiSolver("fast"),
+                t_eval=self.t_eval,
+                initial_soc=initial_soc
             )
             solution = self.battery_simulation.solution
             output = solution[self.output].entries
@@ -183,7 +189,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 self.battery_simulation.solve(
                     inputs=inputs,
                     solver=pybamm.CasadiSolver("safe"),
-                    t_eval=self.t_eval
+                    t_eval=self.t_eval,
+                    initial_soc=initial_soc
                 )
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries
