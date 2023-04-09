@@ -53,15 +53,15 @@ class ParameterEstimation(BaseSamplingProblem):
     """
 
     def __init__(
-            self,
-            data: pd.DataFrame,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            output: str,
-            transform_type: str,
-            initial_soc: float = 1,
-            project_tag: str = "",
+        self,
+        data: pd.DataFrame,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        output: str,
+        transform_type: str,
+        initial_soc: float = 1,
+        project_tag: str = "",
     ):
 
         super().__init__(
@@ -70,7 +70,7 @@ class ParameterEstimation(BaseSamplingProblem):
             variables=variables,
             output=output,
             transform_type=transform_type,
-            project_tag=project_tag
+            project_tag=project_tag,
         )
 
         initial_values = [v.value for v in self.variables]
@@ -84,7 +84,7 @@ class ParameterEstimation(BaseSamplingProblem):
             inputs=self.default_inputs,
             solver=pybamm.CasadiSolver("safe"),
             t_eval=self.times,
-            initial_soc=initial_soc
+            initial_soc=initial_soc,
         )
 
         simulation_end_time = max(self.battery_simulation.solution["Time [s]"].entries)
@@ -99,7 +99,7 @@ class ParameterEstimation(BaseSamplingProblem):
             )
 
         if not np.array_equal(
-                self.battery_simulation.solution["Time [s]"].entries, self.times
+            self.battery_simulation.solution["Time [s]"].entries, self.times
         ):
             # if simulation did not solve at times in data
             # (e.g. for experiments)
@@ -156,7 +156,7 @@ class ParameterEstimation(BaseSamplingProblem):
                 inputs=inputs,
                 solver=pybamm.CasadiSolver("fast"),
                 t_eval=self.times,
-                initial_soc=initial_soc
+                initial_soc=initial_soc,
             )
             solution = self.battery_simulation.solution
             output = solution[self.output].entries
@@ -170,7 +170,7 @@ class ParameterEstimation(BaseSamplingProblem):
                     inputs=inputs,
                     solver=pybamm.CasadiSolver("safe"),
                     t_eval=self.times,
-                    initial_soc=initial_soc
+                    initial_soc=initial_soc,
                 )
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries
@@ -199,12 +199,12 @@ class ParameterEstimation(BaseSamplingProblem):
         return output
 
     def run(
-            self,
-            burnin: int = 0,
-            n_iteration: int = 2000,
-            n_chains: int = 12,
-            n_workers: int = 4,
-            sampling_method: str = "MetropolisRandomWalkMCMC",
+        self,
+        burnin: int = 0,
+        n_iteration: int = 2000,
+        n_chains: int = 12,
+        n_workers: int = 4,
+        sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -290,8 +290,8 @@ class ParameterEstimation(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "r",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -307,8 +307,8 @@ class ParameterEstimation(BaseSamplingProblem):
         )
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "w",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "w",
         ) as outfile:
             json.dump(metadata, outfile)
 

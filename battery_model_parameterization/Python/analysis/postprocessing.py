@@ -130,7 +130,7 @@ def load_chains_with_residual(logs_dir_name=None, logs_dir_path=None):
 
     # calculate chi_sq
     result["chi_sq"] = (
-            result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
+        result.residuals - result.nsmallest(1, "residuals").residuals.values[0]
     )
     result.columns = ["sample number"] + variable_names + ["residuals", "chi_sq"]
     return result
@@ -184,9 +184,9 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
             solution_var = solution[output].entries
 
             if error_axis == "x":
-                _, solution_var = interpolate_time_over_y_values(times,
-                                                                 solution_var,
-                                                                 new_y=ref_axis)
+                _, solution_var = interpolate_time_over_y_values(
+                    times, solution_var, new_y=ref_axis
+                )
 
             summary.append(
                 {
@@ -198,7 +198,7 @@ def generate_residual_over_posterior(logs_dir_path, n_evaluations=20):
 
 
 def run_forward_model_over_posterior(
-        logs_dir_name=None, logs_dir_path=None, n_evaluations=20
+    logs_dir_name=None, logs_dir_path=None, n_evaluations=20
 ):
     """
     Generates time series curves for parameter values sampled

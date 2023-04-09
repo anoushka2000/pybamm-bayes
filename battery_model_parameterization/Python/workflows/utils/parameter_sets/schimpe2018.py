@@ -1,4 +1,5 @@
 import pybamm
+from typing import List
 
 MECHANISM_VARIABLES = {
     "none": [],  # no additional inputs to SEI model
@@ -111,9 +112,12 @@ def _schimpe2018():
     }
 
 
-def schimpe2018(mechanism: str):
+def schimpe2018(mechanism: str, apply_log: List[str] = ["j0_sei", ]):
     parameter_values = pybamm.ParameterValues("Chen2020")
     parameter_values.update(_schimpe2018(), check_already_exists=False)
     for parameter in MECHANISM_VARIABLES[mechanism]:
-        parameter_values[parameter[0]] = pybamm.InputParameter(parameter[1])
+        if parameter[1] in apply_log:
+            parameter_values[parameter[0]] = 10 ** pybamm.InputParameter(parameter[1])
+        else:
+            parameter_values[parameter[0]] = pybamm.InputParameter(parameter[1])
     return parameter_values

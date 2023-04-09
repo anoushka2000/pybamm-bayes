@@ -125,7 +125,8 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         Plot priors for all variables and save.
         """
         i = 0
-        fig, axs = plt.subplots(len(self.variables))
+        n_subplots = len(self.variables)
+        fig, axs = plt.subplots(n_subplots)
         fig.subplots_adjust(hspace=0.9)
         fig.suptitle("Prior Distributions")
         for variable in self.variables:
@@ -134,28 +135,44 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     variable.bounds[0],
                     variable.bounds[1] - variable.bounds[0],
                 )
-                sample = (
-                        lower + variable.prior.distribution.rvs(size=7000)
-                        * rng
-                )
+                sample = lower + variable.prior.distribution.rvs(size=7000) * rng
             else:
                 sample = variable.prior.sample(7000).flatten()
 
-            sns.distplot(
-                sample,
-                hist=True,
-                kde=False,
-                bins=80,
-                color="darkblue",
-                ax=axs[i],
-            )
-
-            if variable.value:
-                axs[i].axvline(
-                    x=variable.value, ymax=0.7, color="darkblue", ls="--", lw=1
+            if n_subplots < 2:
+                sns.distplot(
+                    sample,
+                    hist=True,
+                    kde=False,
+                    bins=80,
+                    color="darkblue",
+                    ax=axs,
                 )
 
-            axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
+            else:
+                sns.distplot(
+                    sample,
+                    hist=True,
+                    kde=False,
+                    bins=80,
+                    color="darkblue",
+                    ax=axs[i],
+                )
+
+            if variable.value:
+                if n_subplots < 2:
+                    axs.axvline(
+                        x=variable.value, ymax=0.7, color="darkblue", ls="--", lw=1
+                    )
+
+                    axs.set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
+
+                else:
+                    axs[i].axvline(
+                        x=variable.value, ymax=0.7, color="darkblue", ls="--", lw=1
+                    )
+
+                    axs[i].set(xlabel=f"{variable.name} (transformed)", ylabel="Frequency")
             i += 1
         plt.savefig(os.path.join(self.logs_dir_path, "prior"))
 
@@ -195,7 +212,8 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                         **inputs,
                         "Residual": abs(
                             self.data_output_axis_values - solution_var
-                        ).sum() / len(solution_var),
+                        ).sum()
+                                    / len(solution_var),
                     }
                 )
 
@@ -251,11 +269,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                         variable.bounds[0],
                         variable.bounds[1] - variable.bounds[0],
                     )
-                    sample = (
-                            lower
-                            + variable.prior.distribution.rvs(size=7000)
-                            * rng
-                    )
+                    sample = lower + variable.prior.distribution.rvs(size=7000) * rng
                 else:
                     sample = variable.prior.sample(7000).flatten()
 

@@ -41,7 +41,7 @@ def interpolate_time_over_y_values(times, y_values, new_y=None):
         new_y = np.linspace(
             start=min_y * (1 + 1e-8),
             stop=max_y * (1 - 1e-8),
-            num=int(y_values.shape[0])
+            num=int(y_values.shape[0]),
         )
     y_function = interp1d(x=y_values, y=times, fill_value="extrapolate")
     interpolated_time = y_function(new_y)

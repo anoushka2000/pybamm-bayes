@@ -13,7 +13,7 @@ from battery_model_parameterization.Python.sampling_problems.base_sampling_probl
 from battery_model_parameterization.Python.sampling_problems.utils import (
     _fmt_variables,
     _fmt_parameters,
-    interpolate_time_over_y_values
+    interpolate_time_over_y_values,
 )
 from battery_model_parameterization.Python.logging import logger
 from battery_model_parameterization.Python.variable import Variable
@@ -53,17 +53,17 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
 
     def __init__(
-            self,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            output: str,
-            transform_type: str,
-            noise: float,
-            initial_soc: float = 1,
-            error_axis: str = "y",
-            times: Optional[np.ndarray] = None,
-            project_tag: str = "",
+        self,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        output: str,
+        transform_type: str,
+        noise: float,
+        initial_soc: float = 1,
+        error_axis: str = "y",
+        times: Optional[np.ndarray] = None,
+        project_tag: str = "",
     ):
 
         super().__init__(
@@ -81,6 +81,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         self.noise = noise
         self.error_axis = error_axis
         self.t_eval = times
+        self.initial_soc = initial_soc
 
         # automatically updated the first time `simulate` method is called
         # (if reference axis is not time)
@@ -97,8 +98,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     def generate_synthetic_data(self):
 
         inputs = dict(
-            zip([v.name for v in self.variables],
-                [v.value for v in self.variables])
+            zip([v.name for v in self.variables], [v.value for v in self.variables])
         )
 
         if self.battery_simulation.operating_mode == "without experiment":
@@ -109,7 +109,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 )
         else:
             # solve simulation initialized with experiment
-            self.battery_simulation.solve(inputs=inputs, initial_soc=initial_soc)
+            self.battery_simulation.solve(inputs=inputs, initial_soc=self.initial_soc)
             # set `t_eval` attribute if argument not passed
             self.t_eval = self.battery_simulation.solution.t
 
@@ -131,7 +131,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 times=self.t_eval,
                 y_values=data,
             )
-        output_values = output_values + np.random.normal(0, self.noise, data.shape)
+        output_values = output_values + np.random.normal(0, self.noise, output_values.shape)
         return output_values
 
     @property
@@ -169,13 +169,14 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
         inputs = dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
 
+        print(inputs)
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(
                 inputs=inputs,
                 solver=pybamm.CasadiSolver("fast"),
                 t_eval=self.t_eval,
-                initial_soc=initial_soc
+                initial_soc=self.initial_soc,
             )
             solution = self.battery_simulation.solution
             output = solution[self.output].entries
@@ -190,7 +191,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                     inputs=inputs,
                     solver=pybamm.CasadiSolver("safe"),
                     t_eval=self.t_eval,
-                    initial_soc=initial_soc
+                    initial_soc=self.initial_soc,
                 )
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries
@@ -214,7 +215,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 _, output = interpolate_time_over_y_values(
                     times=output_times,
                     y_values=output,
-                    new_y=self.data_reference_axis_values
+                    new_y=self.data_reference_axis_values,
                 )
             else:
                 reference_values, output = interpolate_time_over_y_values(
@@ -248,12 +249,12 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         return output
 
     def run(
-            self,
-            burnin: int = 0,
-            n_iteration: int = 2000,
-            n_chains: int = 12,
-            n_workers: int = 4,
-            sampling_method: str = "MetropolisRandomWalkMCMC",
+        self,
+        burnin: int = 0,
+        n_iteration: int = 2000,
+        n_chains: int = 12,
+        n_workers: int = 4,
+        sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -285,10 +286,10 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
             self.data_output_axis_values,
         )
 
-        log_likelihood = pints.GaussianKnownSigmaLogLikelihood(problem, self.noise)
+        log_likelihood = pints.GaussianKnownSigmaLogLikelihood(problem, 1e-3)
 
         log_posterior = pints.LogPosterior(log_likelihood, self.log_prior)
-        xs = [x * self.true_values for x in np.random.normal(1, 0.2, n_chains)]
+        xs = [x * self.true_values for x in np.random.normal(1, 0.1, n_chains)]
 
         # Create MCMC routine
         mcmc = pints.MCMCController(
@@ -333,9 +334,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
         #  find residual at optimal value
         y_hat = self.simulate(theta_optimal, times=self.t_eval)
-        error_at_optimal = np.sum(
-            abs(y_hat - self.data_output_axis_values)
-        ) / len(y_hat)
+        error_at_optimal = np.sum(abs(y_hat - self.data_output_axis_values)) / len(
+            y_hat
+        )
 
         # chi_sq = distance in residuals between optimal value and all others
         pd.DataFrame(
@@ -346,8 +347,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "r",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -369,8 +370,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         )
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "w",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "w",
         ) as outfile:
             json.dump(metadata, outfile)
 

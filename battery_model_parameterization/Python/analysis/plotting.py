@@ -232,12 +232,12 @@ def compare_chain_convergence(log_dir_names=None, log_dir_paths=None):
 
 
 def pairwise(
-        logs_dir_name=None,
-        logs_dir_path=None,
-        kde=False,
-        heatmap=False,
-        opacity=None,
-        n_percentiles=None,
+    logs_dir_name=None,
+    logs_dir_path=None,
+    kde=False,
+    heatmap=False,
+    opacity=None,
+    n_percentiles=None,
 ):
     """
     (Adapted from pint.plot.pairwise)
@@ -313,8 +313,7 @@ def pairwise(
                     )
 
                     prior_samples = (
-                            lower
-                            + priors[i].distribution.rvs(size=len(samples)) * rng
+                        lower + priors[i].distribution.rvs(size=len(samples)) * rng
                     )
                 else:
                     prior_samples = priors[i].sample(len(samples))
@@ -441,7 +440,7 @@ def pairwise(
 
 
 def _plot_confidence_intervals_grid(
-        n_variables, logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
+    n_variables, logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
 ):
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
@@ -450,7 +449,7 @@ def _plot_confidence_intervals_grid(
     result = load_chains_with_residual(logs_dir_path=logs_dir_path)
 
     theta_optimal = result.nsmallest(1, "residuals")[
-        result.columns[1: n_variables + 1]
+        result.columns[1 : n_variables + 1]
     ].values.flatten()
 
     # recover true values from metadata
@@ -517,7 +516,7 @@ def _plot_confidence_intervals_grid(
 
 
 def _plot_confidence_intervals_bivariate(
-        logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
+    logs_dir_name=None, logs_dir_path=None, chi_sq_limit=10
 ):
     if logs_dir_path is None:
         logs_dir_path = _get_logs_path(logs_dir_name)
@@ -606,11 +605,11 @@ def plot_confidence_intervals(logs_dir_name=None, logs_dir_path=None, chi_sq_lim
 
 
 def plot_residual(
-        logs_dir_name=None,
-        logs_dir_path=None,
-        from_stored=True,
-        variables=None,
-        n_evaluations=20,
+    logs_dir_name=None,
+    logs_dir_path=None,
+    from_stored=True,
+    variables=None,
+    n_evaluations=20,
 ):
     """
     Scatter plot of samples from posterior, coloured by residual
@@ -675,7 +674,7 @@ def plot_residual(
 
 
 def plot_forward_model_posterior_distribution(
-        logs_dir_name=None, logs_dir_path=None, from_stored=False, n_evaluations=20
+    logs_dir_name=None, logs_dir_path=None, from_stored=False, n_evaluations=20
 ):
     """
     Time series curves for parameter values sampled from posterior,

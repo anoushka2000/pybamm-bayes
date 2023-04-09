@@ -1,6 +1,8 @@
 import pybamm
 import numpy as np
-from battery_model_parameterization.Python.workflows.utils.parameter_sets import schimpe2018
+from battery_model_parameterization.Python.workflows.utils.parameter_sets import (
+    schimpe2018,
+)
 import pandas as pd
 
 pybamm.set_logging_level("INFO")
@@ -21,7 +23,6 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
         ######################
         # Variables
         ######################
-        #         L_sei = pybamm.Variable("SEI thickness [m]")
         L_sei = pybamm.Variable("SEI thickness [m]")
         L_sei_init = pybamm.Parameter("Initial SEI thickness [m]")
 
@@ -34,7 +35,9 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
         eps = pybamm.Parameter("Negative electrode active material volume fraction")
         R = pybamm.Parameter("Negative particle radius [m]")
         a = 3 * eps / R  # [m^-1]
-        n_SEI = L_sei * a / V_bar_SEI  # 1/[m3.mol-1] --> dimn moles of sei/ V_bar_SEI --> mol.m-3 of Li in SEI
+        n_SEI = (
+            L_sei * a / V_bar_SEI
+        )  # 1/[m3.mol-1] --> dimn moles of sei/ V_bar_SEI --> mol.m-3 of Li in SEI
 
         # TODO: Calculation attempt 2
         Q_sei_irr = (L_sei - L_sei_init) * V_bar_SEI  # [m]*[m3.mol-1]  --> [A.h]
@@ -57,7 +60,9 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
         #         Q_Li = ((c_s_init - n_SEI) / c_s_max)*Q_Li_init
 
         T = pybamm.Parameter("Ambient temperature [K]")
-        U_n = param.n.prim.U_dimensional(c_s / c_s_max, T)  # OCP_n(conc of Li in anode, T)
+        U_n = param.n.prim.U_dimensional(
+            c_s / c_s_max, T
+        )  # OCP_n(conc of Li in anode, T)
         delta_phi = U_n  # (phi_s - phi_e - Un = 0) => phi_s - phi_e = Un
         # eta approx 0 for intercalation reaction but not for SEI
         # since kinetics of intercalation is much faster than SEI
@@ -141,7 +146,7 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
 
         # TODO: Calculation attempt 1 (Scott Marquis thesis (eq. 5.89a)
         SAn = pybamm.Parameter("Electrode area [m2]")
-        self.rhs[Q] = SAn * j_sei
+        self.rhs[Q] = (SAn * j_sei)/3600
         self.initial_conditions[Q] = Q_init
 
         U_p = param.p.prim.U_init_dim
@@ -162,9 +167,11 @@ class CalendarAgeing(pybamm.lithium_ion.BaseModel):
             "SEI volumetric current density [A.m-3]": a * j_sei,
             "SEI reaction overpotential [V]": eta_SEI,
             "Cell capacity [A.h]": Q,  # TODO: Calculation attempt 1
-            "Cell capacity [A.h]": pybamm.Parameter("Nominal cell capacity [A.h]") - Q_sei_irr,
-            # TODO: Calculation attempt 2
-            "Current cyclable lithium capacity [A.h]": Q_Li
+            "Relative cell capacity": Q/Q_init,
+            # "Cell capacity [A.h]": pybamm.Parameter("Nominal cell capacity [A.h]")
+            # - Q_sei_irr,
+            # # TODO: Calculation attempt 2
+            # "Current cyclable lithium capacity [A.h]": Q_Li
             # TODO: Calculation attempt 3 (post processing to Q_loss below)
         }
 
@@ -198,7 +205,9 @@ def capacity_loss_from_calendar_ageing(cell_data: pd.DataFrame):
 
     limit_option = "reaction limited"
     model = CalendarAgeing(options={"SEI": limit_option})
-    simulation = pybamm.Simulation(model, parameter_values=parameter_values, solver=pybamm.CasadiSolver("fast"))
+    simulation = pybamm.Simulation(
+        model, parameter_values=parameter_values, solver=pybamm.CasadiSolver("fast")
+    )
     t_max = cell_data.t_hrs.max() * 3600
     t_eval = np.linspace(0, t_max, num=500)
     simulation.solve(t_eval, initial_soc=1)
@@ -225,7 +234,9 @@ def capacity_loss_from_calendar_ageing(cell_data: pd.DataFrame):
         inputs = {"V_min": Vmin, "V_max": Vmax, "C_n": Q_n, "C_p": Q_p, "n_Li": n_Li}
 
         esoh_sol = esoh_solver.solve(inputs)
-        relative_capacity = esoh_sol["C"].entries[0] / parameter_values["Nominal cell capacity [A.h]"]
+        relative_capacity = (
+            esoh_sol["C"].entries[0] / parameter_values["Nominal cell capacity [A.h]"]
+        )
         relative_capacity_lst.append(relative_capacity)
 
     return relative_capacity_lst
