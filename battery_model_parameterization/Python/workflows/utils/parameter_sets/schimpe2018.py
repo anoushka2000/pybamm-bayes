@@ -1,5 +1,30 @@
 import pybamm
 
+MECHANISM_VARIABLES = {
+    "none": [],  # no additional inputs to SEI model
+    "constant": [],  # no additional inputs to SEI model
+    "reaction limited": [
+        ("SEI reaction exchange current density [A.m-2]", 'j0_sei')
+    ],
+    "solvent-diffusion limited": [
+        ("SEI solvent diffusivity [m2.s-1]", 'D_sol'),
+        ("Bulk solvent concentration [mol.m-3]", 'c_sol'),
+    ],
+    "electron-migration limited": [
+        ("SEI open-circuit potential [V]", 'U_inner'),
+        ("SEI electron conductivity [S.m-1]", 'kappa_inner'),
+    ],
+    "interstitial-diffusion limited": [
+        ("SEI lithium interstitial diffusivity [m2.s-1]", 'D_li'),
+        ("Lithium interstitial reference concentration [mol.m-3]", 'c_li_0'),
+    ],
+    "ec reaction limited": [
+        ("EC initial concentration in electrolyte [mol.m-3]", 'c_ec_0'),
+        ("EC diffusivity [m2.s-1]", 'D_ec'),
+        ("SEI kinetic rate constant [m.s-1]", 'k_sei')
+    ]
+}
+
 
 def negative_ocp(sto):
     u_eq = (
@@ -25,7 +50,7 @@ def positive_ocp(sto):
 
 
 # Call dict via a function to avoid errors when editing in place
-def schimpe2018():
+def _schimpe2018():
     return {
         "Ambient temperature [K]": 298.15,
         "Bulk solvent concentration [mol.m-3]": 2636.0,
@@ -51,7 +76,7 @@ def schimpe2018():
         "Moles of SEI formed in formation [mol]": 0.010564435611599993,
         "Negative electrode OCP [V]": negative_ocp,
         "Negative electrode OCP entropic change [V.K-1]": 0,
-        "Negative electrode active material volume fraction": pybamm.InputParameter("am_fraction_n"),  # 0.486,
+        "Negative electrode active material volume fraction": 0.486,
         "Negative electrode capacity [A.h]": 3.8592137820787755,
         "Negative electrode cation signed stoichiometry": -1.0,
         "Negative electrode electrons in reaction": 1.0,
@@ -64,7 +89,7 @@ def schimpe2018():
         "Number of electrodes connected in parallel to make a cell": 1.0,
         "Positive electrode OCP [V]": positive_ocp,
         "Positive electrode OCP entropic change [V.K-1]": 0,
-        "Positive electrode active material volume fraction": pybamm.InputParameter("am_fraction_p"),  # 0.455,
+        "Positive electrode active material volume fraction": 0.455,
         "Positive electrode capacity [A.h]": 3.448512326562764,
         "Positive electrode cation signed stoichiometry": -1.0,
         "Positive electrode electrons in reaction": 1.0,
@@ -74,10 +99,21 @@ def schimpe2018():
         "Positive particle radius [m]": 1e-06,
         "Ratio of lithium moles to SEI moles": 2.0,
         "Reference temperature [K]": 298.15,
+        "SEI solvent diffusivity [m2.s-1]": 2.5000000000000002e-22,
+        'SEI electron conductivity [S.m-1]': 8.95e-14,
         "SEI growth activation energy [J.mol-1]": 0.0,
         "SEI growth transfer coefficient": 0.5,
         "SEI open-circuit potential [V]": 0.4,
         "SEI partial molar volume [m3.mol-1]": 9.585e-05,
-        "SEI reaction exchange current density [A.m-2]": 1e-8,
+        "SEI reaction exchange current density [A.m-2]": 5e-8,
+        "SEI lithium interstitial diffusivity [m2.s-1]": 1e-20,
         "Upper voltage cut-off [V]": 3.421882785122582,
     }
+
+
+def schimpe2018(mechanism: str):
+    parameter_values = pybamm.ParameterValues("Chen2020")
+    parameter_values.update(_schimpe2018(), check_already_exists=False)
+    for parameter in MECHANISM_VARIABLES[mechanism]:
+        parameter_values[parameter[0]] = pybamm.InputParameter(parameter[1])
+    return parameter_values
