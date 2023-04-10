@@ -235,13 +235,14 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             df.to_csv(
                 os.path.join(self.logs_dir_path, "forward_model_over_posterior.csv")
             )
-            # used to generate color bar for residual plot
-            residual_plot = plt.scatter(
-                df_summary[variable_names[0]],
-                df_summary[variable_names[1]],
-                c=df_summary.Residual,
-                cmap=sns.cubehelix_palette(as_cmap=True),
-            )
+            if len(variable_names) > 1:
+                # used to generate color bar for residual plot
+                residual_plot = plt.scatter(
+                    df_summary[variable_names[0]],
+                    df_summary[variable_names[1]],
+                    c=df_summary.Residual,
+                    cmap=sns.cubehelix_palette(as_cmap=True),
+                )
             plt.clf()
 
             _scratch_plots = []
@@ -260,7 +261,8 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             # Set up axis
             rows = len(variable_names) + 1
             fig, ax = plt.subplots(rows, 2, figsize=(8, rows * 3))
-            plt.colorbar(residual_plot, ax=ax[0][1], label="Residual")
+            if len(variable_names) > 1:
+                plt.colorbar(residual_plot, ax=ax[0][1], label="Residual")
 
             # Add prior plots to column 0 (histograms)
             for i, variable in list(zip([i for i in range(1, rows)], self.variables)):
@@ -314,15 +316,16 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                 # remove discrete legend
                 ax[i][1].legend_.remove()
 
-            sns.scatterplot(
-                data=df_summary,
-                x=variable_names[0],
-                y=variable_names[1],
-                hue="Residual",
-                ax=ax[0][1],
-            )
-            # remove discrete legend
-            ax[0][1].legend_.remove()
+            if len(variable_names) > 1:
+                sns.scatterplot(
+                    data=df_summary,
+                    x=variable_names[0],
+                    y=variable_names[1],
+                    hue="Residual",
+                    ax=ax[0][1],
+                )
+                # remove discrete legend
+                ax[0][1].legend_.remove()
 
             # Output variable with one s.d. plot
             sns.lineplot(
@@ -330,7 +333,8 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             )
             ax[0][0].set_ylabel("Output with one standard deviation")
             ax[1][0].set_ylabel("Frequency")
-            ax[2][0].set_ylabel("Frequency")
+            if len(variable_names)>1:
+                ax[2][0].set_ylabel("Frequency")
 
             fig.tight_layout()
         plt.savefig(os.path.join(self.logs_dir_path, "results_summary"))

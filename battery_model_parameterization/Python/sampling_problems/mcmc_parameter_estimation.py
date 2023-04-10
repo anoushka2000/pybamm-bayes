@@ -60,6 +60,7 @@ class ParameterEstimation(BaseSamplingProblem):
         variables: List[Variable],
         output: str,
         transform_type: str,
+        error_axis: str = 'y',
         initial_soc: float = 1,
         project_tag: str = "",
     ):
@@ -77,17 +78,22 @@ class ParameterEstimation(BaseSamplingProblem):
         # use 1e-6 as initial value for noise
         initial_values.append(1e-6)
         self.initial_values = np.array(initial_values)
-        self.times = data["time"]
-        self.data = data["output"]
+        self.initial_soc = initial_soc
+        self.times = data["time"].values
+        self.t_eval = data["time"].values
+        self.data_reference_axis_values = data["time"].values
+        self.data = data["output"].values
+        self.data_output_axis_values = data["output"].values
+        self.error_axis = error_axis
 
         self.battery_simulation.solve(
             inputs=self.default_inputs,
             solver=pybamm.CasadiSolver("safe"),
             t_eval=self.times,
-            initial_soc=initial_soc,
+            initial_soc=self.initial_soc,
         )
 
-        simulation_end_time = max(self.battery_simulation.solution["Time [s]"].entries)
+        simulation_end_time = max(self.battery_simulation.solution.t)
         if simulation_end_time > max(data["time"]):
             raise ValueError(
                 f"""
@@ -99,15 +105,15 @@ class ParameterEstimation(BaseSamplingProblem):
             )
 
         if not np.array_equal(
-            self.battery_simulation.solution["Time [s]"].entries, self.times
+            self.battery_simulation.solution.t, self.times
         ):
             # if simulation did not solve at times in data
             # (e.g. for experiments)
             # interpolate data to times in simulation
 
             interpolant = interp1d(x=self.times, y=self.data, fill_value="extrapolate")
-            self.times = battery_simulation.solution["Time [s]"].entries
-            self.data = interpolant(battery_simulation.solution["Time [s]"].entries)
+            self.times = battery_simulation.solution.t
+            self.data = interpolant(battery_simulation.solution.t)
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
@@ -156,7 +162,7 @@ class ParameterEstimation(BaseSamplingProblem):
                 inputs=inputs,
                 solver=pybamm.CasadiSolver("fast"),
                 t_eval=self.times,
-                initial_soc=initial_soc,
+                initial_soc=self.initial_soc,
             )
             solution = self.battery_simulation.solution
             output = solution[self.output].entries
@@ -170,7 +176,7 @@ class ParameterEstimation(BaseSamplingProblem):
                     inputs=inputs,
                     solver=pybamm.CasadiSolver("safe"),
                     t_eval=self.times,
-                    initial_soc=initial_soc,
+                    initial_soc=self.initial_soc,
                 )
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries
@@ -273,6 +279,7 @@ class ParameterEstimation(BaseSamplingProblem):
         )
         # drop noise estimation column
         chains = chains[chains.columns[:-1]]
+        self.chains = chains
 
         #  evaluate optimal value for each parameter
         theta_optimal = np.array(
@@ -305,6 +312,7 @@ class ParameterEstimation(BaseSamplingProblem):
                 "error_at_optimal": error_at_optimal,
             }
         )
+        # print(metadata.keys())
 
         with open(
             os.path.join(self.logs_dir_path, "metadata.json"),

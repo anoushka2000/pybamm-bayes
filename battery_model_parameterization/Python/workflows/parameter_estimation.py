@@ -4,6 +4,7 @@ import pybamm
 from battery_model_parameterization import ParameterEstimation, Variable, chen_2020
 
 # define priors for variables being analysed
+
 log_prior_j0_n = pints.GaussianLogPrior(-5.5, 1)
 log_prior_j0_p = pints.GaussianLogPrior(-6.5, 1)
 
