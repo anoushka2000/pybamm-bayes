@@ -3,10 +3,9 @@ import pybamm
 pybamm.set_logging_level("INFO")
 
 
-class CalendarAgeingIdentifiable(pybamm.lithium_ion.BaseModel):
-    def __init__(self, options, name="Calendar ageing model"):
-        options = options or {}
-        options["timescale"] = 1
+class CalendarAgeingLimiting(pybamm.lithium_ion.BaseModel):
+    def __init__(self, name="Calendar ageing model"):
+        options = {"timescale": 1}
         super().__init__(options, name)
         self._length_scales = {}
 
@@ -62,71 +61,41 @@ class CalendarAgeingIdentifiable(pybamm.lithium_ion.BaseModel):
         # Thermal prefactor for reaction, interstitial and EC models
         F_RT = param.F / (param.R * T)
 
-        # Define alpha_SEI depending on whether it is symmetric or asymmetric. This
-        # applies to "reaction limited" and "EC reaction limited"
-        if self.options["SEI"].endswith("(asymmetric)"):
-            alpha_SEI = pybamm.Parameter("SEI growth transfer coefficient")
-        else:
-            alpha_SEI = 0.5
+        # alpha_SEI defined for symmetric, applies to "reaction limited"
+        alpha_SEI = 0.5
 
-        if self.options["SEI"].startswith("reaction limited"):
-            j0_sei = pybamm.Parameter("SEI reaction exchange current density [A.m-2]")
-            # Scott Marquis thesis (eq. 5.92)
-            j_sei = -j0_sei * pybamm.exp(-0.5 * F_RT * eta_SEI)
+        # reaction limited
+        j0_sei_reaction = pybamm.Parameter("SEI reaction exchange current density [A.m-2]")
+        # Scott Marquis thesis (eq. 5.92)
+        j0_sei_reaction = -j0_sei_reaction * pybamm.exp(-0.5 * F_RT * eta_SEI)
 
-        elif self.options["SEI"] == "electron-migration limited":
-            U_inner = pybamm.Parameter("SEI open-circuit potential [V]")
-            kappa_inner = pybamm.Parameter("SEI electron conductivity [S.m-1]")
-            # Scott Marquis thesis (eq. 5.94)
-            eta_inner = delta_phi - U_inner
-            j_sei = kappa_inner * eta_inner / L_sei
+        # interstitial-diffusion limited
+        #  diffusion of lithium-ion interstitials
+        # (carry electrons to the SEI reaction site) is the limits SEI growth
+        # combined D_li "SEI lithium interstitial diffusivity [m2.s-1]"
+        # and c_li_0  "Lithium interstitial reference concentration [mol.m-3]"
+        D_c_li = pybamm.Parameter("Lithium interstitial parameter [mol.m-1.s-1]")
+        # Scott Marquis thesis (eq. 5.96)
+        j0_sei_interstital_diff = -(D_c_li * param.F / L_sei) * pybamm.exp(-F_RT * delta_phi)
 
-        elif self.options["SEI"] == "interstitial-diffusion limited":
-            #  diffusion of lithium-ion interstitials
-            # (carry electrons to the SEI reaction site) is the limits SEI growth
-            # D_li = pybamm.Parameter("SEI lithium interstitial diffusivity [m2.s-1]")
-            # c_li_0 = pybamm.Parameter(
-            #     "Lithium interstitial reference concentration [mol.m-3]"
-            # )
-            D_c_li = pybamm.Parameter("Lithium interstitial parameter [mol.m-1.s-1]")
-            # Scott Marquis thesis (eq. 5.96)
-            j_sei = -(D_c_li * param.F / L_sei) * pybamm.exp(-F_RT * delta_phi)
+        # solvent molecules in electrolyte are slow to transport
+        # through the outer SEI layer to the reaction site
+        # hence rate determining
+        D_c_sol = pybamm.Parameter("Solvent parameter [mol.m-1.s-1]")
+        # combines D_sol ("SEI solvent diffusivity [m2.s-1]") and
+        # c_sol ("Bulk solvent concentration [mol.m-3]")
 
-        elif self.options["SEI"] == "solvent-diffusion limited":
-            # solvent molecules in electrolyte are slow to transport
-            # through the outer SEI layer to the reaction site
-            # hence rate determining
-            D_c_sol = pybamm.Parameter("Solvent parameter [mol.m-1.s-1]")
-            # combines D_sol ("SEI solvent diffusivity [m2.s-1]") and
-            # c_sol ("Bulk solvent concentration [mol.m-3]")
+        # Scott Marquis thesis (eq. 5.91)
+        j0_sei_solv_diffusion = -D_c_sol * param.F / L_sei
 
-            # Scott Marquis thesis (eq. 5.91)
-            j_sei = -D_c_sol * param.F / L_sei
-
-        elif self.options["SEI"].startswith("ec reaction limited"):
-            c_ec_0 = pybamm.Parameter(
-                "EC initial concentration in electrolyte [mol.m-3]"
-            )
-            D_ec = pybamm.Parameter("EC diffusivity [m2.s-1]")
-            k_sei = pybamm.Parameter("SEI kinetic rate constant [m.s-1]")
-            # we have a linear system for j and c
-            #  c = c_0 + j * L * D / F          [1] (eq 11 in the Yang2017 paper)
-            #  j = - F * k * c * exp()          [2] (eq 10 in the Yang2017 paper, factor
-            #                                        of a is outside the defn of j here)
-            # [1] into [2] gives (F cancels in the second terms)
-            #  j = - F * k * c_0 * exp() - k * j * L * D * exp()
-            # rearrange
-            #  j = -F * k * c_0 * exp() / (1 + k * L * D * exp())
-            #  c_ec = c_0 - L * D * k * exp() / (1 + k * L * D * exp())
-            #       = c_0 / (1 + k * L * D * exp())
-            k_exp = k_sei * pybamm.exp(-alpha_SEI * F_RT * eta_SEI)
-            L_D = L_sei * D_ec
-            c_0 = c_ec_0
-            j_sei = -param.F * c_0 * k_exp / (1 + L_D * k_exp)
-        elif self.options["SEI"] in ["none", "constant"]:
-            j_sei = pybamm.Scalar(0)
+        # "none", "constant"
+        # j_sei_none = pybamm.Scalar(0)
 
         z_sei = pybamm.Parameter("Ratio of lithium moles to SEI moles")
+
+        # print(j0_sei_reaction, type(j0_sei_reaction))
+        j0_sei = pybamm.minimum(j0_sei_reaction, j0_sei_solv_diffusion)
+        j_sei = pybamm.minimum(j0_sei, j0_sei_interstital_diff)
 
         # LHS: d L_sei/ dt  [dT/ dt = 0]
         # RHS: L_sei, L_sei^-1   [eta_sei, T]

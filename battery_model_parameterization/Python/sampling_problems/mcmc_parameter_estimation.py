@@ -7,6 +7,7 @@ import pandas as pd
 import pints
 import pybamm
 from scipy.interpolate import interp1d
+import timeout_decorator
 
 from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
@@ -53,16 +54,16 @@ class ParameterEstimation(BaseSamplingProblem):
     """
 
     def __init__(
-        self,
-        data: pd.DataFrame,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        output: str,
-        transform_type: str,
-        error_axis: str = 'y',
-        initial_soc: float = 1,
-        project_tag: str = "",
+            self,
+            data: pd.DataFrame,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            output: str,
+            transform_type: str,
+            error_axis: str = 'y',
+            initial_soc: float = 1,
+            project_tag: str = "",
     ):
 
         super().__init__(
@@ -72,6 +73,7 @@ class ParameterEstimation(BaseSamplingProblem):
             output=output,
             transform_type=transform_type,
             project_tag=project_tag,
+            problem_type="estimation"
         )
 
         initial_values = [v.value for v in self.variables]
@@ -86,12 +88,14 @@ class ParameterEstimation(BaseSamplingProblem):
         self.data_output_axis_values = data["output"].values
         self.error_axis = error_axis
 
-        self.battery_simulation.solve(
+        sol = self.battery_simulation.solve(
             inputs=self.default_inputs,
-            solver=pybamm.CasadiSolver("safe"),
+            solver=pybamm.CasadiSolver("fast"),
             t_eval=self.times,
             initial_soc=self.initial_soc,
         )
+        print(f"# ##### {len(sol.t)}")
+        print(f"# ##### {len(sol[self.output].entries)}")
 
         simulation_end_time = max(self.battery_simulation.solution.t)
         if simulation_end_time > max(data["time"]):
@@ -105,7 +109,7 @@ class ParameterEstimation(BaseSamplingProblem):
             )
 
         if not np.array_equal(
-            self.battery_simulation.solution.t, self.times
+                self.battery_simulation.solution.t, self.times
         ):
             # if simulation did not solve at times in data
             # (e.g. for experiments)
@@ -114,6 +118,14 @@ class ParameterEstimation(BaseSamplingProblem):
             interpolant = interp1d(x=self.times, y=self.data, fill_value="extrapolate")
             self.times = battery_simulation.solution.t
             self.data = interpolant(battery_simulation.solution.t)
+
+        for k, v in self.metadata.items():
+            print(k)
+            print(type(v))
+            if isinstance(v, list):
+                for k1 in v:
+                    print(k1)
+                    print(type(k1))
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))
@@ -129,6 +141,8 @@ class ParameterEstimation(BaseSamplingProblem):
             "project": self.project_tag,
             "times": str(self.times),
             "data": str(self.data),
+            "output": self.output
+
         }
 
     @property
@@ -139,6 +153,31 @@ class ParameterEstimation(BaseSamplingProblem):
         return pints.ComposedLogPrior(*priors)
 
     def simulate(self, theta, times):
+        try:
+            output = self._simulate(theta, times)
+        except StopIteration:
+            with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
+                log.write("**************\n")
+                log.write(np.array2string(theta) + "\n")
+                log.write(repr(e) + "\n")
+
+            self.csv_logger.info(["StopIteration", 0])
+            output = np.zeros(self.data.shape)
+
+        # log residuals
+        try:
+            ess = np.sum(np.square((output - self.data))) / len(output)
+
+        except ValueError:
+            # arrays of unequal size due to incomplete solution
+            ess = np.sum(np.square(self.data)) / len(self.data)
+            output = np.zeros(self.data.shape)
+        self.residuals.append(ess)
+
+        return output
+
+    @timeout_decorator.timeout(5, timeout_exception=StopIteration)
+    def _simulate(self, theta, times):
         """
         Simulate method used by pints sampler.
         Parameters
@@ -155,16 +194,17 @@ class ParameterEstimation(BaseSamplingProblem):
         variable_names = [v.name for v in self.variables]
         theta = theta[: len(variable_names) + 1]
         inputs = dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
+        print(f"inputs {inputs}")
 
         try:
             # solve with CasadiSolver
-            self.battery_simulation.solve(
+            solution = self.battery_simulation.solve(
                 inputs=inputs,
                 solver=pybamm.CasadiSolver("fast"),
                 t_eval=self.times,
                 initial_soc=self.initial_soc,
             )
-            solution = self.battery_simulation.solution
+            # self.battery_simulation.solution
             output = solution[self.output].entries
 
             self.csv_logger.info(["Casadi fast", solution.solve_time.value])
@@ -193,24 +233,15 @@ class ParameterEstimation(BaseSamplingProblem):
                 # array of zeros to maximize residual if solution did not converge
                 output = np.zeros(self.data.shape)
 
-        try:
-            ess = np.sum(np.square((output - self.data))) / len(output)
-
-        except ValueError:
-            # arrays of unequal size due to incomplete solution
-            ess = np.sum(np.square(self.data)) / len(self.data)
-            output = np.zeros(self.data.shape)
-
-        self.residuals.append(ess)
         return output
 
     def run(
-        self,
-        burnin: int = 0,
-        n_iteration: int = 2000,
-        n_chains: int = 12,
-        n_workers: int = 4,
-        sampling_method: str = "MetropolisRandomWalkMCMC",
+            self,
+            burnin: int = 0,
+            n_iteration: int = 2000,
+            n_chains: int = 12,
+            n_workers: int = 4,
+            sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -277,17 +308,20 @@ class ParameterEstimation(BaseSamplingProblem):
         chains = pd.DataFrame(
             chains.reshape(chains.shape[0] * chains.shape[1], chains.shape[2])
         )
-        # drop noise estimation column
-        chains = chains[chains.columns[:-1]]
         self.chains = chains
 
         #  evaluate optimal value for each parameter
         theta_optimal = np.array(
-            [float(chains[column].mode().iloc[0]) for column in chains.columns]
+            [float(chains[column].mode().iloc[0]) for column in chains.columns[:-1]]
         )
 
         #  find residual at optimal value
         y_hat = self.simulate(theta_optimal, times=self.times)
+        pd.DataFrame({
+            "time": self.times,
+            "output": y_hat
+        }).to_csv(os.path.join(self.logs_dir_path, "best_fit.csv"))
+
         error_at_optimal = np.sum(abs(y_hat - self.data)) / len(self.data)
 
         pd.DataFrame(
@@ -297,8 +331,8 @@ class ParameterEstimation(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "r",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -315,8 +349,8 @@ class ParameterEstimation(BaseSamplingProblem):
         # print(metadata.keys())
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "w",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "w",
         ) as outfile:
             json.dump(metadata, outfile)
 

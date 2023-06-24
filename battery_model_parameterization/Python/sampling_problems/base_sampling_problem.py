@@ -43,6 +43,8 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         (only `log10` implemented for now)
     project_tag: str
         Project identifier (prefix to logs dir name).
+    problem_type: str
+        Problem type ("identifiability", "estimation" or "bolfi_identifiability").
     """
 
     def __init__(
@@ -53,6 +55,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             output: str,
             transform_type: str,
             project_tag: str = "",
+            problem_type: str = "identifiability"
     ):
 
         super().__init__()
@@ -63,6 +66,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         self.output = output
         self.transform_type = transform_type
         self.project_tag = project_tag
+        self.problem_type = problem_type
         self.logs_dir_path = self.create_logs_dir()
         self.default_inputs = {v.name: v.value for v in self.variables}
         self.residuals = []
@@ -188,7 +192,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         plt.ylabel(self.output)
         plt.savefig(os.path.join(self.logs_dir_path, "data"))
 
-    def plot_results_summary(self, forward_evaluations=7000):
+    def plot_results_summary(self, forward_evaluations=700):
 
         variable_names = [var.name for var in self.variables]
 
@@ -207,15 +211,20 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     solution_var = self.simulate(
                         theta=list(input_set), times=self.t_eval
                     )
-                summary.append(
-                    {
-                        **inputs,
-                        "Residual": abs(
-                            self.data_output_axis_values - solution_var
-                        ).sum()
-                                    / len(solution_var),
-                    }
-                )
+
+                print(f"input_set {input_set}")
+                print(f"solution_var {len(solution_var)}")
+                try:
+                    summary.append(
+                        {
+                            **inputs,
+                            "Residual": abs(
+                                self.data_output_axis_values - solution_var
+                            ).sum() / len(solution_var),
+                        }
+                    )
+                except ValueError:
+                    continue
 
                 for ref, outp in zip(self.data_reference_axis_values, solution_var):
                     results.append(
@@ -226,6 +235,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                             "run": i,
                         }
                     )
+
             df = pd.DataFrame(results)
             df_summary = pd.DataFrame(summary)
 
@@ -261,6 +271,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             # Set up axis
             rows = len(variable_names) + 1
             fig, ax = plt.subplots(rows, 2, figsize=(8, rows * 3))
+
             if len(variable_names) > 1:
                 plt.colorbar(residual_plot, ax=ax[0][1], label="Residual")
 
@@ -285,7 +296,7 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     ax=ax[i][0],
                 )
 
-                if variable.value:
+                if variable.value and self.problem_type != "estimation":
                     ax[i][0].axvline(
                         x=variable.value, ymax=0.7, color="darkblue", ls="--", lw=1
                     )
@@ -327,13 +338,22 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                 # remove discrete legend
                 ax[0][1].legend_.remove()
 
+            else:
+                sns.scatterplot(
+                    data=df_summary,
+                    x=variable_names[0],
+                    y="Residual",
+                    hue="Residual",
+                    ax=ax[0][1],
+                )
+
             # Output variable with one s.d. plot
             sns.lineplot(
                 data=df, x="Reference", y="Output", errorbar=("sd", 1), ax=ax[0][0]
             )
             ax[0][0].set_ylabel("Output with one standard deviation")
             ax[1][0].set_ylabel("Frequency")
-            if len(variable_names)>1:
+            if len(variable_names) > 1:
                 ax[2][0].set_ylabel("Frequency")
 
             fig.tight_layout()

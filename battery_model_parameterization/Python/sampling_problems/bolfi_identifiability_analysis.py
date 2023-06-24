@@ -86,6 +86,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             output=output,
             transform_type=transform_type,
             project_tag=project_tag,
+            problem_type="bolfi_identifiability"
         )
 
         self.method = "BOLFI"

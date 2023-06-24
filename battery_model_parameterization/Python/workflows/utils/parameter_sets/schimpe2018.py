@@ -49,6 +49,12 @@ GROUPED_VARIABLES = {
     ]
 }
 
+MODEL_IDENTIFICATION_VARIABLES = [
+    ("SEI reaction exchange current density [A.m-2]", 'j0_sei'),
+    ("Solvent parameter [mol.m-1.s-1]", 'D_c_sol'),
+    ("Lithium interstitial parameter [mol.m-1.s-1]", 'D_c_li'),
+]
+
 
 def negative_ocp(sto):
     u_eq = (
@@ -152,7 +158,7 @@ def _schimpe2018grouped():
         "Initial SEI thickness [m]": 7.360490717322975e-08,
         "Initial temperature [K]": 298.15,
         "Lithium interstitial reference concentration [mol.m-3]": 15.0,
-        "Lithium interstitial parameter [mol.m-1.s-1]": 1e-20*15.0,
+        "Lithium interstitial parameter [mol.m-1.s-1]": 1e-20 * 15.0,
         "Lower voltage cut-off [V]": 2.7081453187338065,
         "Maximum concentration in negative electrode [mol.m-3]": 31400.0,
         "Maximum concentration in positive electrode [mol.m-3]": 22800.0,
@@ -194,7 +200,7 @@ def _schimpe2018grouped():
         "SEI partial molar volume [m3.mol-1]": 9.585e-05,
         "SEI reaction exchange current density [A.m-2]": 5e-8,
         "SEI lithium interstitial diffusivity [m2.s-1]": 1e-20,
-        "Solvent parameter [mol.m-1.s-1]": 2636.0*2.5000000000000002e-22,
+        "Solvent parameter [mol.m-1.s-1]": 2636.0 * 2.5000000000000002e-22,
         "Upper voltage cut-off [V]": 3.421882785122582,
     }
 
@@ -214,6 +220,17 @@ def schimpe2018_grouped(mechanism: str, apply_log: List[str] = ["j0_sei", ]):
     parameter_values = pybamm.ParameterValues("Chen2020")
     parameter_values.update(_schimpe2018grouped(), check_already_exists=False)
     for parameter in GROUPED_VARIABLES[mechanism]:
+        if parameter[1] in apply_log:
+            parameter_values[parameter[0]] = 10 ** pybamm.InputParameter(parameter[1])
+        else:
+            parameter_values[parameter[0]] = pybamm.InputParameter(parameter[1])
+    return parameter_values
+
+
+def schimpe2018_limiting(apply_log: List[str] = ["j0_sei", ]):
+    parameter_values = pybamm.ParameterValues("Chen2020")
+    parameter_values.update(_schimpe2018grouped(), check_already_exists=False)
+    for parameter in MODEL_IDENTIFICATION_VARIABLES:
         if parameter[1] in apply_log:
             parameter_values[parameter[0]] = 10 ** pybamm.InputParameter(parameter[1])
         else:

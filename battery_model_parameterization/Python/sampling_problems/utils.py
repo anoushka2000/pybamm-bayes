@@ -10,6 +10,9 @@ def _fmt_variables(variables):
         var["prior"] = var["prior"].__dict__
         if "_boundaries" in var["prior"].keys():
             var["prior"] = var["prior"]["_boundaries"].__dict__.copy()
+            for k, v in var["prior"].items():
+                if isinstance(v, np.ndarray):
+                    var["prior"][k] = v[0]
         lst.append(var)
     return lst
 

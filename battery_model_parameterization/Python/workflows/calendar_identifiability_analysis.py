@@ -69,6 +69,7 @@ simulation = pybamm.Simulation(
     parameter_values=parameter_values,
 )
 
+
 identifiability_problem = MCMCIdentifiabilityAnalysis(
     battery_simulation=simulation,
     times=t_eval,
