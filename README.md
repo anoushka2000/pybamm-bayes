@@ -1,2 +1,2 @@
 # battery-model-parameterization
-Battery model parameter identifiability project
+Bayesian methods for battery model parameterization
