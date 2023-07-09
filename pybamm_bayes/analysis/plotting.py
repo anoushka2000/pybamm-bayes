@@ -14,14 +14,14 @@ from plotly.subplots import make_subplots
 import elfi  # noqa: F401
 import pints  # noqa: F401
 
-from battery_model_parameterization.Python.analysis.postprocessing import (
+from pybamm_bayes.analysis.postprocessing import (
     load_chains,
     load_chains_with_residual,
     load_metadata,
     generate_residual_over_posterior,
     run_forward_model_over_posterior,
 )
-from battery_model_parameterization.Python.analysis.utils import (
+from pybamm_bayes.analysis.utils import (
     _get_logs_path,
     _parse_priors,
 )

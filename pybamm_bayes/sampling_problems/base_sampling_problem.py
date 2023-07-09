@@ -10,13 +10,13 @@ import pybamm
 import seaborn as sns
 import tqdm
 
-from battery_model_parameterization.Python.variable import Variable
-from battery_model_parameterization.Python.analysis.utils import sample_from_posterior
-from battery_model_parameterization.Python.sampling_problems.utils import (
+from pybamm_bayes.variable import Variable
+from pybamm_bayes.analysis.utils import sample_from_posterior
+from pybamm_bayes.sampling_problems.utils import (
     _fmt_parameters,
     _fmt_variables,
 )
-from battery_model_parameterization.Python.logging import csv_logger
+from pybamm_bayes.logging import csv_logger
 
 
 class BaseSamplingProblem(pints.ForwardModelS1):
@@ -163,7 +163,9 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         """
         Plot of profile of time series data used and save.
         """
-        if self.error_axis == "y":
+        if self.method == "BOLFI":  # error axis only applicable for MCMC
+            plt.plot(self.times, self.data)
+        elif self.error_axis == "y":
             plt.plot(self.data_reference_axis_values, self.data_output_axis_values)
         else:
             plt.plot(self.data_output_axis_values, self.data_reference_axis_values)

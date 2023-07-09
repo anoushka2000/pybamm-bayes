@@ -8,11 +8,11 @@ import pybamm
 import tqdm
 from IPython.display import Image, display
 
-from battery_model_parameterization.Python.analysis.utils import (
+from pybamm_bayes.analysis.utils import (
     _get_logs_path,
     sample_from_posterior,
 )
-from battery_model_parameterization.Python.sampling_problems.utils import (
+from pybamm_bayes.sampling_problems.utils import (
     interpolate_time_over_y_values,
 )
 

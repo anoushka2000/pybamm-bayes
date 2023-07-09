@@ -1,7 +1,7 @@
 from functools import partial
 
 import pybamm
-from battery_model_parameterization.Python.workflows.utils.parameter_sets.utils import (
+from pybamm_bayes.workflows.utils.parameter_sets.utils import (
     _exchange_current_density_inputs,
 )
 

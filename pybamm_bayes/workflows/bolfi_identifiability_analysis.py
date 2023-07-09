@@ -1,6 +1,6 @@
 import elfi
 import pybamm
-from battery_model_parameterization import BOLFIIdentifiabilityAnalysis, Variable
+from pybamm_bayes import BOLFIIdentifiabilityAnalysis, Variable
 
 # define priors for variables being analysed
 prior_Ds_n = elfi.Prior("uniform", 0.1, 10, name="Ds_n")
@@ -95,7 +95,7 @@ identifiability_problem = BOLFIIdentifiabilityAnalysis(
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
-chains = identifiability_problem.run(sampling_iterations=2000)
-identifiability_problem.plot_results_summary()
-# identifiability_problem.plot_pairwise()
+chains = identifiability_problem.run(sampling_iterations=20)
+identifiability_problem.plot_results_summary(forward_evaluations=20)
+identifiability_problem.plot_pairwise()
 identifiability_problem.plot_acquistion_surface()

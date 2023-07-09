@@ -7,16 +7,16 @@ import pandas as pd
 import pints
 import pybamm
 
-from battery_model_parameterization.Python.sampling_problems.base_sampling_problem import (  # noqa: E501
+from pybamm_bayes.sampling_problems.base_sampling_problem import (  # noqa: E501
     BaseSamplingProblem,
 )
-from battery_model_parameterization.Python.sampling_problems.utils import (
+from pybamm_bayes.sampling_problems.utils import (
     _fmt_variables,
     _fmt_parameters,
     interpolate_time_over_y_values
 )
-from battery_model_parameterization.Python.logging import logger
-from battery_model_parameterization.Python.variable import Variable
+from pybamm_bayes.logging import logger
+from pybamm_bayes.variable import Variable
 
 
 class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
@@ -44,6 +44,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         (only `log10` implemented for now)
     noise: float
         Scale of zero-mean noise added to synthetic data used to identify parameters.
+    error_axis: str
+        Axis along with error is calculated:
+        (x_data - x_simulated)^2 if `x` else (y_data - y_simulated)^2.
     times: np.ndarray
         Array of times at which simulation is evaluated.
     project_tag: str
