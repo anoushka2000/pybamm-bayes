@@ -147,7 +147,7 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             "canberra": "canberra",
             "braycurtis": "braycurtis",
             "mahalanobis": "mahalanobis",
-            "wasserstein_distance": wasserstein_distance
+            "wasserstein_distance": wasserstein_distance,
         }
 
     def simulate(self, *theta, batch_size=1, random_state=0):
@@ -279,16 +279,16 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         f.savefig(os.path.join(self.logs_dir_path, "acquisition_surface"))
 
     def run(
-            self,
-            batch_size: int = 1,
-            initial_evidence: int = 50,
-            update_interval: int = 10,
-            acq_noise_var: float = 0.1,
-            n_evidence: int = 1500,
-            sampling_iterations: int = 1000,
-            n_chains: int = 4,
-            discrepancy_metric: Union[str, Callable] = "euclidean",
-            distance_kwargs: Optional[Dict] = None
+        self,
+        batch_size: int = 1,
+        initial_evidence: int = 50,
+        update_interval: int = 10,
+        acq_noise_var: float = 0.1,
+        n_evidence: int = 1500,
+        sampling_iterations: int = 1000,
+        n_chains: int = 4,
+        discrepancy_metric: Union[str, Callable] = "euclidean",
+        distance_kwargs: Optional[Dict] = None,
     ):
         """
         Parameters
@@ -394,8 +394,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         sampling_end_time = time.time()
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "r",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -410,19 +410,19 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
                 "min_discrepancy": opt_res,
                 "sample_means_and_95CIs": self.sampled_posterior.sample_means_and_95CIs,
                 "n_chains": n_chains,
-                "discrepancy": discrepancy_metric_name
+                "discrepancy": discrepancy_metric_name,
             }
         )
         self.csv_logger.info(
             [
                 "bolfi_training",
-                (training_start_time - training_end_time) * 1000  # seconds to ms
+                (training_start_time - training_end_time) * 1000,  # seconds to ms
             ]
         )
         self.csv_logger.info(
             [
                 "bolfi_sampling",
-                (sampling_start_time - sampling_end_time) * 1000  # seconds to ms
+                (sampling_start_time - sampling_end_time) * 1000,  # seconds to ms
             ]
         )
 
@@ -443,8 +443,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             chain_idx += 1
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "w",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "w",
         ) as outfile:
             json.dump(metadata, outfile)
         self.chains = pd.concat(chain_df_list)

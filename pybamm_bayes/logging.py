@@ -37,10 +37,12 @@ logger = _get_new_logger(__name__)
 
 # Create csv logger
 def csv_logger(filename):
-    return CsvLogger(filename=filename,
-                     delimiter=',',
-                     level=logging.INFO,
-                     fmt='%(asctime)s,%(message)s',
-                     datefmt='%Y/%m/%d %H:%M:%S',
-                     max_size=1024 * 30,  # 30 kilobytes,
-                     header=['date', 'level', 'solve', 'solve_time [s]'])
+    return CsvLogger(
+        filename=filename,
+        delimiter=",",
+        level=logging.INFO,
+        fmt="%(asctime)s,%(message)s",
+        datefmt="%Y/%m/%d %H:%M:%S",
+        max_size=1024 * 30,  # 30 kilobytes,
+        header=["date", "level", "solve", "solve_time [s]"],
+    )

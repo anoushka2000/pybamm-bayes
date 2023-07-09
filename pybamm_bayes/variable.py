@@ -29,15 +29,19 @@ class Variable:
     """
 
     def __init__(
-            self, name, value, prior, bounds=None,
+        self,
+        name,
+        value,
+        prior,
+        bounds=None,
     ):
         self.name = name
         self.value = value
         self.prior = prior
         if isinstance(prior, elfi.model.elfi_model.Prior):
             self.prior_type = prior.distribution.name
-            self.prior_loc = self.prior.parents[0].state['attr_dict']['_output']
-            self.prior_scale = self.prior.parents[1].state['attr_dict']['_output']
+            self.prior_loc = self.prior.parents[0].state["attr_dict"]["_output"]
+            self.prior_scale = self.prior.parents[1].state["attr_dict"]["_output"]
 
         else:
             self.prior_type = str(type(self.prior)).split(".")[-1][:-2]

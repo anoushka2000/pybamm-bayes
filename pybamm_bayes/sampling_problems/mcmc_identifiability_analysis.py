@@ -13,7 +13,7 @@ from pybamm_bayes.sampling_problems.base_sampling_problem import (  # noqa: E501
 from pybamm_bayes.sampling_problems.utils import (
     _fmt_variables,
     _fmt_parameters,
-    interpolate_time_over_y_values
+    interpolate_time_over_y_values,
 )
 from pybamm_bayes.logging import logger
 from pybamm_bayes.variable import Variable
@@ -54,16 +54,16 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     """
 
     def __init__(
-            self,
-            battery_simulation: pybamm.Simulation,
-            parameter_values: pybamm.ParameterValues,
-            variables: List[Variable],
-            output: str,
-            transform_type: str,
-            noise: float,
-            error_axis: str = "y",
-            times: Optional[np.ndarray] = None,
-            project_tag: str = "",
+        self,
+        battery_simulation: pybamm.Simulation,
+        parameter_values: pybamm.ParameterValues,
+        variables: List[Variable],
+        output: str,
+        transform_type: str,
+        noise: float,
+        error_axis: str = "y",
+        times: Optional[np.ndarray] = None,
+        project_tag: str = "",
     ):
 
         super().__init__(
@@ -97,8 +97,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
     def generate_synthetic_data(self):
 
         inputs = dict(
-            zip([v.name for v in self.variables],
-                [v.value for v in self.variables])
+            zip([v.name for v in self.variables], [v.value for v in self.variables])
         )
 
         if self.battery_simulation.operating_mode == "without experiment":
@@ -185,7 +184,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 self.battery_simulation.solve(
                     inputs=inputs,
                     solver=pybamm.CasadiSolver("safe"),
-                    t_eval=self.t_eval
+                    t_eval=self.t_eval,
                 )
                 solution = self.battery_simulation.solution
                 output = solution[self.output].entries
@@ -196,9 +195,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 #  ScipySolver solver failed
                 try:
                     self.battery_simulation.solve(
-                        inputs=inputs,
-                        solver=pybamm.ScipySolver(),
-                        t_eval=self.t_eval
+                        inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.t_eval
                     )
                     solution = self.battery_simulation.solution
                     output = solution[self.output].entries
@@ -220,7 +217,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
                 _, output = interpolate_time_over_y_values(
                     times=self.t_eval,
                     y_values=output,
-                    new_y=self.data_reference_axis_values
+                    new_y=self.data_reference_axis_values,
                 )
             else:
                 reference_values, output = interpolate_time_over_y_values(
@@ -254,12 +251,12 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         return output
 
     def run(
-            self,
-            burnin: int = 0,
-            n_iteration: int = 2000,
-            n_chains: int = 12,
-            n_workers: int = 4,
-            sampling_method: str = "MetropolisRandomWalkMCMC",
+        self,
+        burnin: int = 0,
+        n_iteration: int = 2000,
+        n_chains: int = 12,
+        n_workers: int = 4,
+        sampling_method: str = "MetropolisRandomWalkMCMC",
     ):
         """
         Parameters
@@ -339,9 +336,9 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
         #  find residual at optimal value
         y_hat = self.simulate(theta_optimal, times=self.t_eval)
-        error_at_optimal = np.sum(
-            abs(y_hat - self.data_output_axis_values)
-        ) / len(y_hat)
+        error_at_optimal = np.sum(abs(y_hat - self.data_output_axis_values)) / len(
+            y_hat
+        )
 
         # chi_sq = distance in residuals between optimal value and all others
         pd.DataFrame(
@@ -352,8 +349,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         ).to_csv(os.path.join(self.logs_dir_path, "residuals.csv"))
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "r",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -375,8 +372,8 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
         )
 
         with open(
-                os.path.join(self.logs_dir_path, "metadata.json"),
-                "w",
+            os.path.join(self.logs_dir_path, "metadata.json"),
+            "w",
         ) as outfile:
             json.dump(metadata, outfile)
 
