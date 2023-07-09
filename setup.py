@@ -12,5 +12,5 @@ setup(
     version="0.0.1",
     packages=find_packages(),
     install_requires=install_requires,
-    description="Battery model parameter identifiability project.",
+    description="Bayesian battery model parameter identifiability and estimation.",
 )

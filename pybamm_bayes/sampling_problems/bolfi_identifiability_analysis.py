@@ -110,9 +110,11 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             )
             battery_simulation.solve(inputs=inputs)
             self.times = battery_simulation.solution["Time [s]"].entries
+        self.data_reference_axis_values = self.times
 
         data = self.simulate(self.true_values).flatten()
         self.data = data + np.random.normal(0, self.noise, data.shape)
+        self.data_output_axis_values = self.data
 
         with open(os.path.join(self.logs_dir_path, "metadata.json"), "w") as outfile:
             outfile.write(json.dumps(self.metadata))

@@ -1,10 +1,10 @@
 import unittest
 import os
-from battery_model_parameterization.Python.analysis.postprocessing import (
+from pybamm_bayes.analysis.postprocessing import (
     load_metadata,
     load_chains,
 )
-from battery_model_parameterization.Python.analysis.utils import (
+from pybamm_bayes.analysis.utils import (
     sample_from_prior,
     sample_from_posterior,
 )
