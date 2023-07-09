@@ -1,2 +1,2 @@
-# battery-model-parameterization
-Bayesian methods for battery model parameterization
+# PyBaMM Bayes
+Bayesian methods for battery model identifiability analysis and parameterization.
