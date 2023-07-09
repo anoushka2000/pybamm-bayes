@@ -1,6 +1,6 @@
 import unittest
 
-from battery_model_parameterization import (
+from pybamm_bayes import (
     electrolyte_diffusivity_Capiglia1999,
     graphite_mcmb2528_diffusivity_Dualfoil1998,
     lico2_diffusivity_Dualfoil1998,

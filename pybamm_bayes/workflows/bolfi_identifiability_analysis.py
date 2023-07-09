@@ -95,7 +95,7 @@ identifiability_problem = BOLFIIdentifiabilityAnalysis(
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
-chains = identifiability_problem.run(sampling_iterations=20)
+chains = identifiability_problem.run(sampling_iterations=700)
 identifiability_problem.plot_results_summary(forward_evaluations=20)
 identifiability_problem.plot_pairwise()
 identifiability_problem.plot_acquistion_surface()

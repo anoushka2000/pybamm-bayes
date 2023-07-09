@@ -3,7 +3,7 @@ import unittest
 import functools
 import pints
 import pybamm
-from battery_model_parameterization import (
+from pybamm_bayes import (
     Variable,
     chen_2020,
     marquis_2019,

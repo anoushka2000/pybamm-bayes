@@ -4,7 +4,7 @@ import unittest
 
 import pints
 import pybamm
-from battery_model_parameterization import (
+from pybamm_bayes import (
     MCMCIdentifiabilityAnalysis,
     Variable,
     marquis_2019,

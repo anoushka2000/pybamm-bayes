@@ -1,6 +1,6 @@
 import unittest
 
-from battery_model_parameterization import (
+from pybamm_bayes import (
     NMC_electrolyte_exchange_current_density_PeymanMPM,
     graphite_electrolyte_exchange_current_density_Dualfoil1998,
     graphite_electrolyte_exchange_current_density_PeymanMPM,

@@ -5,7 +5,7 @@ import unittest
 import elfi
 import pybamm
 from scipy.spatial.distance import cdist
-from battery_model_parameterization import (
+from pybamm_bayes import (
     BOLFIIdentifiabilityAnalysis,
     Variable,
     marquis_2019,

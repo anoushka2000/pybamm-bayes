@@ -2,7 +2,7 @@ import unittest
 import os
 from matplotlib.testing.compare import compare_images
 import matplotlib.pyplot as plt
-from battery_model_parameterization import (
+from pybamm_bayes import (
     plot_chain_convergence,
     compare_chain_convergence,
     pairwise,

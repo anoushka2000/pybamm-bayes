@@ -1,7 +1,7 @@
 import unittest
 import os
 import pandas as pd
-from battery_model_parameterization.Python.analysis.postprocessing import (
+from pybamm_bayes.analysis.postprocessing import (
     load_metadata,
     load_chains,
     load_chains_with_residual,

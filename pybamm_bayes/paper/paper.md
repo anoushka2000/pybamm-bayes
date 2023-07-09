@@ -32,11 +32,13 @@ bibliography: paper.bib
 
 # Statement of need
 
-`PyBaMM-Bayes` is a Python package for ... .
+`PyBaMM-Bayes` is a Python package for nonlinear quantitative identifiability analysis and parameter estimation for electrochemical models.
  It enables ... flexibility or ease-of-use in the user-interface. 
+ In battery literature, numerous methods have been used to fit battery models to experimental data .
+  The use of bayesian parameterization provides precise uncertainty estimates for each parameter
  `PyBaMM-Bayes` was designed to be used by engineers, students, academics and industrial researchers and system designers concerned with ... . 
 
-The API for `PyBaMM-Bayes` was designed to provide a simple and efficient extension to the `PyBaMM` [@pybamm] framework allowing users to . 
+It is designed to provide a simple extension to the `PyBaMM` [@pybamm] framework and allow users to conduct practical identifiability analysis and fit `PyBaMM` models to experimental battery cycling data. 
 `PyBaMM-Bayes` 
 
 # Algorithm
