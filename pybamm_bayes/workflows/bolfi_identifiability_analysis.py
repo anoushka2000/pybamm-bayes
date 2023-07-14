@@ -1,6 +1,10 @@
 import elfi
 import pybamm
-from pybamm_bayes import BOLFIIdentifiabilityAnalysis, Variable
+from pybamm_bayes import (
+    BOLFIIdentifiabilityAnalysis,
+    marquis_2019,
+    Variable
+)
 
 # define priors for variables being analysed
 prior_Ds_n = elfi.Prior("uniform", 0.1, 10, name="Ds_n")
