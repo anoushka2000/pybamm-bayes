@@ -29,38 +29,28 @@ bibliography: paper.bib
 
 # Summary
 Batteries are used ubiquitously is modern technology from mobile phones to electrical vehicles. 
-Battery behavior analysis, state monitoring, design of controllers, fault diagnosis, thermal management and accelerated research of advanced battery technologies all rely on computational battery models. 
-Electrochemical battery models (such as the Doyle Fuller Newman and Single Particle Model) are among the most commonly used models. 
-These models consist of systems of non-linear equations which must be specified in terms of a myriad of parameters for them to emulate physical batteries with high fidelity.
+Battery controller design, state monitoring, fault diagnosis, thermal management and accelerated research of advanced battery technologies all rely on computational battery models. 
+Electrochemical battery models - such as the Doyle Fuller Newman (DFN) and Single Particle Model (SPM) - are among the most commonly used models. 
+These models consist of  which must be specified in terms of tens of parameters to emulate physical batteries with high fidelity.
 Direct empirical measurements of these parameters are difficult, expensive and sometimes impossible. 
-Hence, researchers have appnumerous methods have been used to fit battery models to experimental data such as .
+Hence, researchers have applied numerous numerous optimisation algorithms (such as genetic algorithms) to fit battery models to experimental battery cycling data (charging and discharging time series).
 
 In order to determine appropriate, physically relevant parameters from data 
 
 # Statement of need
+systems of non-linear equations
+`PyBaMM-Bayes` is a Python package for nonlinear quantitative identifiability analysis and parameter estimation for electrochemical models. It provides a simple extension to the `PyBaMM` [@pybamm] battery modelling framework and allow users to conduct practical identifiability analysis and fit `PyBaMM` models to experimental battery cycling data. 
 
-`PyBaMM-Bayes` is a Python package for nonlinear quantitative identifiability analysis and parameter estimation for electrochemical models.
- It enables ... flexibility or ease-of-use in the user-interface. 
- The use of bayesian parameterization provides precise uncertainty estimates for each parameter and the use MCMC counters the problem of finding sub-optimal local minima, which is often encountered when using other optimization algorithms to parameterize non-linear models.
+The use of bayesian parameterization provides precise uncertainty estimates for each parameter. Any of the gradient-free MCMC samplers implemented in `PINTS` [@pints] may be used to sample the likelihood. Alternatively, Likelihood Free Inference (LFI) can be used. LFI is implemented using the BOLFI (Bayesian Optimisation for Likelihood Free Inference) method interfaced via the `ELFI` package [@elfi].
+Several postprocessing and visualization tools are also provided for diagnostics and analysis of the results. The use MCMC sampling counters the problem of finding sub-optimal local minima, which is often encountered when using other optimization algorithms to parameterize non-linear models.
  `PyBaMM-Bayes` was designed to be used by engineers, students, academics and industrial researchers working on designing batteries and battery systems. 
 
-It is designed to provide a simple extension to the `PyBaMM` [@pybamm] framework and allow users to conduct practical identifiability analysis and fit `PyBaMM` models to experimental battery cycling data. 
-`PyBaMM-Bayes` 
-
-# Algorithm
-
-The algorithm used for practical identifiability analysis is show in \autoref{fig:0}. 
-
-At present, 
 
 
-
-Any of the gradient-free MCMC samplers implemented in `PINTS` [@pints] may be used to sample the likelihood. Alternatively, Likelihood Free Inference (LFI) can be used. LFI is implemented using the BOLFI (Bayesian Optimisation for Likelihood Free Inference) method interfaced via the `ELFI` package [@elfi].
-Several postprocessing and visualization tools are also provided for diagnostics and analysis of the results.
 
 # Examples of use
 
-An example of a small pack is included below. A 4p1s configuration is defined with busbar resistance of 1 $m\Omega$ and interconnection resistance of 10 $m\Omega$. The `Chen2020` [@Chen2020] parameter set is used to define the battery cell chemistry which was gathered using an LG M50 cylindrical cell of 21700 format. By default the single particle model `SPM` is used to define the electrochemical battery model system but a suite of others are available [@Marquis2020] and can be configured using a custom simulation.
+An example of identifiability analysis on a DFN model carried is included below. The identifiability of `D_sn` (solid state diffusivity in the negative electrode) and `` (the reference exchange current density) is being tested. Gaussian priors are used for both parameters. The Metropolis Hastings algorithm is used to sample the likelihood with 5 chains and 15000 iterations.
 
 ```
 import liionpack as lp

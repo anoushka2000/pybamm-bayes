@@ -14,67 +14,8 @@ Ds_p = Variable(name="Ds_p", value=1, prior=prior_Ds_p, bounds=(0.1, 10))
 
 variables = [Ds_n, Ds_p]
 
-
-def graphite_mcmb2528_diffusivity_Dualfoil1998(sto, T):
-    """
-    Graphite MCMB 2528 diffusivity as a function of stochiometry, in this case the
-    diffusivity is taken to be a constant. The value is taken from Dualfoil [1].
-    References
-    ----------
-    .. [1] http://www.cchem.berkeley.edu/jsngrp/fortran.html
-    Parameters
-    ----------
-
-    sto: :class:`pybamm.Symbol`
-        Electrode stochiometry
-    T: :class:`pybamm.Symbol`
-        Dimensional temperature
-    Returns
-    -------
-    :class:`pybamm.Symbol`
-        Solid diffusivity
-    """
-
-    D_ref = 1e-14 * pybamm.InputParameter(
-        "Ds_n"
-    )  # default = 3.9 * 10 ** (-14) "Ds_p")  # default = 1 * 10 ** (-13)
-    E_D_s = 42770
-    arrhenius = pybamm.exp(E_D_s / pybamm.constants.R * (1 / 298.15 - 1 / T))
-
-    return D_ref * arrhenius
-
-
-def lico2_diffusivity_Dualfoil1998(sto, T):
-    """
-    LiCo2 diffusivity as a function of stochiometry, in this case the
-    diffusivity is taken to be a constant. The value is taken from Dualfoil [1].
-    References
-    ----------
-    .. [1] http://www.cchem.berkeley.edu/jsngrp/fortran.html
-    Parameters
-    ----------
-    sto: :class:`pybamm.Symbol`
-        Electrode stochiometry
-    T: :class:`pybamm.Symbol`
-        Dimensional temperature
-    Returns
-    -------
-    :class:`pybamm.Symbol`
-        Solid diffusivity
-    """
-    D_ref = 1e-13 * pybamm.InputParameter("Ds_p")  # default = 1 * 10 ** (-13)
-    E_D_s = 18550
-    arrhenius = pybamm.exp(E_D_s / pybamm.constants.R * (1 / 298.15 - 1 / T))
-
-    return D_ref * arrhenius
-
-
 model = pybamm.lithium_ion.SPMe()
-param = pybamm.ParameterValues("Marquis2019")
-param[
-    "Negative electrode diffusivity [m2.s-1]"
-] = graphite_mcmb2528_diffusivity_Dualfoil1998
-param["Positive electrode diffusivity [m2.s-1]"] = lico2_diffusivity_Dualfoil1998
+param = marquis_2019(variables=variables)
 
 simulation = pybamm.Simulation(
     model,
@@ -95,7 +36,7 @@ identifiability_problem = BOLFIIdentifiabilityAnalysis(
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
-chains = identifiability_problem.run(sampling_iterations=700)
-identifiability_problem.plot_results_summary(forward_evaluations=20)
+chains = identifiability_problem.run(sampling_iterations=300)
+identifiability_problem.plot_results_summary(forward_evaluations=10)
 identifiability_problem.plot_pairwise()
 identifiability_problem.plot_acquistion_surface()

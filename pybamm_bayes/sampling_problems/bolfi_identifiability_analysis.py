@@ -67,16 +67,16 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
     """
 
     def __init__(
-        self,
-        battery_simulation: pybamm.Simulation,
-        parameter_values: pybamm.ParameterValues,
-        variables: List[Variable],
-        output: str,
-        transform_type: str,
-        noise: float,
-        target_resolution: int = 30,
-        times: Optional[np.ndarray] = None,
-        project_tag: str = "",
+            self,
+            battery_simulation: pybamm.Simulation,
+            parameter_values: pybamm.ParameterValues,
+            variables: List[Variable],
+            output: str,
+            transform_type: str,
+            noise: float,
+            target_resolution: int = 30,
+            times: Optional[np.ndarray] = None,
+            project_tag: str = "",
     ):
 
         super().__init__(
@@ -235,8 +235,13 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
 
     def plot_pairwise(self):
         plot = self.sampled_posterior.plot_pairs()
-        fig = plot[0].get_figure()
-        fig.savefig(os.path.join(self.logs_dir_path, "pairwise_plot"))
+        try:
+            fig = plot[0].get_figure()
+            fig.savefig(os.path.join(self.logs_dir_path, "pairwise_plot"))
+        except AttributeError:
+            for pl in plot[0]:
+                fig = pl.get_figure()
+                fig.savefig(os.path.join(self.logs_dir_path, "pairwise_plot"))
 
     def plot_discrepancy(self):
         plot = self.bolfi.plot_discrepancy()
@@ -281,16 +286,16 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         f.savefig(os.path.join(self.logs_dir_path, "acquisition_surface"))
 
     def run(
-        self,
-        batch_size: int = 1,
-        initial_evidence: int = 50,
-        update_interval: int = 10,
-        acq_noise_var: float = 0.1,
-        n_evidence: int = 1500,
-        sampling_iterations: int = 1000,
-        n_chains: int = 4,
-        discrepancy_metric: Union[str, Callable] = "euclidean",
-        distance_kwargs: Optional[Dict] = None,
+            self,
+            batch_size: int = 1,
+            initial_evidence: int = 50,
+            update_interval: int = 10,
+            acq_noise_var: float = 0.1,
+            n_evidence: int = 1500,
+            sampling_iterations: int = 1000,
+            n_chains: int = 4,
+            discrepancy_metric: Union[str, Callable] = "euclidean",
+            distance_kwargs: Optional[Dict] = None,
     ):
         """
         Parameters
@@ -396,8 +401,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
         sampling_end_time = time.time()
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "r",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "r",
         ) as outfile:
             metadata = json.load(outfile)
 
@@ -445,8 +450,8 @@ class BOLFIIdentifiabilityAnalysis(BaseSamplingProblem):
             chain_idx += 1
 
         with open(
-            os.path.join(self.logs_dir_path, "metadata.json"),
-            "w",
+                os.path.join(self.logs_dir_path, "metadata.json"),
+                "w",
         ) as outfile:
             json.dump(metadata, outfile)
         self.chains = pd.concat(chain_df_list)
