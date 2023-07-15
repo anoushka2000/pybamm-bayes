@@ -15,17 +15,14 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         # setup variables
         prior_Ds_n = elfi.Prior("norm", 13.1, 1, name="Ds_n")
         prior_Ds_p = elfi.Prior("norm", 12.5, 1, name="Ds_p")
 
-        Ds_n = Variable(name="Ds_n", value=13.4,
-                        prior=prior_Ds_n, bounds=(12, 14))
-        Ds_p = Variable(name="Ds_p", value=13,
-                        prior=prior_Ds_p, bounds=(12, 14))
+        Ds_n = Variable(name="Ds_n", value=13.4, prior=prior_Ds_n, bounds=(12, 14))
+        Ds_p = Variable(name="Ds_p", value=13, prior=prior_Ds_p, bounds=(12, 14))
 
         cls.variables = [Ds_n, Ds_p]
 
@@ -59,7 +56,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         )
 
     def test_custom_discrepancy_metrics(self):
-        func = self.identifiability_problem.discrepancy_metrics['wasserstein_distance']
+        func = self.identifiability_problem.discrepancy_metrics["wasserstein_distance"]
         distance = func([0, 1, 3], [5, 6, 8])
         self.assertEqual(5, distance)
 
@@ -101,7 +98,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             sampling_iterations=n_iteration,
             n_chains=n_chains,
             n_evidence=n_evidence,
-            discrepancy_metric=lambda x, y: cdist(x, y, metric='euclidean')
+            discrepancy_metric=lambda x, y: cdist(x, y, metric="euclidean"),
         )
 
         self.assertEqual(len(chains.columns), len(self.variables))

@@ -14,7 +14,6 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestIdentifiabilityAnalysis(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         # setup variables
@@ -75,7 +74,7 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
     def test_simulate(self):
         output = self.identifiability_problem.simulate(
             self.identifiability_problem.true_values,
-            self.identifiability_problem.t_eval
+            self.identifiability_problem.t_eval,
         )
         self.assertFalse(output is None)
 
@@ -107,9 +106,7 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(
-            TestIdentifiabilityAnalysis.identifiability_problem.logs_dir_path
-        )
+        shutil.rmtree(TestIdentifiabilityAnalysis.identifiability_problem.logs_dir_path)
         shutil.rmtree(
             TestIdentifiabilityAnalysis.identifiability_problem_x_error.logs_dir_path
         )

@@ -46,8 +46,9 @@ class TestPostprocessing(unittest.TestCase):
         pd.testing.assert_index_equal(generated.columns, compare.columns)
 
     def test_run_forward_model_over_posterior(self):
-        generated = run_forward_model_over_posterior(logs_dir_path=self.logs_dir_path,
-                                                     n_evaluations=10)
+        generated = run_forward_model_over_posterior(
+            logs_dir_path=self.logs_dir_path, n_evaluations=10
+        )
         compare = pd.read_csv(
             os.path.join(self.logs_dir_path, "forward_model_over_posterior.csv"),
             index_col=False,

@@ -42,8 +42,18 @@ class TestBaseSamplingProblem(unittest.TestCase):
         )
         cls.test_data = pd.read_csv(os.path.join(here, "test_data.csv"))
 
+    def test_init_(self):
+        self.assertTrue(os.path.exists(self.sampling_problem.logs_dir_path))
+
     def test_create_logs_dir(self):
         self.assertTrue(os.path.exists(self.sampling_problem.logs_dir_path))
+
+    def test_metadata(self):
+        self.assertIsInstance(self.sampling_problem.metadata, dict)
+        self.assertEqual(
+            len(list(self.sampling_problem.metadata.keys())),
+            len(self.sampling_problem.variables),
+        )
 
     def test_log_prior(self):
         self.assertIsInstance(
