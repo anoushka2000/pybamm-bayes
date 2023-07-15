@@ -2,12 +2,15 @@ from csv_logger import CsvLogger
 from logging import Logger
 import unittest
 
-from pybamm_bayes.logging import csv_logger, logger
+from pybamm_bayes.logging import csv_logger, get_new_logger, logger
 
 
 class TestLogging(unittest.TestCase):
     def test_exceptions(self):
         self.assertIsInstance(logger, Logger)
+
+    def test_get_new_logger(self):
+        self.assertRaises(ValueError, get_new_logger, "test_logger", None)
 
     def test_csv_logger(self):
         cl = csv_logger(filename="test_csv_logger")
