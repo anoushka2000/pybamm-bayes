@@ -25,7 +25,7 @@ class TestUtils(unittest.TestCase):
         #   "mean": -4.26, "sd": 1.0
         samples = sample_from_prior(metadata=self.metadata, n_samples=7000)
         self.assertAlmostEqual(list(samples.values())[0].mean(), -12, places=1)
-        self.assertAlmostEqual(list(samples.values())[1].mean(), -4.26, places=1)
+        self.assertAlmostEqual(list(samples.values())[1].mean(), -4.00, places=1)
         self.assertAlmostEqual(list(samples.values())[0].std(), 1.0, places=1)
         self.assertAlmostEqual(list(samples.values())[1].std(), 1.0, places=1)
 

@@ -28,17 +28,15 @@ bibliography: paper.bib
 ---
 
 # Summary
-Batteries are used ubiquitously is modern technology from mobile phones to electrical vehicles. 
-Battery controller design, state monitoring, fault diagnosis, thermal management and accelerated research of advanced battery technologies all rely on computational battery models. 
+Batteries are used ubiquitously in modern technology from mobile phones to electrical vehicles. Battery controller design, state monitoring, fault diagnosis, thermal management and accelerated research of advanced battery technologies all rely on computational battery models [@howey2020, @, @, @]. 
 Electrochemical battery models - such as the Doyle Fuller Newman (DFN) and Single Particle Model (SPM) - are among the most commonly used models. 
 These models must be specified in terms of tens of parameters to emulate physical batteries with high fidelity.
-Direct empirical measurements of these parameters is difficult, expensive and sometimes impossible. 
+Direct empirical measurement of these parameters is difficult, expensive and sometimes impossible. 
 Numerous algorithms (genetic algorithms, localized sensitivity etc.) have been applied to fit models to experimental battery cycling data (charging and discharging time series).
 
-However, in order to determine if a unique, physically relevant set parameters of parameters can be data `PyBaMM-Bayes` implements workflows for Bayesian practical identifiability analysis and parameter estimation of battery models. 
+However, in order to determine if a unique, physically relevant set parameters of parameters can be . `PyBaMM-Bayes` implements workflows for Bayesian practical identifiability analysis and parameter estimation of battery models. 
 
 # Statement of need
-systems of non-linear equations
 `PyBaMM-Bayes` is a Python package for nonlinear quantitative identifiability analysis and parameter estimation for electrochemical models. It provides a simple extension to the `PyBaMM` [@pybamm] battery modelling framework and allow users to conduct practical identifiability analysis and fit `PyBaMM` models to experimental battery cycling data. 
 
 The use of bayesian parameterization provides precise uncertainty estimates for each parameter. Any of the gradient-free MCMC samplers implemented in `PINTS` [@pints] may be used to sample the likelihood. Alternatively, Likelihood Free Inference (LFI) can be used. LFI is implemented using the BOLFI (Bayesian Optimisation for Likelihood Free Inference) method interfaced via the `ELFI` package [@elfi].
