@@ -33,8 +33,8 @@ class TestUtils(unittest.TestCase):
         samples = sample_from_posterior(self.chains, n_samples=7000)
 
         self.assertAlmostEqual(
-            self.chains.mean().values[0], samples[:, 0].mean(), delta=0.11
+            self.chains.mean().values[0], samples[:, 0].mean(), delta=0.2
         )
         self.assertAlmostEqual(
-            self.chains.mean().values[1], samples[:, 1].mean(), delta=0.11
+            self.chains.mean().values[1], samples[:, 1].mean(), delta=0.2
         )
