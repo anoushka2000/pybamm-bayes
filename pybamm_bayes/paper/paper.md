@@ -35,7 +35,7 @@ These models must be specified in terms of tens of parameters to emulate physica
 Direct empirical measurements of these parameters is difficult, expensive and sometimes impossible. 
 Numerous algorithms (genetic algorithms, localized sensitivity etc.) have been applied to fit models to experimental battery cycling data (charging and discharging time series).
 
-In order to determine appropriate, physically relevant parameters from data 
+However, in order to determine if a unique, physically relevant set parameters of parameters can be data `PyBaMM-Bayes` implements workflows for Bayesian practical identifiability analysis and parameter estimation of battery models. 
 
 # Statement of need
 systems of non-linear equations
