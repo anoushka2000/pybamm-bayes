@@ -19,7 +19,7 @@ j0_n = Variable(name="j0_n", value=-4.19, prior=log_prior_j0_n)
 variables = [Dsn, j0_n]
 
 # setup battery simulation
-model = pybamm.lithium_ion.DFN()
+model = pybamm.lithium_ion.SPMe()
 parameter_values = marquis_2019(variables)
 simulation = pybamm.Simulation(
     model,
@@ -35,16 +35,16 @@ identifiability_problem = MCMCIdentifiabilityAnalysis(
     output="Terminal voltage [V]",
     transform_type="log10",
     noise=0.005,
-    project_tag="test",
+    project_tag="TEST_LOGS",
 )
 
 identifiability_problem.plot_data()
 identifiability_problem.plot_priors()
 
 chains = identifiability_problem.run(
-    burnin=1,
-    n_iteration=10,
-    n_chains=2,
+    burnin=10,
+    n_iteration=200,
+    n_chains=3,
 )
 
 identifiability_problem.plot_results_summary(forward_evaluations=10)

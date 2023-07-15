@@ -255,8 +255,8 @@ def run_forward_model_over_posterior(
                 results.append(
                     {
                         **inputs,
-                        "Time [s]": t,
-                        output: V,
+                        "Reference": t,
+                        "Output": V,
                         "run": i,
                     }
                 )

@@ -53,49 +53,63 @@ Several postprocessing and visualization tools are also provided for diagnostics
 An example of identifiability analysis on a DFN model carried is included below. The identifiability of `D_sn` (solid state diffusivity in the negative electrode) and `` (the reference exchange current density) is being tested. Gaussian priors are used for both parameters. The Metropolis Hastings algorithm is used to sample the likelihood with 5 chains and 15000 iterations.
 
 ```
-import liionpack as lp
+import os
+
+import pints
 import pybamm
 
-# Generate the netlist
-netlist = lp.setup_circuit(Np=4, Ns=1, Rb=1e-3, Rc=1e-2)
+from pybamm_bayes import (
+    MCMCIdentifiabilityAnalysis,
+    Variable,
+    marquis_2019,
+)
 
-# Define some additional variables to output
-output_variables = [
-    'X-averaged negative particle surface concentration [mol.m-3]',
-    'X-averaged positive particle surface concentration [mol.m-3]',
-]
+here = os.path.abspath(os.path.dirname(__file__))
 
-# Cycling experiment, using PyBaMM
-experiment = pybamm.Experiment([
-    "Charge at 5 A for 30 minutes",
-    "Rest for 15 minutes",
-    "Discharge at 5 A for 30 minutes",
-    "Rest for 30 minutes"],
-    period="10 seconds")
+# setup variables
+log_prior_Dsn = pints.GaussianLogPrior(-12, 1)
+log_prior_j0_n = pints.GaussianLogPrior(-4, 1)
+Dsn = Variable(name="Ds_n", value=-12.45, prior=log_prior_Dsn)
+j0_n = Variable(name="j0_n", value=-4.19, prior=log_prior_j0_n)
+variables = [Dsn, j0_n]
 
-# PyBaMM battery parameters
-parameter_values = pybamm.ParameterValues("Chen2020")
+# setup battery simulation
+model = pybamm.lithium_ion.DFN()
+parameter_values = marquis_2019(variables)
+simulation = pybamm.Simulation(
+    model,
+    solver=pybamm.CasadiSolver("fast"),
+    parameter_values=parameter_values,
+    experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
+)
 
-# Solve the pack problem
-output = lp.solve(netlist=netlist,
-                  parameter_values=parameter_values,
-                  experiment=experiment,
-                  output_variables=output_variables,
-                  initial_soc=0.5)
+identifiability_problem = MCMCIdentifiabilityAnalysis(
+    battery_simulation=simulation,
+    parameter_values=parameter_values,
+    variables=variables,
+    output="Terminal voltage [V]",
+    transform_type="log10",
+    noise=0.005, 
+    project_tag="example",
+)
 
-# Display the results
-lp.plot_output(output)
+identifiability_problem.plot_data()
+identifiability_problem.plot_priors()
 
-# Draw the circuit at final state
-lp.draw_circuit(netlist, cpt_size=1.0, dpi=150, node_spacing=2.5)
+chains = identifiability_problem.run(
+    burnin=200,
+    n_iteration=15_000,
+    n_chains=5,
+)
+
+
+identifiability_problem.plot_results_summary(forward_evaluations=400)
 ```
 
 The output for the example is shown is the summary plots below.
 
 
 ![Pack summary showing the pack terminal voltage and total current. \label{fig:2}](./paper_figures/Figure_2.png)
-
-![An example of individual cell variable data, any variable defined by the `PyBaMM` model should be accessible. \label{fig:3}](./paper_figures/Figure_3.png)
 
 # Acknowledgements
 
