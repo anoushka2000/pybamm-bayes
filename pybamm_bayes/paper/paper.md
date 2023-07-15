@@ -31,9 +31,9 @@ bibliography: paper.bib
 Batteries are used ubiquitously is modern technology from mobile phones to electrical vehicles. 
 Battery controller design, state monitoring, fault diagnosis, thermal management and accelerated research of advanced battery technologies all rely on computational battery models. 
 Electrochemical battery models - such as the Doyle Fuller Newman (DFN) and Single Particle Model (SPM) - are among the most commonly used models. 
-These models consist of  which must be specified in terms of tens of parameters to emulate physical batteries with high fidelity.
-Direct empirical measurements of these parameters are difficult, expensive and sometimes impossible. 
-Hence, researchers have applied numerous numerous optimisation algorithms (such as genetic algorithms) to fit battery models to experimental battery cycling data (charging and discharging time series).
+These models must be specified in terms of tens of parameters to emulate physical batteries with high fidelity.
+Direct empirical measurements of these parameters is difficult, expensive and sometimes impossible. 
+Numerous algorithms (genetic algorithms, localized sensitivity etc.) have been applied to fit models to experimental battery cycling data (charging and discharging time series).
 
 In order to determine appropriate, physically relevant parameters from data 
 
