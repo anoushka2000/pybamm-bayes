@@ -107,19 +107,28 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
     def test_plot_pairwise(self):
         self.identifiability_problem.plot_pairwise()
         self.assertTrue(
-            os.path.join(self.identifiability_problem.logs_dir_path, "pairwise_plot")
+            os.path.join(
+                self.identifiability_problem.logs_dir_path,
+                "pairwise_plot"
+            )
         )
 
     def test_plot_discrepancy(self):
         self.identifiability_problem.plot_discrepancy()
         self.assertTrue(
-            os.path.join(self.identifiability_problem.logs_dir_path, "discrepancy")
+            os.path.join(
+                self.identifiability_problem.logs_dir_path,
+                "discrepancy"
+            )
         )
 
     def test_acquistion_surface(self):
         self.identifiability_problem.plot_acquistion_surface()
         self.assertTrue(
-            os.path.join(self.identifiability_problem.logs_dir_path, "acquisition_surface")
+            os.path.join(
+                self.identifiability_problem.logs_dir_path,
+                "acquisition_surface"
+            )
         )
 
     @classmethod
