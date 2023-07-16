@@ -1,9 +1,7 @@
-from pybamm_bayes.analysis.postprocessing import (
-    load_chains,
-    load_metadata,
-)
-from pybamm_bayes.analysis.utils import _get_logs_path
 import numpy as np
+
+from pybamm_bayes.analysis.postprocessing import load_chains, load_metadata
+from pybamm_bayes.analysis.utils import _get_logs_path
 
 
 def gelman_rubin_convergence_test(logs_dir_name=None, logs_dir_path=None, burnin=500):

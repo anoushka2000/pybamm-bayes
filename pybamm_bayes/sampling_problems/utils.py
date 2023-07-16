@@ -1,5 +1,5 @@
-from scipy.interpolate import interp1d
 import numpy as np
+from scipy.interpolate import interp1d
 
 
 def _fmt_variables(variables):

@@ -1,5 +1,6 @@
-from csv_logger import CsvLogger
 import logging
+
+from csv_logger import CsvLogger
 
 #   LOGGER    #
 

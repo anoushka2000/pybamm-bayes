@@ -3,13 +3,11 @@ import shutil
 import unittest
 
 import elfi
+from nosedep import depends
 import pybamm
 from scipy.spatial.distance import cdist
-from pybamm_bayes import (
-    BOLFIIdentifiabilityAnalysis,
-    Variable,
-    marquis_2019,
-)
+
+from pybamm_bayes import BOLFIIdentifiabilityAnalysis, Variable, marquis_2019
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -104,6 +102,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         self.assertEqual(len(chains.columns), len(self.variables))
         self.assertEqual(len(chains), n_iteration * n_chains)
 
+    @depends(after=test_run)
     def test_plot_pairwise(self):
         self.identifiability_problem.plot_pairwise()
         self.assertTrue(
@@ -113,6 +112,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             )
         )
 
+    @depends(after=test_run)
     def test_plot_discrepancy(self):
         self.identifiability_problem.plot_discrepancy()
         self.assertTrue(
@@ -122,6 +122,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             )
         )
 
+    @depends(after=test_run)
     def test_acquistion_surface(self):
         self.identifiability_problem.plot_acquistion_surface()
         self.assertTrue(

@@ -1,13 +1,9 @@
-import unittest
 import os
-from pybamm_bayes.analysis.postprocessing import (
-    load_metadata,
-    load_chains,
-)
-from pybamm_bayes.analysis.utils import (
-    sample_from_prior,
-    sample_from_posterior,
-)
+import unittest
+
+from pybamm_bayes.analysis.postprocessing import load_chains, load_metadata
+from pybamm_bayes.analysis.utils import (sample_from_posterior,
+                                         sample_from_prior)
 
 here = os.path.abspath(os.path.dirname(__file__))
 

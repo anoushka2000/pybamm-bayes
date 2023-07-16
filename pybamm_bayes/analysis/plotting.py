@@ -2,29 +2,22 @@ import glob
 import os
 import warnings
 
+import elfi  # noqa: F401
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pints  # noqa: F401
 import plotly.express as px
 import plotly.graph_objects as go
 import scipy.stats as stats
 import seaborn as sns
 from plotly.subplots import make_subplots
-import elfi  # noqa: F401
-import pints  # noqa: F401
 
 from pybamm_bayes.analysis.postprocessing import (
-    load_chains,
-    load_chains_with_residual,
-    load_metadata,
-    generate_residual_over_posterior,
-    run_forward_model_over_posterior,
-)
-from pybamm_bayes.analysis.utils import (
-    _get_logs_path,
-    _parse_priors,
-)
+    generate_residual_over_posterior, load_chains, load_chains_with_residual,
+    load_metadata, run_forward_model_over_posterior)
+from pybamm_bayes.analysis.utils import _get_logs_path, _parse_priors
 
 
 def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):

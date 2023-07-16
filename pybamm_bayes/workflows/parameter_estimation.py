@@ -1,6 +1,7 @@
 import pandas as pd
 import pints
 import pybamm
+
 from pybamm_bayes import ParameterEstimation, Variable, chen_2020
 
 # define priors for variables being analysed

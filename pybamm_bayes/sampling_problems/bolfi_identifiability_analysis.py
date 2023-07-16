@@ -1,20 +1,19 @@
+import inspect
 import json
 import os
 import time
-from typing import List, Optional, Dict, Union, Callable
+from typing import Callable, Dict, List, Optional, Union
 
 import elfi
 import elfi.visualization.interactive as visin
 import matplotlib.pyplot as plt
-import inspect
 import numpy as np
 import pandas as pd
 import pybamm
 from scipy.stats import wasserstein_distance
 
-from pybamm_bayes.sampling_problems.base_sampling_problem import (  # noqa: E501
-    BaseSamplingProblem,
-)
+from pybamm_bayes.sampling_problems.base_sampling_problem import \
+    BaseSamplingProblem  # noqa: E501
 from pybamm_bayes.variable import Variable
 
 

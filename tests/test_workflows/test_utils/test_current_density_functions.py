@@ -1,14 +1,14 @@
 import unittest
 
+from pybamm import Multiplication, Scalar
+
 from pybamm_bayes import (
     NMC_electrolyte_exchange_current_density_PeymanMPM,
     graphite_electrolyte_exchange_current_density_Dualfoil1998,
     graphite_electrolyte_exchange_current_density_PeymanMPM,
     graphite_LGM50_electrolyte_exchange_current_density_Chen2020,
     lico2_electrolyte_exchange_current_density_Dualfoil1998,
-    nmc_LGM50_electrolyte_exchange_current_density_Chen2020,
-)
-from pybamm import Multiplication, Scalar
+    nmc_LGM50_electrolyte_exchange_current_density_Chen2020)
 
 
 class TestCurrentDensityFunctions(unittest.TestCase):

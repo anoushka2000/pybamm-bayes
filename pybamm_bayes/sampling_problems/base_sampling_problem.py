@@ -10,13 +10,11 @@ import pybamm
 import seaborn as sns
 import tqdm
 
-from pybamm_bayes.variable import Variable
 from pybamm_bayes.analysis.utils import sample_from_posterior
-from pybamm_bayes.sampling_problems.utils import (
-    _fmt_parameters,
-    _fmt_variables,
-)
 from pybamm_bayes.logging import csv_logger
+from pybamm_bayes.sampling_problems.utils import (_fmt_parameters,
+                                                  _fmt_variables)
+from pybamm_bayes.variable import Variable
 
 
 class BaseSamplingProblem(pints.ForwardModelS1):

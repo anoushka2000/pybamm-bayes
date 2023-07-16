@@ -8,13 +8,8 @@ import pybamm
 import tqdm
 from IPython.display import Image, display
 
-from pybamm_bayes.analysis.utils import (
-    _get_logs_path,
-    sample_from_posterior,
-)
-from pybamm_bayes.sampling_problems.utils import (
-    interpolate_time_over_y_values,
-)
+from pybamm_bayes.analysis.utils import _get_logs_path, sample_from_posterior
+from pybamm_bayes.sampling_problems.utils import interpolate_time_over_y_values
 
 TRANSFORMS = {
     "log10": lambda x: 10 ** float(x),

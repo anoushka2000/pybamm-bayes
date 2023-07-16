@@ -1,5 +1,6 @@
-import unittest
 import os
+import unittest
+
 from pybamm_bayes import gelman_rubin_convergence_test
 
 here = os.path.abspath(os.path.dirname(__file__))

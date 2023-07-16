@@ -3,11 +3,7 @@ import os
 import pints
 import pybamm
 
-from pybamm_bayes import (
-    MCMCIdentifiabilityAnalysis,
-    Variable,
-    marquis_2019,
-)
+from pybamm_bayes import MCMCIdentifiabilityAnalysis, Variable, marquis_2019
 
 here = os.path.abspath(os.path.dirname(__file__))
 

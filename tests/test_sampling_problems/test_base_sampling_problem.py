@@ -5,8 +5,9 @@ import unittest
 import pandas as pd
 import pints
 import pybamm
-from pybamm_bayes import BaseSamplingProblem, Variable, marquis_2019
 from matplotlib.testing.compare import compare_images
+
+from pybamm_bayes import BaseSamplingProblem, Variable, marquis_2019
 
 here = os.path.abspath(os.path.dirname(__file__))
 

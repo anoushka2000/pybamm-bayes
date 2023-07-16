@@ -1,6 +1,7 @@
-from csv_logger import CsvLogger
-from logging import Logger
 import unittest
+from logging import Logger
+
+from csv_logger import CsvLogger
 
 from pybamm_bayes.logging import csv_logger, get_new_logger, logger
 

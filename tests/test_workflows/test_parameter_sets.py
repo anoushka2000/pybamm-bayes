@@ -1,14 +1,10 @@
+import functools
 import unittest
 
-import functools
 import pints
 import pybamm
-from pybamm_bayes import (
-    Variable,
-    chen_2020,
-    marquis_2019,
-    mohtat_2020,
-)
+
+from pybamm_bayes import Variable, chen_2020, marquis_2019, mohtat_2020
 
 
 class TestModelSetup(unittest.TestCase):

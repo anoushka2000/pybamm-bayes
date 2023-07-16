@@ -8,15 +8,12 @@ import pints
 import pybamm
 from scipy.interpolate import interp1d
 
-from pybamm_bayes.sampling_problems.base_sampling_problem import (  # noqa: E501
-    BaseSamplingProblem,
-)
-from pybamm_bayes.variable import Variable
-from pybamm_bayes.sampling_problems.utils import (
-    _fmt_parameters,
-    _fmt_variables,
-)
 from pybamm_bayes.logging import logger
+from pybamm_bayes.sampling_problems.base_sampling_problem import \
+    BaseSamplingProblem  # noqa: E501
+from pybamm_bayes.sampling_problems.utils import (_fmt_parameters,
+                                                  _fmt_variables)
+from pybamm_bayes.variable import Variable
 
 
 # TODO: add error axis argument
