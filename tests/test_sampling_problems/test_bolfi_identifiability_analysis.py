@@ -119,7 +119,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             )
         )
 
-    def test_acquistion_surface(self):
+    def test_plot_acquistion_surface(self):
         self.identifiability_problem.plot_acquistion_surface()
         self.assertTrue(
             os.path.join(
