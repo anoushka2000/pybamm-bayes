@@ -3,7 +3,6 @@ import shutil
 import unittest
 
 import elfi
-from nosedep import depends
 import pybamm
 from scipy.spatial.distance import cdist
 
@@ -73,7 +72,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         )
         self.assertFalse(output is None)
 
-    def test_run(self):
+    def test_arun(self):
         n_iteration = 200
         n_chains = 4
         n_evidence = 500
@@ -102,7 +101,6 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         self.assertEqual(len(chains.columns), len(self.variables))
         self.assertEqual(len(chains), n_iteration * n_chains)
 
-    @depends(after=test_run)
     def test_plot_pairwise(self):
         self.identifiability_problem.plot_pairwise()
         self.assertTrue(
@@ -112,7 +110,6 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             )
         )
 
-    @depends(after=test_run)
     def test_plot_discrepancy(self):
         self.identifiability_problem.plot_discrepancy()
         self.assertTrue(
@@ -122,7 +119,6 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             )
         )
 
-    @depends(after=test_run)
     def test_acquistion_surface(self):
         self.identifiability_problem.plot_acquistion_surface()
         self.assertTrue(

@@ -1,6 +1,6 @@
 numpy<1.24
 pybamm==22.8
-setuptools==65.5.1
+setuptools
 matplotlib
 pints
 pandas
