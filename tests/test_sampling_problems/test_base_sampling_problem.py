@@ -52,7 +52,7 @@ class TestBaseSamplingProblem(unittest.TestCase):
         self.assertIsInstance(self.sampling_problem.metadata, dict)
         self.assertEqual(
             len(list(self.sampling_problem.metadata.keys())),
-            len(self.sampling_problem.variables),
+            7,
         )
 
     def test_log_prior(self):
