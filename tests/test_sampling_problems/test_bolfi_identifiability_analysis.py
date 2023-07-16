@@ -21,7 +21,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         prior_Ds_n = elfi.Prior("norm", 13.1, 1, name="Ds_n")
         prior_Ds_p = elfi.Prior("norm", 12.5, 1, name="Ds_p")
 
-        Ds_n = Variable(name="Ds_n", value=13.4, prior=prior_Ds_n, bounds=(12, 14))
+        Ds_n = Variable(name="Ds_n", value=12.5, prior=prior_Ds_n, bounds=(12, 14))
         Ds_p = Variable(name="Ds_p", value=13, prior=prior_Ds_p, bounds=(12, 14))
 
         cls.variables = [Ds_n, Ds_p]
@@ -103,6 +103,24 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
 
         self.assertEqual(len(chains.columns), len(self.variables))
         self.assertEqual(len(chains), n_iteration * n_chains)
+
+    def test_plot_pairwise(self):
+        self.identifiability_problem.plot_pairwise()
+        self.assertTrue(
+            os.path.join(self.identifiability_problem.logs_dir_path, "pairwise_plot")
+        )
+
+    def test_plot_discrepancy(self):
+        self.identifiability_problem.plot_discrepancy()
+        self.assertTrue(
+            os.path.join(self.identifiability_problem.logs_dir_path, "discrepancy")
+        )
+
+    def test_acquistion_surface(self):
+        self.identifiability_problem.plot_acquistion_surface()
+        self.assertTrue(
+            os.path.join(self.identifiability_problem.logs_dir_path, "acquisition_surface")
+        )
 
     @classmethod
     def tearDownClass(cls):
