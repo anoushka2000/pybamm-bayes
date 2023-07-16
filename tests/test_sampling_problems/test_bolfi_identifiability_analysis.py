@@ -18,7 +18,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # setup variables
-        prior_Ds_n = elfi.Prior("norm", 13.1, 1, name="Ds_n")
+        prior_Ds_n = elfi.Prior("norm", 13.4, 1, name="Ds_n")
         prior_Ds_p = elfi.Prior("norm", 12.5, 1, name="Ds_p")
 
         Ds_n = Variable(name="Ds_n", value=12.5, prior=prior_Ds_n, bounds=(12, 14))
