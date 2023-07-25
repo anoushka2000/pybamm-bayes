@@ -13,13 +13,11 @@ authors:
     affiliation: "1"
   - name: Valentin Sulzer
     orcid: 0000-0002-8687-327X
-    affiliation: "2"
+    affiliation: "1"
 
 affiliations:
  - name: Carnegie Mellon University, Scott Hall 5109, 5000 Forbes Ave, Pittsburgh, PA 15213, United States.
    index: 1
- - name: The Faraday Institution, Quad One, Becquerel Avenue, Harwell Campus, Didcot, OX11 0RA, United Kingdom.
-   index: 2
 
 date: 30 July 2023
 
@@ -34,9 +32,10 @@ Continuum scale battery models - such as the Doyle Fuller Newman (DFN) and Singl
 The fidelity of these models depends on the accuracy of tens of physicochemical parameter values in terms of which they are specified.
 Direct empirical measurement of these parameters is difficult, expensive and sometimes impossible [@li]. 
 Numerous algorithms (genetic algorithms, localized sensitivity etc.) have been applied to fit models to experimental battery cycling data [@zhao, @streb, @andersson]. 
-However, a pre-cursor to carrying out parameter identification for a complex non-linear model is determining if a unique, physically-relevant set parameters of optimal parameters can be identified from the given data. 
-This involves the practical identifiabilty analysis. 
-`PyBaMM-Bayes` is a Python package for practical identifiability analysis and parameter estimation for electrochemical battery models.  
+However, a pre-cursor to carrying out parameter identification for a complex non-linear model is quantify the extent to which a set of unique, physically-relevant parameters can be estimated from the given data. 
+This involves practical identifiabilty analysis. 
+
+`PyBaMM-Bayes` is a Python package for practical identifiability analysis and parameter estimation for electrochemical battery models.  It serves as an extension to the `PyBaMM` [@pybamm] battery modelling framework, combining it with Bayesian optimization libraries (`PINTS` [@pints] and `ELFI` [@elfi]). 
 
 # Statement of need
 
@@ -47,16 +46,13 @@ The approach used allows complex target distributions to be estimated, which ena
 
 Practical identifiabilty analysis on models is conducted by fitting parameter distributions to synthetic data simulated using the model (which maybe any valid PyBaMM model). 
 To sample parameter space either MCMC (Markov Chain Monte Carlo) or BOLFI (Bayesian Optimization for Likelihood Free Inference) algorithms may be used. 
-Gradient-free MCMC samplers implemented in the `PINTS` package [@pints] may be used to sample the likelihood distribution. 
-Alternatively, Likelihood Free Inference (LFI) may be used. LFI is implemented using the `BOLFI` (Bayesian Optimisation for Likelihood Free Inference) method interfaced via the `ELFI` package [@elfi]. 
-Several postprocessing and visualization tools are provided for diagnostics and analysis of results such as chain comvergence and autocorrelation plots.
+Any gradient-free MCMC sampler implemented in the `PINTS` package can be used for sampling. 
+Alternatively, for Likelihood Free Inference (LFI) the BOLFI algorithm interfaced via the `ELFI` package can be used. 
+Several postprocessing and visualization tools are provided for diagnostics and analysis of results such as chain convergence and autocorrelation plots.
 These provide visual and quantitative heuristics for the classification of identifiable and non-identifiable parameter sets.
 
-Parameter estimation is done using a similar approach with parameter distributions being estimated from experimental cycling data provided by the user rather than from synthetic data. 
+Parameter estimation is done using a similar approach with parameter distributions being estimated from experimental cycling data provided by the user, rather than from synthetic data. 
 The mean of the posterior distribution provides the Maximum Likelihood Estimate (MLE) of the parameter set for the model.
-
-
-
 
 
 # Examples of use
