@@ -5,8 +5,9 @@ import unittest
 import pandas as pd
 import pints
 import pybamm
-from battery_model_parameterization import BaseSamplingProblem, Variable, marquis_2019
 from matplotlib.testing.compare import compare_images
+
+from pybamm_bayes import BaseSamplingProblem, Variable, marquis_2019
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -42,8 +43,18 @@ class TestBaseSamplingProblem(unittest.TestCase):
         )
         cls.test_data = pd.read_csv(os.path.join(here, "test_data.csv"))
 
+    def test_init_(self):
+        self.assertTrue(os.path.exists(self.sampling_problem.logs_dir_path))
+
     def test_create_logs_dir(self):
         self.assertTrue(os.path.exists(self.sampling_problem.logs_dir_path))
+
+    def test_metadata(self):
+        self.assertIsInstance(self.sampling_problem.metadata, dict)
+        self.assertEqual(
+            len(list(self.sampling_problem.metadata.keys())),
+            7,
+        )
 
     def test_log_prior(self):
         self.assertIsInstance(

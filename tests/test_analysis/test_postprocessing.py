@@ -1,13 +1,11 @@
-import unittest
 import os
+import unittest
+
 import pandas as pd
-from battery_model_parameterization.Python.analysis.postprocessing import (
-    load_metadata,
-    load_chains,
-    load_chains_with_residual,
-    generate_residual_over_posterior,
-    run_forward_model_over_posterior,
-)
+
+from pybamm_bayes.analysis.postprocessing import (
+    generate_residual_over_posterior, load_chains, load_chains_with_residual,
+    load_metadata, run_forward_model_over_posterior)
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -46,8 +44,9 @@ class TestPostprocessing(unittest.TestCase):
         pd.testing.assert_index_equal(generated.columns, compare.columns)
 
     def test_run_forward_model_over_posterior(self):
-        generated = run_forward_model_over_posterior(logs_dir_path=self.logs_dir_path,
-                                                     n_evaluations=10)
+        generated = run_forward_model_over_posterior(
+            logs_dir_path=self.logs_dir_path, n_evaluations=10
+        )
         compare = pd.read_csv(
             os.path.join(self.logs_dir_path, "forward_model_over_posterior.csv"),
             index_col=False,

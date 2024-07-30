@@ -21,9 +21,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8
           pip install -r requirements.txt
+          pip install -r requirements_dev.txt
+          pip install casadi==3.5.5
+
       - name: Lint with flake8
         run: |
-          flake8 --max-line-length=88 --exclude=battery_model_parameterization/__init__.py
+          flake8 --max-line-length=88 --exclude=pybamm_bayes/__init__.py
       - name: Run test and generate coverage report
         run: |
           python -m coverage run -m unittest

@@ -1,15 +1,13 @@
-import unittest
 import os
-from matplotlib.testing.compare import compare_images
+import unittest
+
 import matplotlib.pyplot as plt
-from battery_model_parameterization import (
-    plot_chain_convergence,
-    compare_chain_convergence,
-    pairwise,
-    plot_confidence_intervals,
-    plot_residual,
-    plot_forward_model_posterior_distribution,
-)
+from matplotlib.testing.compare import compare_images
+
+from pybamm_bayes import (compare_chain_convergence, pairwise,
+                          plot_chain_convergence, plot_confidence_intervals,
+                          plot_forward_model_posterior_distribution,
+                          plot_residual)
 
 here = os.path.abspath(os.path.dirname(__file__))
 

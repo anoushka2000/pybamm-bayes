@@ -7,12 +7,8 @@ pandas
 scipy
 plotly
 ipython
-coverage
 seaborn
 tqdm
 elfi~=0.8.4
 jupyter
 csv_logger
-
-# TODO: move to requirements_dev
-kaleido

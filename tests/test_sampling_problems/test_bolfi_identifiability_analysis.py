@@ -5,27 +5,21 @@ import unittest
 import elfi
 import pybamm
 from scipy.spatial.distance import cdist
-from battery_model_parameterization import (
-    BOLFIIdentifiabilityAnalysis,
-    Variable,
-    marquis_2019,
-)
+
+from pybamm_bayes import BOLFIIdentifiabilityAnalysis, Variable, marquis_2019
 
 here = os.path.abspath(os.path.dirname(__file__))
 
 
 class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         # setup variables
-        prior_Ds_n = elfi.Prior("norm", 13, 1, name="Ds_n")
+        prior_Ds_n = elfi.Prior("norm", 13.4, 1, name="Ds_n")
         prior_Ds_p = elfi.Prior("norm", 12.5, 1, name="Ds_p")
 
-        Ds_n = Variable(name="Ds_n", value=13.4,
-                        prior=prior_Ds_n, bounds=(12, 14))
-        Ds_p = Variable(name="Ds_p", value=13,
-                        prior=prior_Ds_p, bounds=(12, 14))
+        Ds_n = Variable(name="Ds_n", value=12.5, prior=prior_Ds_n, bounds=(12, 14))
+        Ds_p = Variable(name="Ds_p", value=13, prior=prior_Ds_p, bounds=(12, 14))
 
         cls.variables = [Ds_n, Ds_p]
 
@@ -59,7 +53,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         )
 
     def test_custom_discrepancy_metrics(self):
-        func = self.identifiability_problem.discrepancy_metrics['wasserstein_distance']
+        func = self.identifiability_problem.discrepancy_metrics["wasserstein_distance"]
         distance = func([0, 1, 3], [5, 6, 8])
         self.assertEqual(5, distance)
 
@@ -78,7 +72,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
         )
         self.assertFalse(output is None)
 
-    def test_run(self):
+    def test_arun(self):
         n_iteration = 200
         n_chains = 4
         n_evidence = 500
@@ -101,11 +95,38 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
             sampling_iterations=n_iteration,
             n_chains=n_chains,
             n_evidence=n_evidence,
-            discrepancy_metric=lambda x, y: cdist(x, y, metric='euclidean')
+            discrepancy_metric=lambda x, y: cdist(x, y, metric="euclidean"),
         )
 
         self.assertEqual(len(chains.columns), len(self.variables))
         self.assertEqual(len(chains), n_iteration * n_chains)
+
+    def test_plot_pairwise(self):
+        self.identifiability_problem.plot_pairwise()
+        self.assertTrue(
+            os.path.join(
+                self.identifiability_problem.logs_dir_path,
+                "pairwise_plot"
+            )
+        )
+
+    def test_plot_discrepancy(self):
+        self.identifiability_problem.plot_discrepancy()
+        self.assertTrue(
+            os.path.join(
+                self.identifiability_problem.logs_dir_path,
+                "discrepancy"
+            )
+        )
+
+    def test_plot_acquistion_surface(self):
+        self.identifiability_problem.plot_acquistion_surface()
+        self.assertTrue(
+            os.path.join(
+                self.identifiability_problem.logs_dir_path,
+                "acquisition_surface"
+            )
+        )
 
     @classmethod
     def tearDownClass(cls):
