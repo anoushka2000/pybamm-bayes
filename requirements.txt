@@ -1,5 +1,5 @@
-numpy<1.24
-pybamm==22.8
+numpy
+pybamm==24.5
 setuptools
 matplotlib
 pints
