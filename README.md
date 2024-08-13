@@ -10,7 +10,7 @@ Follow the steps given below to install `pybamm-bayes` in `conda` virtual enviro
 git clone https://github.com/anoushka2000/pybamm-bayes.git
 
 # Create a conda environment name PyBaMM-Bayes
-conda create --name pybamm-bayes python=3.9
+conda create --name pybamm-bayes python=3.11
 
 # Activate the environment
 conda activate pybamm-bayes
