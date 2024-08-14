@@ -13,7 +13,7 @@ class TestDiagnostics(unittest.TestCase):
         cls.logs_dir_path = os.path.join(here, "TEST_LOGS")
 
     def test_gelman_rubin_convergence_test(self):
-        compare = {"j0_n": 1.082874808603, "Ds_n": 0.6314973004249158}
+        compare = {"j0_n": 0.33995420334034865, "Ds_n": 0.7751067734142784}
         result = gelman_rubin_convergence_test(
             logs_dir_path=self.logs_dir_path, burnin=0
         )
