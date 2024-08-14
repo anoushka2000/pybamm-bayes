@@ -2,11 +2,13 @@ import unittest
 
 from pybamm.expression_tree.binary_operators import Multiplication
 
-from pybamm_bayes import (electrolyte_diffusivity_Capiglia1999,
-                          electrolyte_diffusivity_PeymanMPM,
-                          graphite_diffusivity_PeymanMPM,
-                          graphite_mcmb2528_diffusivity_Dualfoil1998,
-                          lico2_diffusivity_Dualfoil1998)
+from pybamm_bayes import (
+    electrolyte_diffusivity_Capiglia1999,
+    electrolyte_diffusivity_PeymanMPM,
+    graphite_diffusivity_PeymanMPM,
+    graphite_mcmb2528_diffusivity_Dualfoil1998,
+    lico2_diffusivity_Dualfoil1998,
+)
 
 
 class TestDiffusivityFunctions(unittest.TestCase):

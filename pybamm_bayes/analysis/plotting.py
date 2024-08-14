@@ -15,8 +15,12 @@ import seaborn as sns
 from plotly.subplots import make_subplots
 
 from pybamm_bayes.analysis.postprocessing import (
-    generate_residual_over_posterior, load_chains, load_chains_with_residual,
-    load_metadata, run_forward_model_over_posterior)
+    generate_residual_over_posterior,
+    load_chains,
+    load_chains_with_residual,
+    load_metadata,
+    run_forward_model_over_posterior,
+)
 from pybamm_bayes.analysis.utils import _get_logs_path, _parse_priors
 
 
@@ -442,7 +446,7 @@ def _plot_confidence_intervals_grid(
     result = load_chains_with_residual(logs_dir_path=logs_dir_path)
 
     theta_optimal = result.nsmallest(1, "residuals")[
-        result.columns[1: n_variables + 1]
+        result.columns[1:n_variables + 1]
     ].values.flatten()
 
     # recover true values from metadata
