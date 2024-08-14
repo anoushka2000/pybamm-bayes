@@ -174,7 +174,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
             self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
-        except pybamm.SolverError:
+        except (pybamm.SolverError, KeyError):
             # CasadiSolver "fast" failed
             try:
                 self.battery_simulation.solve(
@@ -187,7 +187,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
                 self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
-            except pybamm.SolverError:
+            except (pybamm.SolverError, KeyError):
                 #  ScipySolver solver failed
                 try:
                     self.battery_simulation.solve(
@@ -198,7 +198,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
                     self.csv_logger.info(["Scipy", solution.solve_time.value])
 
-                except pybamm.SolverError as e:
+                except (pybamm.SolverError, KeyError) as e:
 
                     with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
                         log.write("**************\n")
