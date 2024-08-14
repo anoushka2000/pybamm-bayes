@@ -8,10 +8,14 @@ import pints
 import pybamm
 
 from pybamm_bayes.logging import logger
-from pybamm_bayes.sampling_problems.base_sampling_problem import \
-    BaseSamplingProblem  # noqa: E501
+from pybamm_bayes.sampling_problems.base_sampling_problem import (
+    BaseSamplingProblem,
+)  # noqa: E501
 from pybamm_bayes.sampling_problems.utils import (
-    _fmt_parameters, _fmt_variables, interpolate_time_over_y_values)
+    _fmt_parameters,
+    _fmt_variables,
+    interpolate_time_over_y_values,
+)
 from pybamm_bayes.variable import Variable
 
 
@@ -174,7 +178,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
             self.csv_logger.info(["Casadi fast", solution.solve_time.value])
 
-        except pybamm.SolverError:
+        except (pybamm.SolverError, KeyError):
             # CasadiSolver "fast" failed
             try:
                 self.battery_simulation.solve(
@@ -187,7 +191,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
                 self.csv_logger.info(["Casadi safe", solution.solve_time.value])
 
-            except pybamm.SolverError:
+            except (pybamm.SolverError, KeyError):
                 #  ScipySolver solver failed
                 try:
                     self.battery_simulation.solve(
@@ -198,7 +202,7 @@ class MCMCIdentifiabilityAnalysis(BaseSamplingProblem):
 
                     self.csv_logger.info(["Scipy", solution.solve_time.value])
 
-                except pybamm.SolverError as e:
+                except (pybamm.SolverError, KeyError) as e:
 
                     with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
                         log.write("**************\n")

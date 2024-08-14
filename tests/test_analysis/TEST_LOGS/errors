@@ -1,0 +1,27 @@
+**************
+[-16.63109106  -5.59713024]
+KeyError(<pybamm.models.full_battery_models.lithium_ion.spme.SPMe object at 0x149ee8e9a3d0>)
+**************
+[-16.27297133  -5.63387935]
+KeyError(<pybamm.models.full_battery_models.lithium_ion.spme.SPMe object at 0x149ee8e9a3d0>)
+**************
+[-16.57409715  -5.97938622]
+KeyError(<pybamm.models.full_battery_models.lithium_ion.spme.SPMe object at 0x149ee8e9a3d0>)
+**************
+[-16.28886977  -5.5583486 ]
+KeyError(<pybamm.models.full_battery_models.lithium_ion.spme.SPMe object at 0x149ee8e9a3d0>)
+**************
+[-16.63888989  -5.78505162]
+KeyError(<pybamm.models.full_battery_models.lithium_ion.spme.SPMe object at 0x149ee8e9a3d0>)
+**************
+[-15.97675295  -5.80687504]
+KeyError(<pybamm.models.full_battery_models.lithium_ion.spme.SPMe object at 0x149ee8e9a3d0>)
+**************
+[-15.82416612  -5.64400246]
+KeyError(<pybamm.models.full_battery_models.lithium_ion.spme.SPMe object at 0x149ee8e9a3d0>)
+**************
+[-15.824114   -6.1178567]
+KeyError(<pybamm.models.full_battery_models.lithium_ion.spme.SPMe object at 0x149ee8e9a3d0>)
+**************
+[-15.57909096  -5.35090633]
+KeyError(<pybamm.models.full_battery_models.lithium_ion.spme.SPMe object at 0x149ee8e9a3d0>)

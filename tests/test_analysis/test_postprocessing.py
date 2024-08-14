@@ -4,8 +4,12 @@ import unittest
 import pandas as pd
 
 from pybamm_bayes.analysis.postprocessing import (
-    generate_residual_over_posterior, load_chains, load_chains_with_residual,
-    load_metadata, run_forward_model_over_posterior)
+    generate_residual_over_posterior,
+    load_chains,
+    load_chains_with_residual,
+    load_metadata,
+    run_forward_model_over_posterior,
+)
 
 here = os.path.abspath(os.path.dirname(__file__))
 

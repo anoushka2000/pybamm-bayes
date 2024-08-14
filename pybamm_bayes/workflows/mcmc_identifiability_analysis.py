@@ -24,6 +24,13 @@ simulation = pybamm.Simulation(
     experiment=pybamm.Experiment(["Discharge at C/10 for 10 hours"]),
 )
 
+# simulation.solve(inputs={
+#     "Ds_n": 2.338346895986477e-17,
+#     "j0_n": 2.5285395765783075e-06,
+# })
+
+# exit()
+
 identifiability_problem = MCMCIdentifiabilityAnalysis(
     battery_simulation=simulation,
     parameter_values=parameter_values,

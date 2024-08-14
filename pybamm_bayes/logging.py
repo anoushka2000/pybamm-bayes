@@ -36,6 +36,7 @@ logger = _get_new_logger(__name__)
 #    CSV LOGGER    #
 # For solve time and solve time logging
 
+
 # Create csv logger
 def csv_logger(filename):
     return CsvLogger(
