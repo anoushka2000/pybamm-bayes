@@ -73,4 +73,4 @@ class TestBaseSamplingProblem(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(cls.sampling_problem.logs_dir_path)
+        shutil.rmtree(os.path.dirname(cls.sampling_problem.logs_dir_path), ignore_errors=True)

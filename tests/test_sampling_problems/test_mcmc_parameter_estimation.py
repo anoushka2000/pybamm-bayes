@@ -82,5 +82,6 @@ class TestParameterEstimation(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(
-            TestParameterEstimation.parameter_estimation_problem.logs_dir_path
+            TestParameterEstimation.parameter_estimation_problem.logs_dir_path,
+            ignore_errors=True # Device or resource busy error on nfs
         )

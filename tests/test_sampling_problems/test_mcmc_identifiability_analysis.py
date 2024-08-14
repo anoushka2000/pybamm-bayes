@@ -4,6 +4,7 @@ import unittest
 
 import pints
 import pybamm
+import time
 
 from pybamm_bayes import MCMCIdentifiabilityAnalysis, Variable, marquis_2019
 
@@ -103,7 +104,9 @@ class TestIdentifiabilityAnalysis(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(TestIdentifiabilityAnalysis.identifiability_problem.logs_dir_path)
-        shutil.rmtree(
-            TestIdentifiabilityAnalysis.identifiability_problem_x_error.logs_dir_path
-        )
+        log_path = os.path.dirname(TestIdentifiabilityAnalysis.identifiability_problem.logs_dir_path)
+        shutil.rmtree(log_path, ignore_errors=True)
+        try:
+            shutil.rmtree(log_path, ignore_errors=False)
+        except OSError as e: # Device or resource busy error on nfs
+            print(e)

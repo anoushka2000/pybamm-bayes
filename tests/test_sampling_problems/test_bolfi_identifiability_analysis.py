@@ -68,7 +68,7 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
 
     def test_simulate(self):
         output = self.identifiability_problem.simulate(
-            self.identifiability_problem.true_values, self.identifiability_problem.times
+            self.identifiability_problem.true_values
         )
         self.assertFalse(output is None)
 
@@ -131,5 +131,6 @@ class TestBOLFIIdentifiabilityAnalysis(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(
-            TestBOLFIIdentifiabilityAnalysis.identifiability_problem.logs_dir_path
+            TestBOLFIIdentifiabilityAnalysis.identifiability_problem.logs_dir_path,
+            ignore_errors=True
         )
