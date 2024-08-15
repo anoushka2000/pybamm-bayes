@@ -1,6 +1,7 @@
 import pybamm
 import numpy as np
 
+
 def electrolyte_diffusivity_Nyman2008(c_e, T):
     """
     Diffusivity of LiPF6 in EC:EMC (3:7) as a function of ion concentration. The data
@@ -63,6 +64,7 @@ def electrolyte_conductivity_Nyman2008(c_e, T):
     # Nyman et al. (2008) does not provide temperature dependence
 
     return sigma_e
+
 
 def graphite_mcmb2528_diffusivity_Dualfoil1998(sto, T):
     """
@@ -152,7 +154,9 @@ def graphite_electrolyte_exchange_current_density_Dualfoil1998(
     E_r = 37480
     arrhenius = np.exp(E_r / pybamm.constants.R * (1 / 298.15 - 1 / T))
 
-    return m_ref * arrhenius * c_e**0.5 * c_s_surf**0.5 * (c_s_max - c_s_surf) ** 0.5
+    return (
+        m_ref * arrhenius * c_e**0.5 * c_s_surf**0.5 * (c_s_max - c_s_surf) ** 0.5
+    )
 
 
 def graphite_entropic_change_Moura2016(sto, c_s_max):
@@ -193,39 +197,35 @@ def airbus_cell_parameters():
     .. [1] >  Zhang, Q., Wang, D., Yang, B., Cui, X. & Li, X.
     Electrochemical model of lithium-ion battery for wide frequency range
     applications. Electrochimica Acta 343, 136094 (2020).
-    .. [2] >  Liu, G. & Zhang, L. Research on the Thermal Characteristics 
-    of an 18650 Lithium-Ion Battery Based on an Electrochemical–Thermal Flow 
+    .. [2] >  Liu, G. & Zhang, L. Research on the Thermal Characteristics
+    of an 18650 Lithium-Ion Battery Based on an Electrochemical–Thermal Flow
     Coupling Model. World Electric Vehicle Journal 12, 250 (2021).
     .. [3] > PyBaMM parameter set: Marquis2019
     """
     c_n_max = 31507  # [2]
     c_p_max = 48000  # [2]
     parameters = {
-
         # Negative Electrode
         "Maximum concentration in negative electrode [mol.m-3]": c_n_max,
         "Negative electrode thickness [m]": 40e-6,  # [2] 40 \mu m
         "Negative electrode active material volume fraction": 0.384,  # [2]
         # "Negative electrode porosity": 0.2, # [1] electrolyte phase fraction (?)
         "Negative electrode OCP [V]": graphite_mcmb2528_ocp_Dualfoil1998,
-        "Negative electrode exchange-current density [A.m-2]": graphite_electrolyte_exchange_current_density_Dualfoil1998, # [3]
-        "Negative electrode OCP entropic change [V.K-1]": graphite_entropic_change_Moura2016, # [3]
+        "Negative electrode exchange-current density [A.m-2]": graphite_electrolyte_exchange_current_density_Dualfoil1998,  # [3]
+        "Negative electrode OCP entropic change [V.K-1]": graphite_entropic_change_Moura2016,  # [3]
         "Negative particle radius [m]": 2.5e-6,  # [2] 2.5 \mu m
         "Negative electrode Bruggeman coefficient (electrolyte)": 1.5,
         "Negative electrode Bruggeman coefficient (electrode)": 1.5,
         "Negative electrode conductivity [S.m-1]": 100,  # [3]
-        "Negative electrode diffusivity [m2.s-1]": graphite_mcmb2528_diffusivity_Dualfoil1998, # [3]
-
+        "Negative electrode diffusivity [m2.s-1]": graphite_mcmb2528_diffusivity_Dualfoil1998,  # [3]
         # Separator
         "Separator thickness [m]": 30e-6,  # [2] 30 \mu m
-
         # Positive electrode
         "Maximum concentration in positive electrode [mol.m-3]": c_p_max,
-        "Positive electrode thickness [m]": 55e-6, # [2] 55 \mu m
-        "Positive electrode active material volume fraction": 0.42, # [2]
-        "Positive particle radius [m]": 0.25e-6, # [2] 0.25 \mu m
-        "Positive electrode diffusivity [m2.s-1]": 1.5e-15, # [2]
-
+        "Positive electrode thickness [m]": 55e-6,  # [2] 55 \mu m
+        "Positive electrode active material volume fraction": 0.42,  # [2]
+        "Positive particle radius [m]": 0.25e-6,  # [2] 0.25 \mu m
+        "Positive electrode diffusivity [m2.s-1]": 1.5e-15,  # [2]
         # Electrolyte
         "Typical electrolyte concentration [mol.m-3]": 1000.0,
         "Initial concentration in electrolyte [mol.m-3]": 1200.0,
@@ -233,10 +233,9 @@ def airbus_cell_parameters():
         "Electrolyte diffusivity [m2.s-1]": electrolyte_diffusivity_Nyman2008,
         "Electrolyte conductivity [S.m-1]": electrolyte_conductivity_Nyman2008,
         "Thermodynamic factor": 1.0,
-
         # Cell
-        "Electrode height [m]": 64.5e-3, # 64.5 mm
-        "Electrode width [m]": 0.578, # https://www.batterydesign.net/cylindrical-cell-electrode-estimation/
+        "Electrode height [m]": 64.5e-3,  # 64.5 mm
+        "Electrode width [m]": 0.578,  # https://www.batterydesign.net/cylindrical-cell-electrode-estimation/
         "Lower voltage cut-off [V]": 2.4,
         "Upper voltage cut-off [V]": 4.5,
         "Typical current [A]": 2.9,
