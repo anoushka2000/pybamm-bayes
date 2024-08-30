@@ -189,6 +189,43 @@ def graphite_entropic_change_Moura2016(sto, c_s_max):
 
     return du_dT
 
+def NCA_OCP(sto):
+    """
+    diffthermo fit for NCA, falling back to regular RK fit
+    sto: stochiometry 
+    """
+    _eps = 1e-7
+    # rk params
+    G0 = -381555.5625 
+    Omega0 = -42432.0820 
+    Omega1 = 6579.1157 
+    Omega2 = 23361.8047 
+    Omega3 = 31590.4922 
+    Omega4 = 28378.8008 
+    Omega5 = 29163.8047 
+    Omega6 = 8955.4033 
+    Omega7 = -7601.7798 
+    Omega8 = -3563.2253 
+    Omega9 = 19743.1211 
+    Omega10 = -24798.2754 
+    Omega11 = 2853.8174 
+    Omega12 = 293.8150 
+    Omega13 = -15989.4336 
+    Omega14 = 33684.6250 
+    Omega15 = -27924.1973 
+    Omega16 = 42068.6250 
+    Omega17 = -28561.3672 
+    Omega18 = -243.7913
+    Omega19 = 42760.6289 
+    Omega20 = -119639.9375 
+    Omegas = [Omega0, Omega1, Omega2, Omega3, Omega4, Omega5, Omega6, Omega7, Omega8, Omega9, Omega10, Omega11, Omega12, Omega13, Omega14, Omega15, Omega16, Omega17, Omega18, Omega19, Omega20]
+    
+    mu_outside = G0 + 8.314*300.0*log((sto+_eps)/(1-sto+_eps))
+    for i in range(0, len(Omegas)):
+        mu_outside = mu_outside + 1.0 * Omegas[i]*((1-2*sto)**(i+1) - 2*i*sto*(1-sto)*(1-2*sto)**(i-1))
+    mu_e = 1.0 * mu_outside 
+    return -mu_e/96485.0
+
 
 def airbus_cell_parameters():
     """
@@ -207,7 +244,7 @@ def airbus_cell_parameters():
     parameters = {
         # Negative Electrode
         "Maximum concentration in negative electrode [mol.m-3]": c_n_max,
-        "Negative electrode thickness [m]": 40e-6,  # [2] 40 \mu m
+        "Negative electrode thickness [m]": 55e-6,  # [2] 55 \mu m
         "Negative electrode active material volume fraction": 0.384,  # [2]
         # "Negative electrode porosity": 0.2, # [1] electrolyte phase fraction (?)
         "Negative electrode OCP [V]": graphite_mcmb2528_ocp_Dualfoil1998,
@@ -226,6 +263,7 @@ def airbus_cell_parameters():
         "Positive electrode active material volume fraction": 0.42,  # [2]
         "Positive particle radius [m]": 0.25e-6,  # [2] 0.25 \mu m
         "Positive electrode diffusivity [m2.s-1]": 1.5e-15,  # [2]
+        "Positive electrode OCP": NCA_OCP,
         # Electrolyte
         "Typical electrolyte concentration [mol.m-3]": 1000.0,
         "Initial concentration in electrolyte [mol.m-3]": 1200.0,
@@ -235,9 +273,11 @@ def airbus_cell_parameters():
         "Thermodynamic factor": 1.0,
         # Cell
         "Electrode height [m]": 64.5e-3,  # 64.5 mm
-        "Electrode width [m]": 0.578,  # https://www.batterydesign.net/cylindrical-cell-electrode-estimation/
+        "Electrode width [m]": 1.542,  # https://www.batterydesign.net/cylindrical-cell-electrode-estimation/
         "Lower voltage cut-off [V]": 2.4,
         "Upper voltage cut-off [V]": 4.5,
+        "Open-circuit voltage at 0% SOC [V]": 2.4,
+        "Open-circuit voltage at 100% SOC [V]": 4.18,
         "Typical current [A]": 2.9,
         "Current function [A]": 2.9,
         "Nominal cell capacity [A.h]": 2.9,
