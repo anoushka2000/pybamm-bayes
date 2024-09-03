@@ -107,7 +107,7 @@ def graphite_LGM50_electrolyte_exchange_current_density_Chen2020(
 
 
 
-def nmc_LGM50_electrolyte_exchange_current_density_Chen2020(c_e, c_s_surf, c_s_max, T):
+def nmc_LGM50_electrolyte_exchange_current_density_fit(c_e, c_s_surf, c_s_max, T):
     """
     Exchange-current density for Butler-Volmer reactions between NMC and LiPF6 in
     EC:DMC.
@@ -239,7 +239,7 @@ def airbus_cell_parameters():
         "Negative electrode porosity": 0.5,  # [1]
         "Negative electrode OCP [V]": graphite_LGM50_ocp_Chen2020,  # [?]
         "Negative electrode OCP entropic change [V.K-1]": 0,
-        "Negative electrode exchange-current density [A.m-2]": graphite_LGM50_electrolyte_exchange_current_density_fit,
+        "Negative electrode exchange-current density [A.m-2]": graphite_LGM50_electrolyte_exchange_current_density_Chen2020,
         "Negative particle radius [m]": 11e-6,  # [1]
         "Negative electrode Bruggeman coefficient (electrolyte)": 1.5,  # [1]
         "Negative electrode Bruggeman coefficient (electrode)": 0.0,  # [?]
@@ -274,7 +274,7 @@ def airbus_cell_parameters():
         "Positive electrode Butler-Volmer transfer coefficient": 0.5,
         "Positive electrode double-layer capacity [F.m-2]": 0.2,  # ?
         "Positive electrode exchange-current density [A.m-2]"
-        "": nmc_LGM50_electrolyte_exchange_current_density_Chen2020,  # [?]
+        "": nmc_LGM50_electrolyte_exchange_current_density_fit,  # [?]
         "Positive electrode density [kg.m-3]": 4870,
         "Positive electrode specific heat capacity [J.kg-1.K-1]": 840.1,
         "Positive electrode thermal conductivity [W.m-1.K-1]": 1.58,
