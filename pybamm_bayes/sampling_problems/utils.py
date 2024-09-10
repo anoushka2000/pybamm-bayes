@@ -7,9 +7,13 @@ def _fmt_variables(variables):
     for v in variables:
         var = v.__dict__.copy()
 
-        var["prior"] = var["prior"].__dict__
-        if "_boundaries" in var["prior"].keys():
-            var["prior"] = var["prior"]["_boundaries"].__dict__.copy()
+        if not isinstance(var["prior"], str):
+            var["prior"] = var["prior"].__dict__
+            if "_boundaries" in var["prior"].keys():
+                var["prior"] = {
+                    "lower": var["prior"]["_boundaries"].__dict__["_lower"][0],
+                    "upper": var["prior"]["_boundaries"].__dict__["_upper"][0]
+                }
         lst.append(var)
     return lst
 
