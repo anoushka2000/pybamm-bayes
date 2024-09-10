@@ -714,14 +714,14 @@ def plot_forward_model_posterior_distribution(
     time_column = "Time [s]"
 
     if "Time [s]" not in df.columns:
-        if metadata["error axis"] == "y":
+        error_axis = metadata.get("error axis", "y")
+        
+        if error_axis == "y":
             time_column = "Reference"
             output_column = "Output"
-
-        elif metadata["error axis"] == "x":
+        elif error_axis == "x":
             time_column = "Output"
             output_column = "Reference"
-
         else:
             raise NotImplementedError("'error axis' must be one of: 'x' or 'y'")
 
@@ -761,3 +761,4 @@ def plot_forward_model_posterior_distribution(
 
     # output with one s.d. plot
     sns.lineplot(data=df, x=time_column, y=output_column, errorbar=("sd", 1), ax=ax[0])
+    return fig
