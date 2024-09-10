@@ -241,7 +241,7 @@ def run_forward_model_over_posterior(
             inputs = dict(zip(variable_names, input_set))
 
             solution = simulation.solve(
-                t_eval=np.fromstring(metadata["t_eval"][1:-1], sep=" "),
+                t_eval=np.fromstring(metadata["times"][1:-1], sep=" "),
                 inputs=inputs.copy(),
             )
             solution_var = solution[output].entries
