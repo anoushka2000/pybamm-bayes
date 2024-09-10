@@ -25,7 +25,7 @@ class Variable:
         https://elfi.readthedocs.io/en/latest/api.html#elfi.Prior
     bounds : Optional[Tuple[float, float]]
         A tuple specifying the lower and upper bound of the variable
-        (this is required to use the BOLFI method.)
+        (this is required to use for pints UniformPriors and the BOLFI method.)
     """
 
     def __init__(
@@ -42,7 +42,8 @@ class Variable:
             self.prior_type = prior.distribution.name
             self.prior_loc = self.prior.parents[0].state["attr_dict"]["_output"]
             self.prior_scale = self.prior.parents[1].state["attr_dict"]["_output"]
-
+        elif prior == "uniform":
+            self.prior_type = prior
         else:
             self.prior_type = str(type(self.prior)).split(".")[-1][:-2]
         self.bounds = bounds
