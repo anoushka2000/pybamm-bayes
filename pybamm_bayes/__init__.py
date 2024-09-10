@@ -24,6 +24,11 @@ from .sampling_problems.base_sampling_problem import *
 from .sampling_problems.bolfi_identifiability_analysis import *
 from .sampling_problems.mcmc_identifiability_analysis import *
 from .sampling_problems.mcmc_parameter_estimation import *
+from .sampling_problems.degradation_parameter_estimation import *
+
+#
+# Worflow Utils
+#
 from .workflows.utils.parameter_sets.chen2020 import *
 from .workflows.utils.parameter_sets.marquis2019 import *
 from .workflows.utils.parameter_sets.mohtat2020 import *
