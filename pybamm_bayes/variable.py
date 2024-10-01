@@ -26,6 +26,10 @@ class Variable:
     bounds : Optional[Tuple[float, float]]
         A tuple specifying the lower and upper bound of the variable
         (this is required to use for pints UniformPriors and the BOLFI method.)
+    inverse_transform: Optional[Callable]
+        Function which transforms sampled values to model parameter values.
+        e.g if Diffusivity is sample in log space (log10) 
+        `inverse_transform = lambda Ds: 10**Ds`.
     """
 
     def __init__(
@@ -34,10 +38,12 @@ class Variable:
         value,
         prior,
         bounds=None,
+        inverse_transform = lambda x: x
     ):
         self.name = name
         self.value = value
         self.prior = prior
+        self.inverse_transform = inverse_transform
         if isinstance(prior, elfi.model.elfi_model.Prior):
             self.prior_type = prior.distribution.name
             self.prior_loc = self.prior.parents[0].state["attr_dict"]["_output"]
