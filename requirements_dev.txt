@@ -2,4 +2,5 @@ black
 coverage
 flake8
 kaleido
+rich
 nosedep==0.7
