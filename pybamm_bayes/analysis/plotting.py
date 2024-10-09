@@ -1,6 +1,7 @@
 import glob
 import os
 import warnings
+from math import floor, ceil
 
 import elfi  # noqa: F401
 import matplotlib.colors as mcolors
@@ -46,13 +47,16 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
         f"{transfrom_type} {var['name']}" for var in metadata["variables"]
     ]
     true_values = [var["value"] for var in metadata["variables"]]
-
     priors, bounds = _parse_priors(metadata)
 
     # load chains
-    chains = load_chains(logs_dir_path)
-    n_chains = metadata["n_chains"]
+    chains = load_chains(logs_dir_path, concat = False)
+    n_chains = metadata.get("n_chains", len(chains))
+    chains = pd.concat(chains)
     n_param = len(variable_names)
+    # Check for extra noise param
+    if len(variable_names) < len(chains.columns): 
+        chains = chains.drop(columns = chains.columns[-1])
     samples = chains.to_numpy().reshape(n_chains, int(len(chains) / n_chains), n_param)
 
     # set up figure
@@ -80,18 +84,20 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
                 max_n = int(max(n))
 
             # set x limit for histogram subplot
-            axes[i, 0].set_xlim([round(true_values[i] - 2), round(true_values[i] + 2)])
-
+            lower = max(floor(0.75*true_values[i]), floor(true_values[i] - 2))
+            upper = min(ceil(1.25*true_values[i]), ceil(true_values[i] + 2))
+            axes[i, 0].set_xlim([lower, upper])
+            print(f"{variable_names[i]} {lower} {upper}")
             # add trace subplot
             axes[i, 1].set_xlabel("Iteration")
             axes[i, 1].set_ylabel(variable_names[i])
             axes[i, 1].plot(samples_j[:, i], alpha=0.8)
 
             # set y limit for trace subplot
-            axes[i, 1].set_ylim([round(true_values[i] - 2), round(true_values[i] + 2)])
+            axes[i, 1].set_ylim([lower, upper])
 
         # add prior histogram
-        if metadata["sampling_method"] == "BOLFI":
+        if metadata.get("sampling_method", None) == "BOLFI":
             lower, rng = bounds[i][0], bounds[i][1] - bounds[i][0]
             axes[i, 0].hist(
                 lower
@@ -120,6 +126,7 @@ def plot_chain_convergence(logs_dir_name=None, logs_dir_path=None):
 
     plt.tight_layout()
     plt.savefig(os.path.join(logs_dir_path, "chain_convergence"))
+    plt.close()
 
 
 def compare_chain_convergence(log_dir_names=None, log_dir_paths=None):
@@ -226,6 +233,7 @@ def compare_chain_convergence(log_dir_names=None, log_dir_paths=None):
     # save in each project directory
     for logs_dir_path in log_dir_paths:
         plt.savefig(os.path.join(logs_dir_path, "comparison_chain_convergence"))
+    plt.close()
 
 
 def pairwise(
@@ -235,6 +243,7 @@ def pairwise(
     heatmap=False,
     opacity=None,
     n_percentiles=None,
+    bins = 50
 ):
     """
     (Adapted from pint.plot.pairwise)
@@ -280,6 +289,7 @@ def pairwise(
         df_list.append(pd.read_csv(name))
 
     chains = pd.concat(df_list)
+    chains = chains[chains.columns[:len(variable_names)]]
     n_param = len(variable_names)
 
     samples = chains.to_numpy().reshape(len(chains), n_param)
@@ -287,7 +297,6 @@ def pairwise(
     fig_size = (3 * n_param, 3 * n_param)
     fig, axes = plt.subplots(n_param, n_param, figsize=fig_size)
 
-    bins = 50
     for i in range(n_param):
         for j in range(n_param):
             if i == j:
@@ -303,7 +312,7 @@ def pairwise(
 
                 axes[i, j].hist(samples[:, i], bins=xbins)  # , density=True)
 
-                if metadata["sampling_method"] == "BOLFI":
+                if metadata.get("sampling_method", None) == "BOLFI":
                     lower, rng = (
                         bounds[i][0],
                         bounds[i][1] - bounds[i][0],
@@ -363,7 +372,7 @@ def pairwise(
 
                     # Scatter points
                     axes[i, j].scatter(
-                        samples[:, j], samples[:, i], alpha=opacity, s=0.1
+                        samples[:, j], samples[:, i], alpha=opacity, s=0.5
                     )
 
                 elif kde:
@@ -434,6 +443,7 @@ def pairwise(
             axes[i, 0].set_ylabel(variable_names[i])
 
     plt.savefig(os.path.join(logs_dir_path, "pairwise_correlation"))
+    plt.close()
 
 
 def _plot_confidence_intervals_grid(
