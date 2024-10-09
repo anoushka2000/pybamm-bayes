@@ -108,7 +108,7 @@ def load_chains_with_residual(logs_dir_name=None, logs_dir_path=None):
 
     # recover variable definition from metadata
     variable_names = [
-        f"{metadata['transform type']} {var['name']}" for var in metadata["variables"]
+        f"{var['name']}" for var in metadata["variables"]
     ]
 
     # load chains
