@@ -8,6 +8,7 @@ import pints
 import pints.plot
 import pybamm
 import seaborn as sns
+from scipy import stats
 import tqdm
 
 from pybamm_bayes.analysis.utils import sample_from_posterior
@@ -34,10 +35,6 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         Name of battery simulation output corresponding to observed quantity
         recorded in data e.g "Terminal voltage [V]", "Terminal power [W]"
         or "Current [A]".
-    transform_type: str
-        Transformation variable value input to battery model
-        and sampling space.
-        (only `log10` implemented for now)
     project_tag: str
         Project identifier (prefix to logs dir name).
     """
@@ -48,7 +45,6 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         parameter_values: pybamm.ParameterValues,
         variables: List[Variable],
         output: str,
-        transform_type: str,
         project_tag: str = "",
     ):
 
@@ -58,7 +54,6 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         self.parameter_values = parameter_values
         self.variables = variables
         self.output = output
-        self.transform_type = transform_type
         self.project_tag = project_tag
         self.logs_dir_path = self.create_logs_dir()
         self.default_inputs = {v.name: v.value for v in self.variables}
@@ -78,26 +73,14 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         )
 
     @property
-    def transforms(self):
-        return {
-            "log10": lambda x: 10 ** float(x),
-            "None": lambda x: x,
-            "negated_log10": lambda x: 10 ** float(-x),
-        }
-
-    @property
-    def inverse_transform(self):
-        return self.transforms[self.transform_type]
-
-    @property
     def log_prior(self):
         return pints.ComposedLogPrior(*[v.prior for v in self.variables])
 
     def create_logs_dir(self):
         logs_dir_name = [self.project_tag] + [p.name for p in self.variables]
         logs_dir_name.append(datetime.utcnow().strftime(format="%d%m%y_%H%M"))
-        current_path = os.getcwd()
-        return os.path.join(current_path, "logs", "__".join(logs_dir_name))
+        current_path = "/scratch/venkvis_root/venkvis/abhutani" # os.getcwd()
+        return os.path.join(current_path, "scratch-logs", "__".join(logs_dir_name))
 
     @property
     def metadata(self):
@@ -107,7 +90,6 @@ class BaseSamplingProblem(pints.ForwardModelS1):
             "default inputs": self.default_inputs,
             "variables": _fmt_variables(self.variables),
             "output": self.output,
-            "transform type": self.transform_type,
             "project": self.project_tag,
         }
 
@@ -132,6 +114,14 @@ class BaseSamplingProblem(pints.ForwardModelS1):
                     variable.bounds[1] - variable.bounds[0],
                 )
                 sample = lower + variable.prior.distribution.rvs(size=7000) * rng
+            elif variable.prior=="uniform":
+                lower, rng = (
+                    variable.bounds[0],
+                    variable.bounds[1] - variable.bounds[0],
+                )
+
+                prior = stats.uniform(loc=lower, scale=rng)
+                sample = prior.rvs(size=7000)
             else:
                 sample = variable.prior.sample(7000).flatten()
 
@@ -157,54 +147,62 @@ class BaseSamplingProblem(pints.ForwardModelS1):
         """
         Plot of profile of time series data used and save.
         """
-        if self.method == "BOLFI":  # error axis only applicable for MCMC
-            plt.plot(self.times, self.data)
-        elif self.error_axis == "y":
-            plt.plot(self.data_reference_axis_values, self.data_output_axis_values)
+        if self.method == "BOLFI":
+            plt.plot(self.times, self.data)            
         else:
-            plt.plot(self.data_output_axis_values, self.data_reference_axis_values)
+            plt.plot(self.data_reference_axis_values, self.data_output_axis_values)
         plt.xlabel("Time (s)")
         plt.ylabel(self.output)
         plt.savefig(os.path.join(self.logs_dir_path, "data"))
 
-    def plot_results_summary(self, forward_evaluations=7000):
+    def plot_results_summary(self, resample_posterior=True, forward_evaluations=None):
 
         variable_names = [var.name for var in self.variables]
 
-        posterior_samples = sample_from_posterior(self.chains, forward_evaluations)
+        if resample_posterior:
+            posterior_samples = sample_from_posterior(self.chains, forward_evaluations)
+        else:
+            posterior_samples = self.chains.drop_duplicates(
+                subset=self.chains.columns.values[:len(variable_names)],
+                ).values
 
         results = []
         summary = []
 
         if len(posterior_samples) > 1:
             for i, input_set in tqdm.tqdm(enumerate(posterior_samples)):
-
+                print("plot_results_summary", type(input_set))
                 inputs = dict(zip(variable_names, input_set))
                 if self.method == "BOLFI":
                     solution_var = self.simulate(*list(input_set))
                 else:
                     solution_var = self.simulate(
-                        theta=list(input_set), times=self.t_eval
+                        theta=input_set, times=self.times
                     )
-                summary.append(
-                    {
-                        **inputs,
-                        "Residual": abs(
-                            self.data_output_axis_values - solution_var
-                        ).sum()
-                        / len(solution_var),
-                    }
-                )
 
-                for ref, outp in zip(self.data_reference_axis_values, solution_var):
-                    results.append(
+                try:
+                    summary.append(
                         {
                             **inputs,
-                            "Reference": ref,
-                            "Output": outp,
-                            "run": i,
+                            "Residual": abs(
+                                self.data_output_axis_values - solution_var
+                            ).sum()
+                            / len(solution_var),
                         }
                     )
+
+                    for ref, outp in zip(self.data_reference_axis_values, solution_var):
+                        results.append(
+                            {
+                                **inputs,
+                                "Reference": ref,
+                                "Output": outp,
+                                "run": i,
+                            }
+                        )
+                except ValueError: # simulation failed at sample
+                    continue
+
             df = pd.DataFrame(results)
             df_summary = pd.DataFrame(summary)
 

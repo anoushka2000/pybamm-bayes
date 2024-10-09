@@ -10,7 +10,7 @@ def _get_logs_path(logs_dir_name):
 
 
 def _parse_priors(metadata):
-    if metadata["sampling_method"] == "BOLFI":
+    if metadata.get("sampling_method", None) == "BOLFI":
         priors = [
             eval(
                 'elfi.Prior("'
@@ -21,14 +21,26 @@ def _parse_priors(metadata):
         ]
         bounds = [v["bounds"] for v in metadata["variables"]]
     else:
-        priors = [
-            eval(
-                f"pints.{v['prior_type']}({list(v['prior'].values())[0]},"
-                + f"{list(v['prior'].values())[1]})"
-            )
-            for v in metadata["variables"]
-        ]
         bounds = None
+        priors = []
+        for v in metadata["variables"]:
+            if "Truncated" in v['prior_type']:
+                priors.append(
+                    eval(
+                        f"pints.{v['prior_type']}({list(v['prior'].values())[0]},"
+                        + f"{list(v['prior'].values())[1]},"
+                        + f"{list(v['prior'].values())[2]},"
+                        + f"{list(v['prior'].values())[3]})"
+                    )
+                )
+            else:
+                priors.append(
+                    eval(
+                        f"pints.{v['prior_type']}({list(v['prior'].values())[0]},"
+                        + f"{list(v['prior'].values())[1]})"
+                    )
+                )
+
     return priors, bounds
 
 

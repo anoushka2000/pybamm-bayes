@@ -1,4 +1,5 @@
 import numpy as np
+import inspect
 from scipy.interpolate import interp1d
 
 
@@ -9,6 +10,7 @@ def _fmt_variables(variables):
 
         if not isinstance(var["prior"], str):
             var["prior"] = var["prior"].__dict__
+            var["inverse_transform"] = inspect.getsourcelines(var["inverse_transform"])[0][0]
             if "_boundaries" in var["prior"].keys():
                 var["prior"] = {
                     "lower": var["prior"]["_boundaries"].__dict__["_lower"][0],

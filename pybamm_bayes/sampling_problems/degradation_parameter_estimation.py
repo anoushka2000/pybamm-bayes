@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import pints
 import pybamm
-from scipy.interpolate import interp1d
 
 from pybamm_bayes.logging import logger
 from pybamm_bayes.sampling_problems.base_sampling_problem import (
@@ -14,6 +13,10 @@ from pybamm_bayes.sampling_problems.base_sampling_problem import (
 )  # noqa: E501
 from pybamm_bayes.sampling_problems.utils import _fmt_parameters, _fmt_variables
 from pybamm_bayes.variable import Variable
+
+import signal
+
+
 
 
 class DegradationParameterEstimation(BaseSamplingProblem):
@@ -38,10 +41,6 @@ class DegradationParameterEstimation(BaseSamplingProblem):
         Name of battery simulation output corresponding to observed quantity
         recorded in data e.g "Terminal voltage [V]", "Terminal power [W]"
         or "Current [A]".
-    transform_type: str
-        Transformation variable value input to battery model
-        and sampling space.
-        (only `log10` implemented for now)
     project_tag: str
         Project identifier (prefix to logs dir name).
     """
@@ -53,7 +52,6 @@ class DegradationParameterEstimation(BaseSamplingProblem):
         parameter_values: pybamm.ParameterValues,
         variables: List[Variable],
         output: str,
-        transform_type: str,
         project_tag: str = "",
     ):
 
@@ -62,7 +60,6 @@ class DegradationParameterEstimation(BaseSamplingProblem):
             parameter_values=parameter_values,
             variables=variables,
             output=output,
-            transform_type=transform_type,
             project_tag=project_tag,
         )
 
@@ -93,7 +90,6 @@ class DegradationParameterEstimation(BaseSamplingProblem):
             "battery model": self.battery_simulation.model.name,
             "parameter values": _fmt_parameters(self.parameter_values),
             "variables": _fmt_variables(self.variables),
-            "transform type": self.transform_type,
             "project": self.project_tag,
             "output": self.output,
             "times": np.array2string(self.times),
@@ -104,18 +100,26 @@ class DegradationParameterEstimation(BaseSamplingProblem):
     def log_prior(self):
         priors = [v.prior for v in self.variables]
         # extra prior for unknown noise
-        priors.append(pints.GaussianLogPrior(0, 1))
+        priors.append(pints.UniformLogPrior(0, 1))
         return pints.ComposedLogPrior(*priors)
     
     def _get_state_of_health(self, inputs):
 
-        eps_p = inputs["eps_p"]
-        eps_n = inputs["eps_n"]
-        Q_Li = inputs.pop("Q_Li")
-        
-        self.soh_parameter_values["Negative electrode active material volume fraction"] = eps_n
-        self.soh_parameter_values["Positive electrode active material volume fraction"] = eps_p        
+        if "eps_n" in inputs.keys():
+            eps_n = inputs.get("eps_n")
+            self.soh_parameter_values["Negative electrode active material volume fraction"] = eps_n
+            self.parameter_values["Negative electrode active material volume fraction"] = eps_n
 
+        if "eps_p" in inputs.keys():
+            eps_p = inputs.get("eps_p")
+            self.soh_parameter_values["Positive electrode active material volume fraction"] = eps_p      
+            self.parameter_values["Positive electrode active material volume fraction"] = eps_p      
+
+        if "Q_Li" in inputs.keys():
+            Q_Li = inputs.pop("Q_Li")
+        else: 
+            Q_Li = self.soh_parameter_values.evaluate(self.symbolic_params.Q_Li_particles_init)
+        
         Q_n = self.soh_parameter_values.evaluate(self.symbolic_params.n.Q_init)
         Q_p = self.soh_parameter_values.evaluate(self.symbolic_params.p.Q_init)
         U_n = self.symbolic_params.n.prim.U
@@ -123,11 +127,10 @@ class DegradationParameterEstimation(BaseSamplingProblem):
         T_ref = self.symbolic_params.T_ref
         
         # Get voltage thresholds from data
-        Vmin = self.data.min()
-        Vmax = self.data.max()
+        Vmin = self.parameter_values["V_min"]
+        Vmax = self.parameter_values["V_max"]
         Vinit = self.data[0]
-        print(f"eps_p {eps_p} eps_n {eps_n} Q_Li {Q_Li} Vinit {Vinit} Vmin {Vmin} Vmax {Vmax}")
-
+        print(f"Q_Li {Q_Li} Vinit {Vinit} Vmin {Vmin} Vmax {Vmax}")
         # Define Electrode Capacity Model
         model = pybamm.BaseModel()
 
@@ -159,23 +162,56 @@ class DegradationParameterEstimation(BaseSamplingProblem):
             "SOC": soc
             }
 
-        soh_solver = pybamm.Simulation(
-            model, 
-            parameter_values=self.soh_parameter_values 
-        )
+        self.soh_parameter_values.process_model(model)
+        try:
+            solver = pybamm.CasadiAlgebraicSolver()
+            sol = solver.solve(model)
 
-        sol = soh_solver.solve([0])
+            x = sol["x"].data[0]
+            y = sol["y"].data[0]
+            soc = sol["SOC"].data[0]
+            return soc, x, y
+        
+        except pybamm.SolverError as e:
+            try:
+                model.initial_conditions = {
+                    x_100: 0.9, 
+                    x_0: 0.1, 
+                    soc: (Vinit - Vmin) / (Vmax - Vmin)
+                }
+                self.soh_parameter_values.process_model(model)
+                solver = pybamm.CasadiAlgebraicSolver()
+                sol = solver.solve(model)
+                x = sol["x"].data[0]
+                y = sol["y"].data[0]
+                soc = sol["SOC"].data[0]
+            except pybamm.SolverError as e:
+                # fails to solve for eSOH
+                return None, None, None
 
-        x = sol["x"].data[0]
-        y = sol["y"].data[0]
-        soc = sol["SOC"].data[0]
 
-        return soc, x, y
-
+    def simulate(self, theta: np.ndarray, times: np.ndarray):
+        """
+        Wrapper around _simulate method to handle timeouts.
+        """
+        def handler(signum, frame):
+            raise TimeoutError
+        signal.signal(signal.SIGALRM, handler)
+        signal.alarm(60)
+        try:
+            output = self._simulate(theta, times)
+        except TimeoutError as e:
+            with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
+                log.write("**************\n")
+                log.write(np.array2string(theta) + "\n")
+                log.write(repr(e) + "\n")
+            output = np.zeros(*self.data.shape)
+        signal.alarm(0)
+        return output
 
 
         
-    def simulate(self, theta: np.ndarray, times: np.ndarray):
+    def _simulate(self, theta: np.ndarray, times: np.ndarray):
         """
         Simulate method used by pints sampler.
         Parameters
@@ -188,76 +224,56 @@ class DegradationParameterEstimation(BaseSamplingProblem):
         ----------
         output: np.ndarray
             Simulated time series.
-        """
+        """ 
         variable_names = [v.name for v in self.variables]
+        inverse_transforms = [v.inverse_transform for v in self.variables]
         theta = theta[: len(variable_names) + 1]
-        inputs = dict(zip(variable_names, [self.inverse_transform(t) for t in theta]))
+        inputs = dict(
+            zip(variable_names, [inverse_transforms[i](theta[i]) for i in range(len(theta))])
+            )
         initial_soc, x, y = self._get_state_of_health(inputs=inputs)
-        # print(f"initial_soc {initial_soc}, x {x}, y {y}")
-
+        if not (initial_soc and x and y):
+            output = np.zeros(*self.data.shape)
+            return output
         c_p_max = self.parameter_values["Maximum concentration in positive electrode [mol.m-3]"]
         c_n_max = self.parameter_values["Maximum concentration in negative electrode [mol.m-3]"]
         inputs["c_init_p"] = c_p_max * y
         inputs["c_init_n"] = c_n_max * x
-
+        
         try:
             # solve with CasadiSolver
             self.battery_simulation.solve(
-                inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times,
+                inputs=inputs, 
+                solver=pybamm.CasadiSolver("safe"), 
+                t_eval=self.times,
                 # initial_soc=initial_soc
             )
             solution = self.battery_simulation.solution
             output = solution[self.output].entries
 
             self.csv_logger.info(["Casadi safe", solution.solve_time.value])
-
-        # except pybamm.SolverError:
-        #     # CasadiSolver "fast" failed
-        #     try:
-        #         self.battery_simulation.solve(
-        #             inputs=inputs, solver=pybamm.CasadiSolver("safe"), t_eval=self.times,
-        #             # initial_soc=initial_soc
-        #         )
-        #         solution = self.battery_simulation.solution
-        #         output = solution[self.output].entries
-
-        #         self.csv_logger.info(["Casadi safe", solution.solve_time.value])
-
-        except pybamm.SolverError:
-            #  Casadi solver failed
-            try:
-                self.battery_simulation.solve(
-                    inputs=inputs, solver=pybamm.ScipySolver(), t_eval=self.times,
-                    # initial_soc=initial_soc
-                )
-                solution = self.battery_simulation.solution
-                output = solution[self.output].entries
-
-                self.csv_logger.info(["Scipy", solution.solve_time.value])
-
-            except pybamm.SolverError as e:
-
-                with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
-                    log.write("**************\n")
-                    log.write(np.array2string(theta) + "\n")
-                    log.write(repr(e) + "\n")
-
-                # array of zeros to as residual if solution did not converge
-                output = np.zeros(*self.data.shape)
-
-        try:
-            ess = np.sum(np.square((output - self.data))) / len(output)
-
-        except ValueError:
-            # arrays of unequal size due to incomplete solution
-            ess = np.sum(np.square(self.data)) / len(self.data)
-            output = np.zeros(*self.data.shape)
         
+        except pybamm.SolverError as e:
+
+            with open(os.path.join(self.logs_dir_path, "errors"), "a") as log:
+                log.write("**************\n")
+                log.write(np.array2string(theta) + "\n")
+                log.write(repr(e) + "\n")
+
+            # array of zeros to as residual if solution did not converge
+            output = np.zeros(*self.data.shape)
+
+        output = np.nan_to_num(output, copy=True, nan=0.0, posinf=0.0, neginf=0.0)
+        if len(output) < len(self.data):
+            fill_length = len(self.data) - len(output)
+            # arrays of unequal size due to incomplete solution
+            output = np.append(output, np.zeros(fill_length))
+      
+        ess = np.sum(np.square((output - self.data))) / len(output)
+        print(ess)
         if output.max() > 100: 
             output = np.random.rand(*self.data.shape)
         self.residuals.append(ess)
-
-        print(f"output {output}")
         return output
 
     def run(
@@ -302,11 +318,11 @@ class DegradationParameterEstimation(BaseSamplingProblem):
 
         log_posterior = pints.LogPosterior(log_likelihood, self.log_prior)
 
-        xs = [x * self.initial_values for x in np.random.normal(1, 0.01, n_chains)]
+        xs = [x*self.initial_values for x in np.random.normal(1, 0.1, n_chains)]
 
         # Create MCMC routine
         mcmc = pints.MCMCController(
-            log_posterior, n_chains, xs, method=eval(sampling_method)
+            log_posterior, n_chains, xs, method=eval(sampling_method),
         )
 
         # Add stopping criterion
@@ -343,7 +359,7 @@ class DegradationParameterEstimation(BaseSamplingProblem):
 
         #  find residual at optimal value
         y_hat = self.simulate(theta_optimal, times=self.times)
-        error_at_optimal = np.sum(abs(y_hat - self.data)) / len(self.data)
+        error_at_optimal = np.sum((y_hat - self.data)**2) / len(self.data)
 
         pd.DataFrame(
             {

@@ -24,7 +24,7 @@ def nmc_LGM50_ocp_Chen2020(sto):
     :class:`pybamm.Symbol`
         Open-circuit potential
     """
-
+    sto += 1e-5
     u_eq = (
         -0.8090 * sto
         + 4.4875
@@ -145,7 +145,6 @@ def nmc_LGM50_electrolyte_exchange_current_density_fit(c_e, c_s_surf, c_s_max, T
         * (c_s_max - c_s_surf) ** 0.5
     )
 
-    return m_ref * arrhenius * c_e**0.5 * c_s_surf**0.5 * (c_s_max - c_s_surf) ** 0.5
 
 
 def electrolyte_diffusivity_Valoen2005(c_e, T):
@@ -289,7 +288,7 @@ def airbus_cell_parameters():
         "Electrode height [m]": 65e-3,  # 64.5 mm
         "Electrode width [m]": 1.5,  # https://www.batterydesign.net/cylindrical-cell-electrode-estimation/
         "Lower voltage cut-off [V]": 2.0,
-        "Upper voltage cut-off [V]": 4.2,
+        "Upper voltage cut-off [V]": 4.5, # allow for small voltage overshoots with safe solver
         "Typical current [A]": 2.9,
         "Current function [A]": 2.9,
         "Nominal cell capacity [A.h]": 3.5,
