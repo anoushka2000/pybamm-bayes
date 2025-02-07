@@ -228,7 +228,7 @@ def airbus_cell_parameters():
                 lithium-ion cell during fast charging.
     """
     c_n_max = 31360  # [1]
-    c_p_max = 52500  # [1]
+    c_p_max = 50060  # [1]
     parameters = {
         # Negative Electrode
         "Maximum concentration in negative electrode [mol.m-3]": c_n_max,
