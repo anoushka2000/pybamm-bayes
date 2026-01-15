@@ -2648,6 +2648,7 @@ dependencies = [
     { name = "pints" },
     { name = "plotly" },
     { name = "pybamm", extra = ["jax"] },
+    { name = "scipy" },
     { name = "seaborn" },
     { name = "tqdm" },
 ]
@@ -2668,6 +2669,7 @@ requires-dist = [
     { name = "pints", specifier = ">=0.5.0" },
     { name = "plotly", specifier = ">=6.0.0" },
     { name = "pybamm", extras = ["jax"], specifier = ">=25.1.1" },
+    { name = "scipy", specifier = ">=1.12.0" },
     { name = "seaborn", specifier = ">=0.13.2" },
     { name = "tqdm", specifier = ">=4.67.1" },
 ]
